@@ -5,6 +5,7 @@ import { Server, SkipForward, X, PictureInPicture2, PictureInPicture } from 'luc
 export default function PlayerContainer({ type, id, season, episode, autoPlayNext, onNextEpisode, nextEpisodeTitle, episodeRuntime }) {
   const [currentServer, setCurrentServer] = useState(2);
   const [server1Available, setServer1Available] = useState(true);
+  const serverProviders = { 1: 'vidsrc.to', 2: 'vidking.net', 3: 'embed.su', 4: 'vidsrc.pro' };
   const [showIframe, setShowIframe] = useState(false);
   const [showCountdown, setShowCountdown] = useState(false);
   const [countdown, setCountdown] = useState(15);
@@ -35,9 +36,21 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const buildUrl = (server) => {
     let url = '';
     if (server === 1) {
-      url = isTv ? `https://vidsrc.to/embed/tv/${id}?season=${season}&episode=${episode}` : `https://vidsrc.to/embed/movie/${id}`;
+      url = isTv
+        ? `https://vidsrc.to/embed/tv/${id}/${season}/${episode}`
+        : `https://vidsrc.to/embed/movie/${id}`;
+    } else if (server === 2) {
+      url = isTv
+        ? `https://www.vidking.net/embed/tv/${id}/${season}/${episode}`
+        : `https://www.vidking.net/embed/movie/${id}`;
+    } else if (server === 3) {
+      url = isTv
+        ? `https://embed.su/embed/tv/${id}/${season}/${episode}`
+        : `https://embed.su/embed/movie/${id}`;
     } else {
-      url = isTv ? `https://www.vidking.net/embed/tv/${id}?season=${season}&episode=${episode}` : `https://www.vidking.net/embed/movie/${id}`;
+      url = isTv
+        ? `https://vidsrc.pro/embed/tv/${id}/${season}/${episode}`
+        : `https://vidsrc.pro/embed/movie/${id}`;
     }
     if (autoPlayNext) {
       const sep = url.includes('?') ? '&' : '?';
@@ -211,11 +224,13 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     setShowCountdown(false);
     setEmbedBlocked(false);
     setCountdown(15);
+    setCurrentServer(2);
+    setServer1Available(true);
     clearTimeout(autoPlayTimerRef.current);
     clearInterval(countdownRef.current);
     const timer = setTimeout(() => setShowIframe(true), 1500);
     return () => clearTimeout(timer);
-  }, [currentServer, season, episode, type, id]);
+  }, [season, episode, type, id]);
 
   const handleIframeLoad = () => {
     setEmbedBlocked(false);
@@ -223,9 +238,10 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   };
 
   const handleIframeError = () => {
-    if (currentServer === 1) {
-      setServer1Available(false);
-      setCurrentServer(2);
+    const nextServer = currentServer + 1;
+    if (nextServer <= 4) {
+      if (currentServer === 1) setServer1Available(false);
+      setCurrentServer(nextServer);
       setEmbedBlocked(false);
       setShowIframe(false);
       setTimeout(() => setShowIframe(true), 600);
@@ -341,7 +357,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <button onClick={() => window.open(buildUrl(currentServer), '_blank')} style={{ background: '#e50914', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Open Player in New Tab</button>
                 <button onClick={() => { setEmbedBlocked(false); setShowIframe(false); setTimeout(() => setShowIframe(true), 600); }} style={{ background: 'rgba(255,255,255,0.06)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Retry</button>
-                <button onClick={() => setCurrentServer(currentServer === 1 ? 2 : 1)} style={{ background: 'rgba(255,255,255,0.04)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Try Other Server</button>
+                <button onClick={() => { const next = currentServer >= 4 ? 1 : currentServer + 1; if (next === 1) setServer1Available(true); setCurrentServer(next); setEmbedBlocked(false); setShowIframe(false); setTimeout(() => setShowIframe(true), 600); }} style={{ background: 'rgba(255,255,255,0.04)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Try Server {currentServer >= 4 ? 1 : currentServer + 1}</button>
               </div>
             </div>
           </div>
@@ -437,6 +453,8 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           <Server style={{ width: 14, height: 14 }} /> {server1Available ? 'Server 1' : 'Server 1 (blocked)'}
         </button>
         <button onClick={() => setCurrentServer(2)} style={serverBtnStyle(currentServer === 2, false)}><Server style={{ width: 14, height: 14 }} /> Server 2</button>
+        <button onClick={() => setCurrentServer(3)} style={serverBtnStyle(currentServer === 3, false)}><Server style={{ width: 14, height: 14 }} /> Server 3</button>
+        <button onClick={() => setCurrentServer(4)} style={serverBtnStyle(currentServer === 4, false)}><Server style={{ width: 14, height: 14 }} /> Server 4</button>
         <button
           onClick={togglePiP}
           style={{

@@ -1,6 +1,7 @@
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import Script from 'next/script';
 
 export const metadata = {
   title: 'idkstream — Premium Streaming',
@@ -43,7 +44,9 @@ export default function RootLayout({ children }) {
         <Footer />
 
         {/* Register Service Worker for PWA */}
-        <script
+        <Script
+          id="sw-register"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
