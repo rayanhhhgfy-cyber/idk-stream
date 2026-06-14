@@ -6,9 +6,11 @@ import PlayerContainer from '@/components/PlayerContainer';
 import KeyboardShortcuts from '@/components/KeyboardShortcuts';
 import CastSection from '@/components/CastSection';
 import TrailerModal from '@/components/TrailerModal';
+import EpisodeSelector from '@/components/EpisodeSelector';
 import Image from 'next/image';
-import { Star, ArrowLeft, Layers, PlayCircle, Film, Clock } from 'lucide-react';
+import { Star, ArrowLeft, Layers, PlayCircle, Film, Clock, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
+import { getAllWatchProgress } from '@/lib/watchHistory';
 
 export default function Watch({ params }) {
   const { type, id } = React.use(params);
@@ -25,6 +27,7 @@ export default function Watch({ params }) {
   const [trailers, setTrailers] = useState([]);
   const [showTrailer, setShowTrailer] = useState(false);
   const [resumeInfo, setResumeInfo] = useState(null);
+  const [allProgress, setAllProgress] = useState({});
 
   // Ref for the player container (used by KeyboardShortcuts for fullscreen)
   const playerRef = useRef(null);
@@ -111,6 +114,11 @@ export default function Watch({ params }) {
       setResumeInfo(null);
     }
   }, [details, id, type, currentSeason, currentEpisode]);
+
+  // Load all watch progress for episode progress bars
+  useEffect(() => {
+    setAllProgress(getAllWatchProgress());
+  }, [currentSeason, currentEpisode]);
 
   // Track watch time — start timer when iframe loads, pause when tab hidden
   useEffect(() => {
@@ -346,25 +354,26 @@ export default function Watch({ params }) {
             </div>
           </div>
 
-          {/* TV Show Controls */}
+          {/* TV Show Controls (Compact) */}
           {type === 'tv' && seasons.length > 0 && (
-            <div style={{ display: 'flex', gap: '12px', background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', alignItems: 'center', flexWrap: 'wrap' }}>
-              <select value={currentSeason} onChange={(e) => handleSeasonChange(parseInt(e.target.value))} style={{ background: 'transparent', color: 'white', border: 'none', padding: '8px 12px', fontSize: '0.875rem', outline: 'none', cursor: 'pointer' }}>
-                {seasons.map(s => <option key={s.season_number} value={s.season_number} style={{background: '#141414'}}>Season {s.season_number}</option>)}
-              </select>
-              <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)' }} />
-              <select value={currentEpisode} onChange={(e) => setCurrentEpisode(parseInt(e.target.value))} style={{ background: 'transparent', color: 'white', border: 'none', padding: '8px 12px', fontSize: '0.875rem', outline: 'none', cursor: 'pointer', maxWidth: '200px' }}>
-                {episodes.map(e => <option key={e.id} value={e.episode_number} style={{background: '#141414'}}>E{e.episode_number}: {e.name}</option>)}
-              </select>
-              <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)' }} />
+            <div style={{ display: 'flex', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '8px 14px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ position: 'relative' }}>
+                <select value={currentSeason} onChange={(e) => handleSeasonChange(parseInt(e.target.value))} style={{ background: 'rgba(255,255,255,0.06)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', padding: '6px 30px 6px 10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600, outline: 'none', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none', MozAppearance: 'none' }}>
+                  {seasons.map(s => <option key={s.season_number} value={s.season_number} style={{background: '#141414', color: 'white'}}>Season {s.season_number}</option>)}
+                </select>
+                <ChevronDown style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', width: 12, height: 12, color: '#888', pointerEvents: 'none' }} />
+              </div>
+              <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)' }} />
+              <span style={{ color: '#aaa', fontSize: '0.8rem', fontWeight: 600, whiteSpace: 'nowrap' }}>E{currentEpisode} of {episodes.length}</span>
+              <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)' }} />
               {nextEpisodeTitle && (
-                <button onClick={handleNextEpisode} style={{ background: '#e50914', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}>
-                  Next Episode <PlayCircle style={{ width: 16, height: 16 }} />
+                <button onClick={handleNextEpisode} style={{ background: '#e50914', color: 'white', border: 'none', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s' }}>
+                  Next <PlayCircle style={{ width: 14, height: 14 }} />
                 </button>
               )}
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#aaa', fontSize: '0.875rem', cursor: 'pointer', paddingRight: '8px' }}>
-                <input type="checkbox" checked={autoPlayNext} onChange={(e) => setAutoPlayNext(e.target.checked)} style={{ accentColor: '#e50914', cursor: 'pointer', width: '16px', height: '16px' }} />
-                Auto-play
+              <label style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#aaa', fontSize: '0.8rem', cursor: 'pointer' }}>
+                <input type="checkbox" checked={autoPlayNext} onChange={(e) => setAutoPlayNext(e.target.checked)} style={{ accentColor: '#e50914', cursor: 'pointer', width: '14px', height: '14px' }} />
+                Auto
               </label>
             </div>
           )}
@@ -375,26 +384,37 @@ export default function Watch({ params }) {
           <PlayerContainer type={type} id={id} season={currentSeason} episode={currentEpisode} autoPlayNext={autoPlayNext} onNextEpisode={handleNextEpisode} nextEpisodeTitle={nextEpisodeTitle} episodeRuntime={displayRuntime} />
         </div>
 
+        {/* Episode Selector */}
+        {type === 'tv' && episodes.length > 0 && (
+          <div style={{ marginBottom: '48px' }}>
+            <EpisodeSelector
+              episodes={episodes}
+              seasons={seasons}
+              currentEpisode={currentEpisode}
+              currentSeason={currentSeason}
+              showId={parseInt(id)}
+              progressData={allProgress}
+              onEpisodeSelect={(epNum) => {
+                setCurrentEpisode(epNum);
+                setTimeout(() => {
+                  if (playerRef.current) {
+                    playerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }, 50);
+              }}
+              onSeasonChange={handleSeasonChange}
+            />
+          </div>
+        )}
+
         {/* Details Section */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '48px' }}>
           <div>
             <h3 style={{ color: 'white', fontSize: '1.2rem', fontWeight: 700, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Layers style={{ width: 20, height: 20, color: '#e50914' }} />
-              {type === 'tv' && selectedEpisodeData ? `Episode Info: ${selectedEpisodeData.name}` : 'Storyline'}
+              Storyline
             </h3>
-            {type === 'tv' && selectedEpisodeData && (
-              <div style={{ marginBottom: '24px', display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-                {selectedEpisodeData.still_path && (
-                  <div style={{ position: 'relative', width: '200px', aspectRatio: '16/9', borderRadius: '12px', overflow: 'hidden', flexShrink: 0, border: '1px solid rgba(255,255,255,0.1)' }}>
-                    <Image src={`https://image.tmdb.org/t/p/w500${selectedEpisodeData.still_path}`} alt={selectedEpisodeData.name} fill style={{ objectFit: 'cover' }} />
-                  </div>
-                )}
-                <p style={{ color: '#aaa', lineHeight: 1.7, fontSize: '0.95rem' }}>{selectedEpisodeData.overview || "No description available."}</p>
-              </div>
-            )}
-            {(!selectedEpisodeData || !selectedEpisodeData.overview) && (
-              <p style={{ color: '#aaa', lineHeight: 1.8, fontSize: '1rem' }}>{displayOverview || "No overview available."}</p>
-            )}
+            <p style={{ color: '#aaa', lineHeight: 1.8, fontSize: '1rem' }}>{displayOverview || "No overview available."}</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '24px' }}>
               {genres.map(g => (
                 <span key={g.id} style={{ background: 'rgba(255,255,255,0.05)', color: '#888', padding: '6px 14px', borderRadius: '10px', fontSize: '0.8rem', border: '1px solid rgba(255,255,255,0.05)' }}>{g.name}</span>
