@@ -1,14 +1,14 @@
 "use client";
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { fetchMovieDetails, fetchTVDetails, fetchMovieCredits, fetchTVCredits, fetchMovieVideos, fetchTVVideos } from '@/lib/tmdb';
-import { addToWatchHistory, updateWatchProgress, getWatchProgress, formatWatchTime, getWatchHistory } from '@/lib/watchHistory';
+import { addToWatchHistory, updateWatchProgress, getWatchProgress, getWatchHistory } from '@/lib/watchHistory';
 import PlayerContainer from '@/components/PlayerContainer';
 import KeyboardShortcuts from '@/components/KeyboardShortcuts';
 import CastSection from '@/components/CastSection';
 import TrailerModal from '@/components/TrailerModal';
 import EpisodeSelector from '@/components/EpisodeSelector';
 import Image from 'next/image';
-import { Star, ArrowLeft, Layers, PlayCircle, Film, Clock, ChevronDown } from 'lucide-react';
+import { Star, ArrowLeft, Layers, PlayCircle, Film, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { getAllWatchProgress } from '@/lib/watchHistory';
 
@@ -26,7 +26,6 @@ export default function Watch({ params }) {
   const [credits, setCredits] = useState(null);
   const [trailers, setTrailers] = useState([]);
   const [showTrailer, setShowTrailer] = useState(false);
-  const [resumeInfo, setResumeInfo] = useState(null);
   const [allProgress, setAllProgress] = useState({});
 
   // Ref for the player container (used by KeyboardShortcuts for fullscreen)
@@ -103,17 +102,6 @@ export default function Watch({ params }) {
       episode: type === 'tv' ? currentEpisode : null,
     });
   }, [details, currentSeason, currentEpisode, id, type]);
-
-  // Resume playback — check for saved progress
-  useEffect(() => {
-    if (!details) return;
-    const progress = getWatchProgress(parseInt(id), type, type === 'tv' ? currentSeason : undefined, type === 'tv' ? currentEpisode : undefined);
-    if (progress && progress.watchedSeconds > 60) {
-      setResumeInfo(progress);
-    } else {
-      setResumeInfo(null);
-    }
-  }, [details, id, type, currentSeason, currentEpisode]);
 
   // Load all watch progress for episode progress bars
   useEffect(() => {
@@ -311,44 +299,6 @@ export default function Watch({ params }) {
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
                 >
                   <Film style={{ width: 14, height: 14 }} /> Watch Trailer
-                </button>
-              )}
-              {/* Resume badge */}
-              {resumeInfo && (
-                <button 
-                  onClick={() => {
-                    if (playerRef.current) {
-                      playerRef.current.scrollIntoView({ behavior: 'smooth' });
-                      
-                      // Attempt to seek the iframe video
-                      try {
-                        const iframe = playerRef.current.querySelector('iframe');
-                        if (iframe) {
-                           // For vidsrc, we can try appending &t= or #t= to URL
-                           const url = new URL(iframe.src);
-                           if (!url.searchParams.has('t')) {
-                             url.searchParams.append('t', resumeInfo.watchedSeconds);
-                             iframe.src = url.toString();
-                           }
-                           
-                           // Send postMessage for players that support it
-                           if (iframe.contentWindow) {
-                              iframe.contentWindow.postMessage({ 
-                                event: 'seek_to', 
-                                seconds: resumeInfo.watchedSeconds 
-                              }, '*');
-                           }
-                        }
-                      } catch (err) {
-                        console.error('Failed to seek player:', err);
-                      }
-                    }
-                  }}
-                  style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(229,9,20,0.15)', border: '1px solid rgba(229,9,20,0.3)', padding: '4px 12px', borderRadius: '8px', color: '#ff6b6b', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(229,9,20,0.25)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(229,9,20,0.15)'; }}
-                >
-                  <Clock style={{ width: 13, height: 13 }} /> Resume from {formatWatchTime(resumeInfo.watchedSeconds)}
                 </button>
               )}
             </div>

@@ -37,19 +37,19 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     let url = '';
     if (server === 1) {
       url = isTv
-        ? `https://vidsrc.to/embed/tv/${id}/${season}/${episode}`
+        ? `https://vidsrc.to/embed/tv/${id}/${season}/${Number(episode) - 1}`
         : `https://vidsrc.to/embed/movie/${id}`;
     } else if (server === 2) {
       url = isTv
-        ? `https://www.vidking.net/embed/tv/${id}/${season}/${episode}`
+        ? `https://www.vidking.net/embed/tv/${id}/${season}/${Number(episode) - 1}`
         : `https://www.vidking.net/embed/movie/${id}`;
     } else if (server === 3) {
       url = isTv
-        ? `https://embed.su/embed/tv/${id}/${season}/${episode}`
+        ? `https://embed.su/embed/tv/${id}/${season}/${Number(episode) - 1}`
         : `https://embed.su/embed/movie/${id}`;
     } else {
       url = isTv
-        ? `https://vidsrc.pro/embed/tv/${id}/${season}/${episode}`
+        ? `https://vidsrc.pro/embed/tv/${id}/${season}/${Number(episode) - 1}`
         : `https://vidsrc.pro/embed/movie/${id}`;
     }
     if (autoPlayNext) {
