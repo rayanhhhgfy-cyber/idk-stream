@@ -25,7 +25,7 @@ export default function TVPage() {
   const [selectedSort, setSelectedSort] = useState('popularity.desc');
 
   useEffect(() => {
-    fetchTVGenres().then(data => setGenres(data.genres || [])).catch(() => {});
+    fetchTVGenres().then(data => setGenres(data.genres || [])).catch(err => console.warn('Failed to load TV genres:', err));
   }, []);
 
   useEffect(() => {

@@ -40,7 +40,7 @@ export default function CreateRoom() {
           .filter(item => item.media_type === 'movie' || item.media_type === 'tv')
           .slice(0, 12);
         setSearchResults(filtered);
-      } catch {}
+      } catch (err) { console.warn('Watch party search failed:', err); }
       setSearchLoading(false);
     }, 400);
     return () => clearTimeout(timer);

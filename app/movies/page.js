@@ -26,7 +26,7 @@ export default function MoviesPage() {
 
   // Load genres once
   useEffect(() => {
-    fetchMovieGenres().then(data => setGenres(data.genres || [])).catch(() => {});
+    fetchMovieGenres().then(data => setGenres(data.genres || [])).catch(err => console.warn('Failed to load movie genres:', err));
   }, []);
 
   // Fetch movies when filters or page change

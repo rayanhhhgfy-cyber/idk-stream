@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { Users, Plus, Video } from 'lucide-react';
 import { subscribeRooms, cleanupInactiveRooms } from '@/lib/watchParty';
 import RoomCard from '@/components/RoomCard';
-import { getDb } from '@/lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -13,7 +12,7 @@ export default function WatchPartyBrowse() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    cleanupInactiveRooms();
+    cleanupInactiveRooms().catch(err => console.warn('Room cleanup failed:', err));
 
     const unsub = subscribeRooms(async (roomsData) => {
       const withCounts = await Promise.all(roomsData.map(async (room) => {

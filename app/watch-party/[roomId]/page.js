@@ -85,7 +85,7 @@ export default function RoomPage({ params }) {
         const data = await fetchSearch(mediaSearch);
         const f = (data.results || []).filter(i => i.media_type === 'movie' || i.media_type === 'tv').slice(0, 12);
         setMediaResults(f);
-      } catch {}
+      } catch (err) { console.warn('Media search failed:', err); }
       setMediaSearchLoading(false);
     }, 400);
     return () => clearTimeout(t);

@@ -67,12 +67,13 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     if (pipActive && pipWindowRef.current) {
       try { 
         if (isIos && pipWindowRef.current.requestFullscreen) {
-          // Exit fullscreen on iOS
           if (document.fullscreenElement) document.exitFullscreen();
         } else {
           pipWindowRef.current.close();
         }
-      } catch {}
+      } catch (err) {
+        console.warn('Failed to close PiP window:', err);
+      }
       pipWindowRef.current = null;
       setPipActive(false);
       return;
@@ -172,7 +173,9 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           return;
         }
       }
-    } catch {}
+    } catch (err) {
+      console.warn('Legacy PiP failed:', err);
+    }
 
     // Method 3: Popup window fallback — works everywhere (except iOS)
     if (!isIos) {
@@ -211,7 +214,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   useEffect(() => {
     return () => {
       if (pipWindowRef.current) {
-        try { pipWindowRef.current.close(); } catch {}
+        try { pipWindowRef.current.close(); } catch (err) { console.warn('PiP cleanup failed:', err); }
         pipWindowRef.current = null;
         setPipActive(false);
       }
@@ -274,14 +277,16 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       if (!autoPlayNext || !isTv || !onNextEpisode) return;
       try {
         let data = e.data;
-        if (typeof data === 'string') { try { data = JSON.parse(data); } catch {} }
+        if (typeof data === 'string') { try { data = JSON.parse(data); } catch { /* non-JSON message, use as-is */ } }
         const isEnded = data === 'ended' || data === 'video_ended' || data?.event === 'ended' || data?.event === 'video_ended' || data?.type === 'ended' || data?.status === 'complete';
         if (isEnded) {
           clearTimeout(autoPlayTimerRef.current);
           setShowCountdown(true);
           setCountdown(15);
         }
-      } catch {}
+      } catch (err) {
+        console.warn('Error processing iframe message:', err);
+      }
     };
 
     window.addEventListener('message', handleMessage);

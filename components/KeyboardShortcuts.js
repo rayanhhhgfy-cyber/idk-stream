@@ -55,12 +55,12 @@ export default function KeyboardShortcuts({ playerContainerRef, onNextEpisode, i
       target.requestFullscreen().then(() => {
         setIsFullscreen(true);
         showToast('maximize', 'Fullscreen');
-      }).catch(() => {});
+      }).catch(err => console.warn('Fullscreen request failed:', err));
     } else {
       document.exitFullscreen().then(() => {
         setIsFullscreen(false);
         showToast('minimize', 'Exit Fullscreen');
-      }).catch(() => {});
+      }).catch(err => console.warn('Exit fullscreen failed:', err));
     }
   }, [playerContainerRef, showToast]);
 
@@ -86,7 +86,7 @@ export default function KeyboardShortcuts({ playerContainerRef, onNextEpisode, i
             if (iframe?.contentWindow) {
               iframe.contentWindow.postMessage({ event: 'toggle_play' }, '*');
             }
-          } catch {}
+          } catch (err) { console.warn('postMessage to iframe failed:', err); }
           break;
 
         case 'f':
@@ -108,7 +108,7 @@ export default function KeyboardShortcuts({ playerContainerRef, onNextEpisode, i
             if (iframe?.contentWindow) {
               iframe.contentWindow.postMessage({ event: 'toggle_mute' }, '*');
             }
-          } catch {}
+          } catch (err) { console.warn('postMessage to iframe failed:', err); }
           break;
 
         case 'ArrowRight':
@@ -119,7 +119,7 @@ export default function KeyboardShortcuts({ playerContainerRef, onNextEpisode, i
             if (iframe?.contentWindow) {
               iframe.contentWindow.postMessage({ event: 'seek_forward', seconds: 10 }, '*');
             }
-          } catch {}
+          } catch (err) { console.warn('postMessage to iframe failed:', err); }
           break;
 
         case 'ArrowLeft':
@@ -130,7 +130,7 @@ export default function KeyboardShortcuts({ playerContainerRef, onNextEpisode, i
             if (iframe?.contentWindow) {
               iframe.contentWindow.postMessage({ event: 'seek_backward', seconds: 10 }, '*');
             }
-          } catch {}
+          } catch (err) { console.warn('postMessage to iframe failed:', err); }
           break;
 
         case 'n':

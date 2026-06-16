@@ -39,9 +39,14 @@ export default function RoomChat({ roomId }) {
     e.preventDefault();
     if (!input.trim() || sending) return;
     setSending(true);
-    await sendMessage(roomId, userId, displayName, input);
-    setInput('');
-    setSending(false);
+    try {
+      await sendMessage(roomId, userId, displayName, input);
+      setInput('');
+    } catch (err) {
+      console.error('Failed to send message:', err);
+    } finally {
+      setSending(false);
+    }
   };
 
   const formatTime = (ts) => {

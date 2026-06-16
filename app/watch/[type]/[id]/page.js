@@ -174,9 +174,13 @@ export default function Watch({ params }) {
   const fetchSeasonData = async (seasonNum) => {
     try {
       const response = await fetch(`https://api.themoviedb.org/3/tv/${id}/season/${seasonNum}?api_key=5ad947200f7bbf9bafa9fed1cf3991af`);
+      if (!response.ok) throw new Error(`Season fetch failed (${response.status})`);
       const seasonData = await response.json();
       setEpisodes(seasonData.episodes || []);
-    } catch (err) { console.error('Error fetching season episodes:', err); }
+    } catch (err) {
+      console.error('Error fetching season episodes:', err);
+      setEpisodes([]);
+    }
   };
 
   const handleSeasonChange = async (newSeason) => {
