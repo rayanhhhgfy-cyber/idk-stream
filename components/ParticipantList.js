@@ -21,17 +21,17 @@ export default function ParticipantList({ roomId }) {
 
   const handleKick = async (targetId, targetName) => {
     if (!isCreator || targetId === userId) return;
-    await kickParticipant(roomId, targetId, displayName);
+    await kickParticipant(roomId, targetId, displayName, userId);
   };
 
   const handleBanPause = async (targetId) => {
     if (!isCreator || targetId === userId) return;
-    await banFromPausing(roomId, targetId);
+    await banFromPausing(roomId, targetId, userId);
   };
 
   const handleUnbanPause = async (targetId) => {
     if (!isCreator || targetId === userId) return;
-    await unbanFromPausing(roomId, targetId);
+    await unbanFromPausing(roomId, targetId, userId);
   };
 
   return (

@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { Users, Plus, Video } from 'lucide-react';
 import { subscribeRooms, cleanupInactiveRooms } from '@/lib/watchParty';
 import RoomCard from '@/components/RoomCard';
-import { getDb } from '@/lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
