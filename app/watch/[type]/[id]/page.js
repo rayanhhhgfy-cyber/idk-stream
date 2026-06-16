@@ -7,6 +7,7 @@ import KeyboardShortcuts from '@/components/KeyboardShortcuts';
 import CastSection from '@/components/CastSection';
 import TrailerModal from '@/components/TrailerModal';
 import EpisodeSelector from '@/components/EpisodeSelector';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import Image from 'next/image';
 import { Star, ArrowLeft, Layers, PlayCircle, Film, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
@@ -218,11 +219,7 @@ export default function Watch({ params }) {
   if (loading) {
     return (
       <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: '40px', height: '40px', border: '3px solid rgba(229,9,20,0.2)', borderTopColor: '#e50914', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-          <p style={{ color: '#666', fontSize: '0.875rem' }}>Preparing your stream...</p>
-        </div>
-        <style jsx>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <LoadingSpinner size={40} message="Preparing your stream..." />
       </div>
     );
   }

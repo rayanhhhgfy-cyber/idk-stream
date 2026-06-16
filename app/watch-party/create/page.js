@@ -1,50 +1,26 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, Search, Lock, Film, Monitor, Check, Loader2, Users } from 'lucide-react';
-import { fetchSearch } from '@/lib/tmdb';
+import { ArrowLeft, Search, Lock, Users } from 'lucide-react';
 import { getImageUrl } from '@/lib/tmdb';
 import { createRoom } from '@/lib/watchParty';
 import { getUserId, getDisplayName, setDisplayName } from '@/lib/firebase';
+import useMediaSearch from '@/lib/useMediaSearch';
 
 export default function CreateRoom() {
   const router = useRouter();
-  const [step, setStep] = useState(1);
   const [roomName, setRoomName] = useState('');
   const [password, setPassword] = useState('');
   const [hasPassword, setHasPassword] = useState(false);
-  const [displayNameInput, setDisplayNameInput] = useState('');
+  const [displayNameInput, setDisplayNameInput] = useState(() => getDisplayName());
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [searchLoading, setSearchLoading] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    setDisplayNameInput(getDisplayName());
-  }, []);
-
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      return;
-    }
-    const timer = setTimeout(async () => {
-      setSearchLoading(true);
-      try {
-        const data = await fetchSearch(searchQuery);
-        const filtered = (data.results || [])
-          .filter(item => item.media_type === 'movie' || item.media_type === 'tv')
-          .slice(0, 12);
-        setSearchResults(filtered);
-      } catch {}
-      setSearchLoading(false);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  const { results: searchResults, loading: searchLoading } = useMediaSearch(searchQuery, { limit: 12 });
 
   const handleCreate = async () => {
     if (!roomName.trim()) { setError('Room name is required'); return; }
@@ -174,7 +150,7 @@ export default function CreateRoom() {
                 <div style={{ flex: 1 }}>
                   <p style={{ color: 'white', fontWeight: 700, fontSize: '0.95rem' }}>{selectedMedia.title || selectedMedia.name}</p>
                   <p style={{ color: '#888', fontSize: '0.8rem' }}>
-                    {selectedMedia.media_type === 'tv' ? 'TV Series' : 'Movie'} • {new Date(selectedMedia.release_date || selectedMedia.first_air_date || Date.now()).getFullYear()}
+                    {selectedMedia.media_type === 'tv' ? 'TV Series' : 'Movie'} • {(selectedMedia.release_date || selectedMedia.first_air_date || '').slice(0, 4) || 'N/A'}
                   </p>
                 </div>
                 <button onClick={() => setSelectedMedia(null)} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: '#888', borderRadius: '8px', padding: '8px 12px', cursor: 'pointer', fontSize: '0.8rem' }}>

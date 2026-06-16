@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { Users, Plus, Video } from 'lucide-react';
 import { subscribeRooms, cleanupInactiveRooms } from '@/lib/watchParty';
 import RoomCard from '@/components/RoomCard';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import EmptyState from '@/components/EmptyState';
 import { getDb } from '@/lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -56,25 +58,15 @@ export default function WatchPartyBrowse() {
           </Link>
         </div>
 
-        {loading && (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ width: '36px', height: '36px', border: '3px solid rgba(229,9,20,0.2)', borderTopColor: '#e50914', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-              <p style={{ color: '#555', fontSize: '0.85rem' }}>Loading rooms...</p>
-            </div>
-            <style jsx>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-          </div>
-        )}
+        {loading && <LoadingSpinner message="Loading rooms..." />}
 
         {!loading && rooms.length === 0 && (
           <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-            <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-              <Video style={{ width: 32, height: 32, color: '#333' }} />
-            </div>
-            <h2 style={{ color: 'white', fontSize: '1.3rem', fontWeight: 700, marginBottom: '8px' }}>No rooms yet</h2>
-            <p style={{ color: '#555', fontSize: '0.9rem', marginBottom: '24px', maxWidth: '400px', margin: '0 auto 24px' }}>
-              Create the first watch party and invite your friends to watch together in sync!
-            </p>
+            <EmptyState
+              icon={Video}
+              title="No rooms yet"
+              subtitle="Create the first watch party and invite your friends to watch together in sync!"
+            />
             <Link href="/watch-party/create" style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px',
               background: 'linear-gradient(135deg, #e50914, #b20710)',

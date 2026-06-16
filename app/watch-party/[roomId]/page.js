@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft, Search, LogOut, Edit3, Crown, Users } from 'lucide-react';
-import { fetchSearch } from '@/lib/tmdb';
 import { getImageUrl } from '@/lib/tmdb';
 import {
   joinRoom, leaveRoom, subscribeRoom, changeMedia,
@@ -15,6 +14,8 @@ import PartyPlayer from '@/components/PartyPlayer';
 import CollapsibleSidebar from '@/components/CollapsibleSidebar';
 import RoomChat from '@/components/RoomChat';
 import ParticipantList from '@/components/ParticipantList';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import useMediaSearch from '@/lib/useMediaSearch';
 
 export default function RoomPage({ params }) {
   const { roomId } = React.use(params);
@@ -32,8 +33,8 @@ export default function RoomPage({ params }) {
   const [joining, setJoining] = useState(false);
   const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [mediaSearch, setMediaSearch] = useState('');
-  const [mediaResults, setMediaResults] = useState([]);
-  const [mediaSearchLoading, setMediaSearchLoading] = useState(false);
+
+  const { results: mediaResults, loading: mediaSearchLoading } = useMediaSearch(mediaSearch, { limit: 12 });
 
   useEffect(() => {
     const unsub = subscribeRoom(roomId, (data) => {
@@ -77,20 +78,6 @@ export default function RoomPage({ params }) {
     router.push('/watch-party');
   };
 
-  useEffect(() => {
-    if (!mediaSearch.trim()) { setMediaResults([]); return; }
-    const t = setTimeout(async () => {
-      setMediaSearchLoading(true);
-      try {
-        const data = await fetchSearch(mediaSearch);
-        const f = (data.results || []).filter(i => i.media_type === 'movie' || i.media_type === 'tv').slice(0, 12);
-        setMediaResults(f);
-      } catch {}
-      setMediaSearchLoading(false);
-    }, 400);
-    return () => clearTimeout(t);
-  }, [mediaSearch]);
-
   const handleChangeMedia = async (item) => {
     await changeMedia(roomId, {
       type: item.media_type || 'movie',
@@ -101,17 +88,12 @@ export default function RoomPage({ params }) {
     }, userId, displayName);
     setShowMediaPicker(false);
     setMediaSearch('');
-    setMediaResults([]);
   };
 
   if (loading) {
     return (
       <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', paddingTop: '64px' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: '40px', height: '40px', border: '3px solid rgba(229,9,20,0.2)', borderTopColor: '#e50914', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-          <p style={{ color: '#666' }}>Loading room...</p>
-        </div>
-        <style jsx>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <LoadingSpinner size={40} message="Loading room..." />
       </div>
     );
   }
@@ -195,11 +177,11 @@ export default function RoomPage({ params }) {
         </CollapsibleSidebar>
       </div>
       {showMediaPicker && (
-        <div onClick={() => { setShowMediaPicker(false); setMediaSearch(''); setMediaResults([]); }} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+        <div onClick={() => { setShowMediaPicker(false); setMediaSearch(''); }} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
           <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px', width: '100%', background: '#141414', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.08)', padding: '24px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
               <h3 style={{ color: 'white', fontWeight: 700, fontSize: '1.1rem' }}>Change Media</h3>
-              <button onClick={() => { setShowMediaPicker(false); setMediaSearch(''); setMediaResults([]); }} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: 'white', borderRadius: '8px', padding: '6px 10px', cursor: 'pointer' }}>X</button>
+              <button onClick={() => { setShowMediaPicker(false); setMediaSearch(''); }} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: 'white', borderRadius: '8px', padding: '6px 10px', cursor: 'pointer' }}>X</button>
             </div>
             <div style={{ position: 'relative', marginBottom: '12px' }}>
               <Search style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', width: 18, height: 18, color: '#555', pointerEvents: 'none' }} />
