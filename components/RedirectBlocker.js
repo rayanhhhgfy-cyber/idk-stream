@@ -501,3 +501,4 @@ export default function RedirectBlocker() {
   // ────────────────────────────────────────────────────────────────────
   return null;
 }
+// Forced update to include in patch
