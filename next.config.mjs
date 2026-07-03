@@ -101,11 +101,6 @@ const nextConfig = {
           // This stops "clickjacking" attacks — where bad guys overlay
           // invisible buttons on top of our site to trick you into
           // clicking something you didn't mean to click.
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
-          },
-
           // ── RULE 2: Content-Security-Policy (CSP) ───────────────────────
           //
           // This is the MOST IMPORTANT security rule. Think of it like
@@ -114,22 +109,14 @@ const nextConfig = {
           // It tells the browser exactly what's allowed and what's not:
           //
           //   "frame-ancestors 'self'" = Only our own website can embed us.
-          //     (Same idea as X-Frame-Options above, but newer and better.)
           //
-          //   "frame-src 'self' https://vidsrc.cc ..." = These are the ONLY
+          //   "frame-src 'self' ..." = These are the ONLY
           //     websites we allow to show up inside our video player iframe.
           //     If a sneaky ad tries to load a different website in an iframe,
           //     the browser will say "NOPE!" and block it.
-          //
-          //   "child-src" = Same as frame-src but also covers web workers
-          //     (background helper scripts). Same whitelist applies.
-          //
-          // The ".join('; ')" at the end combines all the rules into one
-          // long string separated by semicolons, because that's the format
-          // browsers expect (like writing a sentence with proper punctuation).
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors 'self'; frame-src 'self' https://vidsrc.to https://*.vidsrc.to https://vidking.net https://*.vidking.net https://vidsrc.cc https://*.vidsrc.cc https://vidsrc.pro https://*.vidsrc.pro https://embed.su https://*.embed.su;",
+            value: "frame-ancestors 'self'; frame-src 'self' https://vidsrc.to https://*.vidsrc.to https://vidking.net https://*.vidking.net https://vidsrc.cc https://*.vidsrc.cc https://vidsrc.pro https://*.vidsrc.pro https://embed.su https://*.embed.su https://vidplay.online https://*.vidplay.online https://2embed.cc https://*.2embed.cc https://vidsrc.me https://*.vidsrc.me https://vidsrc.xyz https://*.vidsrc.xyz https://vidsrc.net https://*.vidsrc.net https://multi-embed.com https://*.multi-embed.com;",
           },
 
           // ── RULE 3: Referrer-Policy ─────────────────────────────────────

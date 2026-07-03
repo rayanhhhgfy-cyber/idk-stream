@@ -315,7 +315,6 @@ export default function RedirectBlocker() {
           // Ad networks inject <script> tags that load their ad code.
           // We check if the script comes from an EXTERNAL source
           // (not our own website, not Next.js, not Google Fonts).
-          // If it's external and unknown, we remove it!
           if (node.tagName === 'SCRIPT' && node.src) {
             const src = node.src;
             // These are sources we trust and should keep:
@@ -323,27 +322,38 @@ export default function RedirectBlocker() {
               src.includes(window.location.hostname) || // Our own site
               src.includes('/_next/') ||                 // Next.js framework files
               src.includes('fonts.googleapis.com') ||    // Google Fonts
-              src.includes('fonts.gstatic.com');         // Google Fonts CDN
+              src.includes('fonts.gstatic.com') ||       // Google Fonts CDN
+              src.includes('gstatic.com') ||             // Firebase/Google
+              src.includes('firebaseapp.com') ||         // Firebase
+              src.includes('googletagmanager.com');      // GTM
+
+            // We'll be less aggressive and only log for now, as removing scripts can break apps
             if (!isInternal) {
-              node.remove(); // Delete the suspicious script!
-              console.warn('[RedirectBlocker] Removed injected external script:', src);
+              console.warn('[RedirectBlocker] Detected external script:', src);
+              // node.remove();
               continue;
             }
           }
 
           // ── CHECK 3: Remove rogue iframes (ad frames) ──
           // Ads often inject hidden iframes that load ad content.
-          // We check if the iframe is our VIDEO PLAYER (which we want to keep)
-          // or an unknown iframe (which is probably an ad).
-          // Our player has a special "data-player" marker to identify it.
           if (node.tagName === 'IFRAME') {
             const src = node.getAttribute('src') || '';
             const isOurPlayer =
               node.hasAttribute('data-player') || // Marked as our player
               src.includes('vidsrc') ||            // Our video provider #1 & #4
               src.includes('vidking') ||           // Our video provider #2
+              src.includes('vidplay') ||
+              src.includes('2embed') ||
+              src.includes('multi-embed') ||
               src.includes('embed.su');            // Our video provider #3
-            if (!isOurPlayer) {
+
+            // Only remove if it's clearly an ad (usually small or hidden)
+            const width = parseInt(node.getAttribute('width') || '0');
+            const height = parseInt(node.getAttribute('height') || '0');
+            const isSmall = (width > 0 && width < 100) || (height > 0 && height < 100);
+
+            if (!isOurPlayer && isSmall) {
               node.remove(); // Delete the ad iframe!
               console.warn('[RedirectBlocker] Removed injected ad iframe:', src);
               continue;
@@ -501,4 +511,3 @@ export default function RedirectBlocker() {
   // ────────────────────────────────────────────────────────────────────
   return null;
 }
-// Forced update to include in patch

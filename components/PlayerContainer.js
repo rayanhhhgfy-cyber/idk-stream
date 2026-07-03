@@ -5,7 +5,7 @@ import { Server, SkipForward, X, PictureInPicture2, PictureInPicture } from 'luc
 export default function PlayerContainer({ type, id, season, episode, autoPlayNext, onNextEpisode, nextEpisodeTitle, episodeRuntime }) {
   const [currentServer, setCurrentServer] = useState(2);
   const [server1Available, setServer1Available] = useState(true);
-  const serverProviders = { 1: 'vidsrc.to', 2: 'vidking.net', 3: 'vidsrc.cc', 4: 'vidsrc.pro' };
+  const serverProviders = { 1: 'vidsrc.to', 2: 'vidking.net', 3: 'vidsrc.cc', 4: 'vidsrc.pro', 5: 'embed.su' };
   const [showIframe, setShowIframe] = useState(false);
   const [showCountdown, setShowCountdown] = useState(false);
   const [countdown, setCountdown] = useState(15);
@@ -47,10 +47,14 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       url = isTv
         ? `https://vidsrc.cc/embed/tv/${id}/${season}/${Number(episode)}`
         : `https://vidsrc.cc/embed/movie/${id}`;
-    } else {
+    } else if (server === 4) {
       url = isTv
         ? `https://vidsrc.pro/embed/tv/${id}/${season}/${Number(episode)}`
         : `https://vidsrc.pro/embed/movie/${id}`;
+    } else {
+      url = isTv
+        ? `https://embed.su/embed/tv/${id}/${season}/${Number(episode)}`
+        : `https://embed.su/embed/movie/${id}`;
     }
     if (autoPlayNext) {
       const sep = url.includes('?') ? '&' : '?';
@@ -239,7 +243,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
 
   const handleIframeError = () => {
     const nextServer = currentServer + 1;
-    if (nextServer <= 4) {
+    if (nextServer <= 5) {
       if (currentServer === 1) setServer1Available(false);
       setCurrentServer(nextServer);
       setEmbedBlocked(false);
@@ -357,7 +361,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <button onClick={() => window.open(buildUrl(currentServer), '_blank')} style={{ background: '#e50914', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Open Player in New Tab</button>
                 <button onClick={() => { setEmbedBlocked(false); setShowIframe(false); setTimeout(() => setShowIframe(true), 600); }} style={{ background: 'rgba(255,255,255,0.06)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Retry</button>
-                <button onClick={() => { const next = currentServer >= 4 ? 1 : currentServer + 1; if (next === 1) setServer1Available(true); setCurrentServer(next); setEmbedBlocked(false); setShowIframe(false); setTimeout(() => setShowIframe(true), 600); }} style={{ background: 'rgba(255,255,255,0.04)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Try Server {currentServer >= 4 ? 1 : currentServer + 1}</button>
+                <button onClick={() => { const next = currentServer >= 5 ? 1 : currentServer + 1; if (next === 1) setServer1Available(true); setCurrentServer(next); setEmbedBlocked(false); setShowIframe(false); setTimeout(() => setShowIframe(true), 600); }} style={{ background: 'rgba(255,255,255,0.04)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Try Server {currentServer >= 5 ? 1 : currentServer + 1}</button>
               </div>
             </div>
           </div>
@@ -455,6 +459,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         <button onClick={() => setCurrentServer(2)} style={serverBtnStyle(currentServer === 2, false)}><Server style={{ width: 14, height: 14 }} /> Server 2</button>
         <button onClick={() => setCurrentServer(3)} style={serverBtnStyle(currentServer === 3, false)}><Server style={{ width: 14, height: 14 }} /> Server 3</button>
         <button onClick={() => setCurrentServer(4)} style={serverBtnStyle(currentServer === 4, false)}><Server style={{ width: 14, height: 14 }} /> Server 4</button>
+        <button onClick={() => setCurrentServer(5)} style={serverBtnStyle(currentServer === 5, false)}><Server style={{ width: 14, height: 14 }} /> Server 5</button>
         <button
           onClick={togglePiP}
           style={{
