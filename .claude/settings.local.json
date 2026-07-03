@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(taskkill /f /im node.exe)",
+      "Bash(taskkill *)",
+      "Bash(taskkill.exe *)",
+      "Bash(cmd *)",
+      "Bash(wmic process *)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :3000)"
+    ]
+  }
+}
