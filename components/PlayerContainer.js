@@ -16,7 +16,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     5: { name: 'ezvidapi.com', episodeOffset: 0, baseUrl: 'https://ezvidapi.com' },
   };
   const qualityOptions = ['auto', '1080p', '720p', '480p', '360p'];
-  const [showIframe, setShowIframe] = useState(false);
+  const [iframeLoading, setIframeLoading] = useState(true);
   const [showCountdown, setShowCountdown] = useState(false);
   const [countdown, setCountdown] = useState(15);
   const [pipActive, setPipActive] = useState(false);
@@ -81,8 +81,14 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         : `${cfg.baseUrl}/embed/movie/${id}`;
     }
     const params = [];
+    if (server === 2) {
+      params.push('color=e50914');
+      if (isTv) {
+        params.push('nextEpisode=true', 'episodeSelector=true');
+      }
+    }
     if (quality !== 'auto') params.push(`quality=${quality}`);
-    if (autoPlayNext) params.push('autoplay=1&autoPlay=1');
+    if (autoPlayNext) params.push('autoplay=1', 'autoPlay=true');
     if (params.length) url += (url.includes('?') ? '&' : '?') + params.join('&');
     return url;
   };
@@ -248,24 +254,31 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
 
   // Reset player when parameters change
   useEffect(() => {
-    setShowIframe(false);
+    setIframeLoading(true);
     setShowCountdown(false);
     setEmbedBlocked(false);
     setIsBuffering(false);
+    setLoadErrorMessage('');
     setCountdown(15);
     setCurrentServer(2);
     setServer1Available(true);
     setQuality('auto');
     clearTimeout(autoPlayTimerRef.current);
     clearInterval(countdownRef.current);
-    const timer = setTimeout(() => setShowIframe(true), 1500);
-    return () => clearTimeout(timer);
   }, [season, episode, type, id]);
+
+  // Reset loading overlay when switching servers or quality
+  useEffect(() => {
+    setIframeLoading(true);
+    setEmbedBlocked(false);
+    setLoadErrorMessage('');
+  }, [currentServer, quality]);
 
   const handleIframeLoad = () => {
     setEmbedBlocked(false);
     setLoadErrorMessage('');
     setIsBuffering(false);
+    setIframeLoading(false);
   };
 
   const handleIframeError = () => {
@@ -275,12 +288,12 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       if (currentServer === 1) setServer1Available(false);
       setCurrentServer(nextServer);
       setEmbedBlocked(false);
-      setShowIframe(false);
-      setTimeout(() => setShowIframe(true), 600);
+      setIframeLoading(true);
       return;
     }
 
     setEmbedBlocked(true);
+    setIframeLoading(false);
     setLoadErrorMessage('Failed to load player. The provider may be down.');
   };
 
@@ -291,7 +304,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     setShowCountdown(false);
     setCountdown(15);
 
-    if (autoPlayNext && showIframe && isTv && onNextEpisode) {
+    if (autoPlayNext && isTv && onNextEpisode) {
       const runtimeMs = episodeRuntime ? (episodeRuntime - 2) * 60 * 1000 : 25 * 60 * 1000;
       let waitTime = Math.max(runtimeMs, 60000);
       if (process.env.NODE_ENV === 'development') waitTime = 10000;
@@ -306,6 +319,23 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       try {
         let data = e.data;
         if (typeof data === 'string') { try { data = JSON.parse(data); } catch {} }
+
+        // Vidking player events — hide loading overlay when playback starts
+        if (data?.type === 'PLAYER_EVENT' && data?.data?.event) {
+          const playerEvent = data.data.event;
+          if (playerEvent === 'play' || playerEvent === 'timeupdate') {
+            setIframeLoading(false);
+            setIsBuffering(false);
+          }
+          if (playerEvent === 'ended' && autoPlayNext && isTv && onNextEpisode) {
+            clearTimeout(autoPlayTimerRef.current);
+            setShowCountdown(true);
+            setCountdown(15);
+          }
+          if (playerEvent === 'timeupdate' && typeof data.data.currentTime === 'number') {
+            if (onSyncTime) onSyncTime(data.data.currentTime, isBuffering);
+          }
+        }
 
         // Detect ended
         if (autoPlayNext && isTv && onNextEpisode) {
@@ -338,7 +368,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       clearInterval(countdownRef.current);
       window.removeEventListener('message', handleMessage);
     };
-  }, [autoPlayNext, showIframe, isTv, season, episode, onNextEpisode, episodeRuntime, onSyncTime, isBuffering]);
+  }, [autoPlayNext, isTv, season, episode, onNextEpisode, episodeRuntime, onSyncTime, isBuffering]);
 
   // Countdown ticker
   useEffect(() => {
@@ -368,32 +398,48 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     opacity: disabled ? 0.45 : 1,
   });
 
+  const switchServer = (server) => {
+    if (server === 1 && !server1Available) return;
+    setIframeLoading(true);
+    setEmbedBlocked(false);
+    setCurrentServer(server);
+  };
+
+  const retryPlayer = () => {
+    setEmbedBlocked(false);
+    setIframeLoading(true);
+  };
+
+  const playerReady = isTv ? Boolean(season && episode) : Boolean(id);
+
   return (
     <div>
-      <div data-player="true" style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9', background: '#111', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
+      <div data-player="true" style={{ position: 'relative', width: '100%', paddingTop: '56.25%', background: '#111', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
 
-        {!showIframe && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ width: '36px', height: '36px', border: '3px solid rgba(229,9,20,0.2)', borderTopColor: '#e50914', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 10px' }} />
-              <p style={{ color: '#555', fontSize: '0.8rem' }}>Loading player...</p>
-            </div>
-          </div>
-        )}
-
-        {showIframe && (
+        {playerReady && (
           <iframe
-            key={`${currentServer}-${id}-${season}-${episode}`}
+            key={`${currentServer}-${id}-${season}-${episode}-${quality}`}
             ref={iframeRef}
             src={buildUrl(currentServer)}
             title="Video Player"
-            style={{ width: '100%', height: '100%', border: 'none' }}
-            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+            allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope; clipboard-write"
             allowFullScreen
+            referrerPolicy="no-referrer-when-downgrade"
+            loading="eager"
             data-player="true"
             onLoad={handleIframeLoad}
             onError={handleIframeError}
           />
+        )}
+
+        {iframeLoading && playerReady && !embedBlocked && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111', zIndex: 5, pointerEvents: 'none' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ width: '36px', height: '36px', border: '3px solid rgba(229,9,20,0.2)', borderTopColor: '#e50914', borderRadius: '50%', animation: 'playerSpin 0.8s linear infinite', margin: '0 auto 10px' }} />
+              <p style={{ color: '#555', fontSize: '0.8rem' }}>Loading player...</p>
+            </div>
+          </div>
         )}
 
         {/* Embed blocked / error fallback UI */}
@@ -404,15 +450,15 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
               <p style={{ color: '#aaa', margin: '0 0 16px' }}>{loadErrorMessage || 'The embed provider blocked playback or the content failed to load.'}</p>
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <button onClick={() => window.open(buildUrl(currentServer), '_blank')} style={{ background: '#e50914', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Open Player in New Tab</button>
-                <button onClick={() => { setEmbedBlocked(false); setShowIframe(false); setTimeout(() => setShowIframe(true), 600); }} style={{ background: 'rgba(255,255,255,0.06)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Retry</button>
-                <button onClick={() => { const maxSrv = Object.keys(serverConfigs).length; const next = currentServer >= maxSrv ? 1 : currentServer + 1; if (next === 1) setServer1Available(true); setCurrentServer(next); setEmbedBlocked(false); setShowIframe(false); setTimeout(() => setShowIframe(true), 600); }} style={{ background: 'rgba(255,255,255,0.04)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Try Server {currentServer >= Object.keys(serverConfigs).length ? 1 : currentServer + 1}</button>
+                <button onClick={retryPlayer} style={{ background: 'rgba(255,255,255,0.06)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Retry</button>
+                <button onClick={() => { const maxSrv = Object.keys(serverConfigs).length; const next = currentServer >= maxSrv ? 1 : currentServer + 1; if (next === 1) setServer1Available(true); switchServer(next); }} style={{ background: 'rgba(255,255,255,0.04)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Try Server {currentServer >= Object.keys(serverConfigs).length ? 1 : currentServer + 1}</button>
               </div>
             </div>
           </div>
         )}
 
         {/* PiP Button — top right of player */}
-        {showIframe && (
+        {playerReady && (
           <button
             onClick={togglePiP}
             title={getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Enter Fullscreen') : (pipActive ? 'Exit Picture-in-Picture' : 'Picture-in-Picture')}
@@ -452,7 +498,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         )}
 
         {/* PiP Active Indicator */}
-        {pipActive && showIframe && (
+        {pipActive && playerReady && (
           <div style={{
             position: 'absolute',
             top: '12px',
@@ -496,7 +542,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       </div>
 
       {/* Buffering indicator */}
-      {isBuffering && showIframe && (
+      {isBuffering && !iframeLoading && (
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
           marginTop: '10px', padding: '6px 14px',
@@ -510,13 +556,13 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
 
       {/* Server buttons + Quality + PiP row */}
       <div style={{ display: 'flex', gap: '10px', marginTop: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
-        <button onClick={() => server1Available && setCurrentServer(1)} disabled={!server1Available} style={serverBtnStyle(currentServer === 1, !server1Available)}>
+        <button onClick={() => switchServer(1)} disabled={!server1Available} style={serverBtnStyle(currentServer === 1, !server1Available)}>
           <Server style={{ width: 14, height: 14 }} /> {server1Available ? 'Vidsrc' : 'Vidsrc (down)'}
         </button>
-        <button onClick={() => setCurrentServer(2)} style={serverBtnStyle(currentServer === 2, false)}><Server style={{ width: 14, height: 14 }} /> Vidking</button>
-        <button onClick={() => setCurrentServer(3)} style={serverBtnStyle(currentServer === 3, false)}><Server style={{ width: 14, height: 14 }} /> Embed.su</button>
-        <button onClick={() => setCurrentServer(4)} style={serverBtnStyle(currentServer === 4, false)}><Server style={{ width: 14, height: 14 }} /> Vidsrc.pro</button>
-        <button onClick={() => setCurrentServer(5)} style={serverBtnStyle(currentServer === 5, false)}><Server style={{ width: 14, height: 14 }} /> Ezvidapi</button>
+        <button onClick={() => switchServer(2)} style={serverBtnStyle(currentServer === 2, false)}><Server style={{ width: 14, height: 14 }} /> Vidking</button>
+        <button onClick={() => switchServer(3)} style={serverBtnStyle(currentServer === 3, false)}><Server style={{ width: 14, height: 14 }} /> Embed.su</button>
+        <button onClick={() => switchServer(4)} style={serverBtnStyle(currentServer === 4, false)}><Server style={{ width: 14, height: 14 }} /> Vidsrc.pro</button>
+        <button onClick={() => switchServer(5)} style={serverBtnStyle(currentServer === 5, false)}><Server style={{ width: 14, height: 14 }} /> Ezvidapi</button>
 
         {/* Quality Chooser */}
         <div ref={qualityMenuRef} style={{ position: 'relative' }}>
@@ -576,6 +622,8 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       <style jsx>{`
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pipPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        @keyframes playerSpin { to { transform: rotate(360deg); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );

@@ -129,7 +129,10 @@ const nextConfig = {
           // browsers expect (like writing a sentence with proper punctuation).
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors 'self'",
+            value: [
+              "frame-ancestors 'self'",
+              "frame-src 'self' https://www.vidking.net https://vidking.net https://vidsrc.to https://vidsrc.cc https://vidsrc.pro https://embed.su https://ezvidapi.com https://*.vidking.net https://*.vidsrc.to https://*.vidsrc.cc https://*.vidsrc.pro https://*.embed.su https://*.ezvidapi.com",
+            ].join('; '),
           },
 
           // ── RULE 3: Referrer-Policy ─────────────────────────────────────
