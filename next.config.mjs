@@ -116,7 +116,7 @@ const nextConfig = {
           //     the browser will say "NOPE!" and block it.
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors 'self'; frame-src 'self' https://vidsrc.to https://*.vidsrc.to https://vidking.net https://*.vidking.net https://vidsrc.cc https://*.vidsrc.cc https://vidsrc.pro https://*.vidsrc.pro https://embed.su https://*.embed.su https://vidplay.online https://*.vidplay.online https://2embed.cc https://*.2embed.cc https://vidsrc.me https://*.vidsrc.me https://vidsrc.xyz https://*.vidsrc.xyz https://vidsrc.net https://*.vidsrc.net https://multi-embed.com https://*.multi-embed.com;",
+            value: "frame-ancestors 'self'; frame-src 'self' https://vidsrc.to https://*.vidsrc.to https://vidking.net https://*.vidking.net https://vidsrc.cc https://*.vidsrc.cc https://vidsrc.pro https://*.vidsrc.pro https://embed.su https://*.embed.su https://vidplay.online https://*.vidplay.online https://2embed.cc https://*.2embed.cc https://vidsrc.me https://*.vidsrc.me https://vidsrc.xyz https://*.vidsrc.xyz https://vidsrc.net https://*.vidsrc.net https://vidsrc.in https://*.vidsrc.in https://vidsrc.pm https://*.vidsrc.pm https://vidsrc.stream https://*.vidsrc.stream https://multi-embed.com https://*.multi-embed.com;",
           },
 
           // ── RULE 3: Referrer-Policy ─────────────────────────────────────
