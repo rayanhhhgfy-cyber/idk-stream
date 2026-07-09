@@ -8,7 +8,7 @@ import CastSection from '@/components/CastSection';
 import TrailerModal from '@/components/TrailerModal';
 import EpisodeSelector from '@/components/EpisodeSelector';
 import Image from 'next/image';
-import { Star, ArrowLeft, Layers, PlayCircle, Film, ChevronDown, Monitor } from 'lucide-react';
+import { Star, ArrowLeft, Layers, PlayCircle, Film, ChevronDown, Monitor, Clock, Info } from 'lucide-react';
 import Link from 'next/link';
 import { getAllWatchProgress } from '@/lib/watchHistory';
 
@@ -28,15 +28,12 @@ export default function Watch({ params }) {
   const [showTrailer, setShowTrailer] = useState(false);
   const [allProgress, setAllProgress] = useState({});
 
-  // Ref for the player container (used by KeyboardShortcuts for fullscreen)
   const playerRef = useRef(null);
-  // Track when the user started watching (for progress tracking)
   const watchStartRef = useRef(null);
   const accumulatedTimeRef = useRef(0);
   const isVisibleRef = useRef(true);
   const lastSaveTimeRef = useRef(0);
 
-  // Fetch movie/show details + credits + trailers
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -62,7 +59,6 @@ export default function Watch({ params }) {
           let targetSeason = tvSeasons.length > 0 ? tvSeasons[0].season_number : 1;
           let targetEpisode = 1;
           
-          // Check watch history to resume where they left off
           const history = getWatchHistory();
           const savedShow = history.find(h => h.id === parseInt(id) && h.type === 'tv');
           if (savedShow && savedShow.season && savedShow.episode) {
@@ -90,7 +86,6 @@ export default function Watch({ params }) {
     fetchData();
   }, [type, id]);
 
-  // Save to watch history
   useEffect(() => {
     if (!details) return;
     addToWatchHistory({
@@ -103,16 +98,13 @@ export default function Watch({ params }) {
     });
   }, [details, currentSeason, currentEpisode, id, type]);
 
-  // Load all watch progress for episode progress bars
   useEffect(() => {
     setAllProgress(getAllWatchProgress());
   }, [currentSeason, currentEpisode]);
 
-  // Track watch time — start timer when iframe loads, pause when tab hidden
   useEffect(() => {
     if (!details) return;
     
-    // Reset timers when details/season/episode change
     watchStartRef.current = Date.now();
     accumulatedTimeRef.current = 0;
     
@@ -122,17 +114,11 @@ export default function Watch({ params }) {
 
     const saveProgress = () => {
       if (!watchStartRef.current) return;
-      
-      // Calculate active viewing time since last start/resume
       let currentSessionTime = 0;
       if (isVisibleRef.current) {
         currentSessionTime = Math.floor((Date.now() - watchStartRef.current) / 1000);
       }
-      
       const totalSessionTime = accumulatedTimeRef.current + currentSessionTime;
-      
-      // Only save if we actually watched something meaningful (>10s) 
-      // and haven't saved in the last 5 seconds (debounce)
       if (totalSessionTime > 10 && (Date.now() - lastSaveTimeRef.current > 5000)) {
         const totalWatched = existingWatched + totalSessionTime;
         updateWatchProgress(parseInt(id), type, totalWatched, totalSeconds, type === 'tv' ? currentSeason : undefined, type === 'tv' ? currentEpisode : undefined);
@@ -140,17 +126,14 @@ export default function Watch({ params }) {
       }
     };
 
-    // Handle tab visibility changes
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        // Tab is hidden: pause timer and accumulate the time spent
         if (isVisibleRef.current && watchStartRef.current) {
           accumulatedTimeRef.current += Math.floor((Date.now() - watchStartRef.current) / 1000);
           isVisibleRef.current = false;
         }
         saveProgress();
       } else {
-        // Tab is visible again: restart the timer
         if (!isVisibleRef.current) {
           watchStartRef.current = Date.now();
           isVisibleRef.current = true;
@@ -214,25 +197,21 @@ export default function Watch({ params }) {
     return null;
   };
 
-  // Loading state
   if (loading) {
     return (
-      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: '40px', height: '40px', border: '3px solid rgba(229,9,20,0.2)', borderTopColor: '#e50914', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-          <p style={{ color: '#666', fontSize: '0.875rem' }}>Preparing your stream...</p>
-        </div>
-        <style jsx>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="flex flex-col h-screen items-center justify-center bg-[#0a0a0a]">
+        <div className="w-10 h-10 border-3 border-red-600/20 border-t-red-600 rounded-full animate-spin mb-4" />
+        <p className="text-gray-500 text-sm font-medium">Preparing your stream...</p>
       </div>
     );
   }
 
   if (error || !details) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '80vh', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a' }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#e50914', marginBottom: '12px' }}>Oops!</h1>
-        <p style={{ color: '#666', marginBottom: '24px' }}>{error || 'Details not found'}</p>
-        <Link href="/" style={{ padding: '12px 24px', background: '#e50914', color: 'white', borderRadius: '12px', textDecoration: 'none' }}>Go Home</Link>
+      <div className="flex flex-col min-h-screen items-center justify-center bg-[#0a0a0a] p-6 text-center">
+        <h1 className="text-3xl font-black text-red-600 mb-2">Oops!</h1>
+        <p className="text-gray-400 mb-8 max-w-md">{error || 'Details not found'}</p>
+        <Link href="/" className="px-8 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors">Go Home</Link>
       </div>
     );
   }
@@ -248,8 +227,7 @@ export default function Watch({ params }) {
   const nextEpisodeTitle = getNextEpisodeTitle();
 
   return (
-    <div style={{ background: '#0a0a0a', minHeight: '100vh', paddingBottom: '100px' }}>
-
+    <div className="bg-[#0a0a0a] min-h-screen relative overflow-x-hidden">
       {/* Keyboard Shortcuts */}
       <KeyboardShortcuts playerContainerRef={playerRef} onNextEpisode={handleNextEpisode} isTv={type === 'tv'} />
 
@@ -258,151 +236,203 @@ export default function Watch({ params }) {
         <TrailerModal youtubeKey={trailers[0].key} title={displayTitle} onClose={() => setShowTrailer(false)} />
       )}
 
-      {/* Cinematic Backdrop */}
+      {/* Ambient Backdrop */}
       {displayBackdrop && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: '100vh', zIndex: 0 }}>
-          <Image src={`https://image.tmdb.org/t/p/original${displayBackdrop}`} alt="" fill style={{ objectFit: 'cover', opacity: 0.25, filter: 'blur(60px)' }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at center, transparent 0%, #0a0a0a 100%)' }} />
+        <div className="fixed inset-0 z-0 pointer-events-none">
+          <Image
+            src={`https://image.tmdb.org/t/p/w780${displayBackdrop}`}
+            alt=""
+            fill
+            className="object-cover opacity-10 blur-[100px]"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] via-transparent to-[#0a0a0a]" />
         </div>
       )}
 
-      {/* Main Content */}
-      <div style={{ position: 'relative', zIndex: 10, maxWidth: '1200px', margin: '0 auto', padding: '100px 24px 0' }}>
+      <main className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 pb-20">
 
-        {/* Navigation & Title */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', gap: '20px', marginBottom: '32px' }}>
-          <div style={{ flex: 1, minWidth: '300px' }}>
-            <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#e50914', fontSize: '0.875rem', textDecoration: 'none', fontWeight: 600, marginBottom: '12px' }}>
-              <ArrowLeft style={{ width: 16, height: 16 }} /> Back
+        {/* Navigation & Header */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
+          <div className="flex-1">
+            <Link href="/" className="inline-flex items-center gap-2 text-red-600 text-sm font-bold mb-4 hover:gap-3 transition-all">
+              <ArrowLeft className="w-4 h-4" /> Back to Home
             </Link>
-            <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 900, color: 'white', letterSpacing: '-1px', marginBottom: '8px' }}>{displayTitle}</h1>
 
-            {/* Meta info + Trailer button */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', color: '#888', fontSize: '0.9rem' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#fbbf24' }}>
-                <Star style={{ width: 16, height: 16, fill: '#fbbf24' }} /> {displayRating.toFixed(1)}
-              </span>
-              <span>{new Date(displayReleaseDate).getFullYear()}</span>
-              {displayRuntime && <span>{displayRuntime} min</span>}
-              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 10px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', color: 'white' }}>
-                {type === 'tv' ? 'Series' : 'Movie'}
-              </span>
-              {/* Watch Trailer Button */}
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tighter mb-4 leading-tight break-words">
+              {displayTitle}
+            </h1>
+
+            <div className="flex flex-wrap items-center gap-3 sm:gap-5 text-sm font-medium text-gray-400">
+              <div className="flex items-center gap-1.5 text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded-md border border-yellow-500/20">
+                <Star className="w-4 h-4 fill-yellow-500" />
+                <span className="font-bold">{displayRating.toFixed(1)}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-4 h-4" /> {displayRuntime} min
+              </div>
+              <div>{new Date(displayReleaseDate).getFullYear()}</div>
+              <div className="bg-white/10 px-2 py-0.5 rounded text-[10px] font-black uppercase text-white tracking-widest">
+                {type === 'tv' ? 'TV Series' : 'Movie'}
+              </div>
+
               {trailers.length > 0 && (
-                <button onClick={() => setShowTrailer(true)} style={{
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                  background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
-                  color: 'white', padding: '6px 16px', borderRadius: '8px',
-                  fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.25s',
-                }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(229,9,20,0.2)'; e.currentTarget.style.borderColor = 'rgba(229,9,20,0.5)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
+                <button
+                  onClick={() => setShowTrailer(true)}
+                  className="flex items-center gap-2 bg-red-600/10 border border-red-600/30 text-red-500 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-600 hover:text-white transition-all"
                 >
-                  <Film style={{ width: 14, height: 14 }} /> Watch Trailer
+                  <Film className="w-4 h-4" /> Trailer
                 </button>
               )}
             </div>
           </div>
 
-          {/* TV Show Controls (Compact) */}
+          {/* TV Controls */}
           {type === 'tv' && seasons.length > 0 && (
-            <div style={{ display: 'flex', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '8px 14px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', alignItems: 'center', flexWrap: 'wrap' }}>
-              <div style={{ position: 'relative' }}>
-                <select value={currentSeason} onChange={(e) => handleSeasonChange(parseInt(e.target.value))} style={{ background: 'rgba(255,255,255,0.06)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', padding: '6px 30px 6px 10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600, outline: 'none', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none', MozAppearance: 'none' }}>
-                  {seasons.map(s => <option key={s.season_number} value={s.season_number} style={{background: '#141414', color: 'white'}}>Season {s.season_number}</option>)}
+            <div className="flex items-center gap-3 bg-white/5 border border-white/10 p-2 sm:p-3 rounded-2xl backdrop-blur-xl">
+              <div className="relative">
+                <select
+                  value={currentSeason}
+                  onChange={(e) => handleSeasonChange(parseInt(e.target.value))}
+                  className="bg-white/10 text-white text-xs font-bold py-2 pl-3 pr-8 rounded-xl border-none outline-none appearance-none cursor-pointer hover:bg-white/20 transition-colors"
+                >
+                  {seasons.map(s => <option key={s.season_number} value={s.season_number} className="bg-[#141414]">Season {s.season_number}</option>)}
                 </select>
-                <ChevronDown style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', width: 12, height: 12, color: '#888', pointerEvents: 'none' }} />
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               </div>
-              <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)' }} />
-              <span style={{ color: '#aaa', fontSize: '0.8rem', fontWeight: 600, whiteSpace: 'nowrap' }}>E{currentEpisode} of {episodes.length}</span>
-              <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)' }} />
+
+              <div className="h-6 w-px bg-white/10" />
+
+              <span className="text-xs font-bold text-gray-400 whitespace-nowrap px-1">
+                E{currentEpisode} <span className="text-[10px] opacity-50 font-medium">/ {episodes.length}</span>
+              </span>
+
               {nextEpisodeTitle && (
-                <button onClick={handleNextEpisode} style={{ background: '#e50914', color: 'white', border: 'none', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s' }}>
-                  Next <PlayCircle style={{ width: 14, height: 14 }} />
+                <button
+                  onClick={handleNextEpisode}
+                  className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-xl transition-all shadow-lg shadow-red-600/20"
+                  title="Next Episode"
+                >
+                  <PlayCircle className="w-5 h-5" />
                 </button>
               )}
-              <label style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#aaa', fontSize: '0.8rem', cursor: 'pointer' }}>
-                <input type="checkbox" checked={autoPlayNext} onChange={(e) => setAutoPlayNext(e.target.checked)} style={{ accentColor: '#e50914', cursor: 'pointer', width: '14px', height: '14px' }} />
-                Auto
-              </label>
             </div>
           )}
         </div>
 
-        {/* Video Player */}
-        <div ref={playerRef} style={{ marginBottom: '48px', boxShadow: '0 30px 60px rgba(0,0,0,0.8)' }}>
-          <PlayerContainer type={type} id={id} season={currentSeason} episode={currentEpisode} autoPlayNext={autoPlayNext} onNextEpisode={handleNextEpisode} nextEpisodeTitle={nextEpisodeTitle} episodeRuntime={displayRuntime} onSyncTime={() => {}} />
-        </div>
+        {/* Responsive Grid Layout for Player and Sidebar */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
 
-        {/* Episode Selector */}
-        {type === 'tv' && episodes.length > 0 && (
-          <div style={{ marginBottom: '48px' }}>
-            <EpisodeSelector
-              episodes={episodes}
-              seasons={seasons}
-              currentEpisode={currentEpisode}
-              currentSeason={currentSeason}
-              showId={parseInt(id)}
-              progressData={allProgress}
-              onEpisodeSelect={(epNum) => {
-                setCurrentEpisode(epNum);
-                setTimeout(() => {
-                  if (playerRef.current) {
-                    playerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }
-                }, 50);
-              }}
-              onSeasonChange={handleSeasonChange}
-            />
+          {/* Main Column: Player + Selectors */}
+          <div className="lg:col-span-2 space-y-10">
+            <div ref={playerRef} className="rounded-3xl overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.8)]">
+              <PlayerContainer
+                type={type}
+                id={id}
+                season={currentSeason}
+                episode={currentEpisode}
+                autoPlayNext={autoPlayNext}
+                onNextEpisode={handleNextEpisode}
+                nextEpisodeTitle={nextEpisodeTitle}
+                episodeRuntime={displayRuntime}
+                onSyncTime={() => {}}
+              />
+            </div>
+
+            {/* Episode Selector */}
+            {type === 'tv' && episodes.length > 0 && (
+              <div className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-1 h-6 bg-red-600 rounded-full" />
+                  <h2 className="text-xl font-black text-white uppercase tracking-tight">Select Episode</h2>
+                </div>
+                <EpisodeSelector
+                  episodes={episodes}
+                  seasons={seasons}
+                  currentEpisode={currentEpisode}
+                  currentSeason={currentSeason}
+                  showId={parseInt(id)}
+                  progressData={allProgress}
+                  onEpisodeSelect={(epNum) => {
+                    setCurrentEpisode(epNum);
+                    setTimeout(() => {
+                      if (playerRef.current) {
+                        playerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }
+                    }, 50);
+                  }}
+                  onSeasonChange={handleSeasonChange}
+                />
+              </div>
+            )}
           </div>
-        )}
 
-        {/* Details Section */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '48px' }}>
-          <div>
-            <h3 style={{ color: 'white', fontSize: '1.2rem', fontWeight: 700, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Layers style={{ width: 20, height: 20, color: '#e50914' }} />
-              Storyline
-            </h3>
-            <p style={{ color: '#aaa', lineHeight: 1.8, fontSize: '1rem' }}>{displayOverview || "No overview available."}</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '24px' }}>
-              {genres.map(g => (
-                <span key={g.id} style={{ background: 'rgba(255,255,255,0.05)', color: '#888', padding: '6px 14px', borderRadius: '10px', fontSize: '0.8rem', border: '1px solid rgba(255,255,255,0.05)' }}>{g.name}</span>
-              ))}
+          {/* Sidebar Column: Storyline + Metadata */}
+          <div className="space-y-8 lg:pt-2">
+
+            {/* Storyline Card */}
+            <div className="bg-white/5 border border-white/5 rounded-3xl p-6 sm:p-8 backdrop-blur-sm">
+              <h3 className="text-lg font-black text-white mb-4 flex items-center gap-3">
+                <Layers className="w-5 h-5 text-red-600" /> Storyline
+              </h3>
+              <p className="text-gray-400 leading-relaxed text-sm sm:text-base mb-6">
+                {displayOverview || "No overview available for this title."}
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {genres.map(g => (
+                  <span key={g.id} className="text-[10px] font-bold text-gray-500 border border-white/5 px-3 py-1 rounded-full uppercase tracking-widest">
+                    {g.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Stream Info Card */}
+            <div className="bg-red-600/5 border border-red-600/10 rounded-3xl p-6 sm:p-8">
+              <h3 className="text-lg font-black text-white mb-6 flex items-center gap-3">
+                <Info className="w-5 h-5 text-red-600" /> Stream Details
+              </h3>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between py-3 border-b border-white/5">
+                  <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Status</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    <span className="text-xs font-black text-green-500 uppercase">Live</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between py-3 border-b border-white/5">
+                  <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Auto-Play</span>
+                  <button
+                    onClick={() => setAutoPlayNext(!autoPlayNext)}
+                    className={`text-[10px] font-black uppercase px-3 py-1 rounded-full transition-all ${autoPlayNext ? 'bg-green-600/20 text-green-500' : 'bg-white/10 text-gray-500'}`}
+                  >
+                    {autoPlayNext ? 'On' : 'Off'}
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between py-3">
+                  <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Location</span>
+                  <span className="text-xs font-black text-white uppercase tracking-tighter">Global Edge</span>
+                </div>
+              </div>
             </div>
 
             {/* Cast & Crew Section */}
-            <CastSection credits={credits} />
-          </div>
-
-          {/* Stream Information */}
-          <div style={{ background: 'rgba(255,255,255,0.03)', padding: '24px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.06)' }}>
-            <h4 style={{ color: 'white', fontSize: '1rem', fontWeight: 600, marginBottom: '20px' }}>Stream Information</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>
-                <span style={{ color: '#666', fontSize: '0.9rem' }}>Status</span>
-                <span style={{ color: '#4ade80', fontSize: '0.9rem', fontWeight: 600 }}>Online</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>
-                <span style={{ color: '#666', fontSize: '0.9rem' }}>Quality</span>
-                <span style={{ color: 'white', fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}><Monitor style={{ width: 14, height: 14 }} /> Adjustable (below player)</span>
-              </div>
-              {type === 'tv' && (
-                <>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>
-                    <span style={{ color: '#666', fontSize: '0.9rem' }}>Season/Episode</span>
-                    <span style={{ color: 'white', fontSize: '0.9rem', fontWeight: 600 }}>S{currentSeason} : E{currentEpisode}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '12px' }}>
-                    <span style={{ color: '#666', fontSize: '0.9rem' }}>Auto-play</span>
-                    <span style={{ color: autoPlayNext ? '#4ade80' : '#666', fontSize: '0.9rem', fontWeight: 600 }}>{autoPlayNext ? 'Enabled' : 'Disabled'}</span>
-                  </div>
-                </>
-              )}
+            <div className="px-2">
+              <CastSection credits={credits} />
             </div>
           </div>
         </div>
-      </div>
+      </main>
+
+      <style jsx global>{`
+        body { overflow-x: hidden; }
+        .animate-fade-in-up { animation: fadeInUp 0.6s ease-out both; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
     </div>
   );
 }

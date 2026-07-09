@@ -32,79 +32,41 @@ export default function CastSection({ credits }) {
   if (cast.length === 0 && directors.length === 0) return null;
 
   return (
-    <div style={{ marginTop: '32px' }}>
+    <div className="mt-8">
 
       {/* ── Director(s) ── */}
       {directors.length > 0 && (
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            marginBottom: '12px',
-          }}>
-            <Clapperboard style={{ width: 18, height: 18, color: '#e50914' }} />
-            <h4 style={{
-              color: 'white',
-              fontSize: '1rem',
-              fontWeight: 700,
-            }}>
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Clapperboard className="w-4 h-4 text-red-600" />
+            <h4 className="text-white text-sm font-bold uppercase tracking-wider">
               {directors.length > 1 ? 'Directors' : 'Director'}
             </h4>
           </div>
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <div className="flex flex-wrap gap-3">
             {directors.map(d => (
               <Link
                 key={d.id}
                 href={`/search?q=${encodeURIComponent(d.name)}`}
-                style={{
-                  textDecoration: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  background: 'rgba(255,255,255,0.05)',
-                  padding: '8px 16px 8px 8px',
-                  borderRadius: '12px',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  transition: 'all 0.25s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(229,9,20,0.1)';
-                  e.currentTarget.style.borderColor = 'rgba(229,9,20,0.3)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-                }}
+                className="group flex items-center gap-3 bg-white/5 p-1.5 pr-4 rounded-full border border-white/5 hover:bg-red-600/10 hover:border-red-600/30 transition-all duration-300"
               >
                 {/* Director Photo */}
-                <div style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                  background: '#222',
-                  flexShrink: 0,
-                  position: 'relative',
-                }}>
+                <div className="w-9 h-9 rounded-full overflow-hidden bg-white/5 flex-shrink-0 relative ring-2 ring-white/5 group-hover:ring-red-600/30 transition-all">
                   {d.profile_path ? (
                     <Image
                       src={`https://image.tmdb.org/t/p/w185${d.profile_path}`}
                       alt={d.name}
                       fill
                       sizes="36px"
-                      style={{ objectFit: 'cover' }}
+                      className="object-cover"
                     />
                   ) : (
-                    <div style={{
-                      width: '100%', height: '100%',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <User style={{ width: 16, height: 16, color: '#555' }} />
+                    <div className="w-full h-full flex items-center justify-center">
+                      <User className="w-4 h-4 text-white/20" />
                     </div>
                   )}
                 </div>
-                <span style={{ color: 'white', fontSize: '0.85rem', fontWeight: 600 }}>
+                <span className="text-white text-xs font-bold whitespace-nowrap">
                   {d.name}
                 </span>
               </Link>
@@ -116,106 +78,45 @@ export default function CastSection({ credits }) {
       {/* ── Cast (Actors) ── */}
       {cast.length > 0 && (
         <div>
-          <h4 style={{
-            color: 'white',
-            fontSize: '1rem',
-            fontWeight: 700,
-            marginBottom: '14px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}>
-            <User style={{ width: 18, height: 18, color: '#e50914' }} />
-            Cast
-          </h4>
+          <div className="flex items-center gap-2 mb-5">
+            <User className="w-4 h-4 text-red-600" />
+            <h4 className="text-white text-sm font-bold uppercase tracking-wider">
+              Top Cast
+            </h4>
+          </div>
 
           {/* Horizontal scrolling row of cast cards */}
-          <div style={{
-            display: 'flex',
-            gap: '14px',
-            overflowX: 'auto',
-            overflowY: 'hidden',
-            paddingBottom: '12px',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-          }}>
+          <div className="flex gap-6 overflow-x-auto pb-4 hide-scrollbar">
             {cast.map(actor => (
               <Link
                 key={actor.id}
                 href={`/search?q=${encodeURIComponent(actor.name)}`}
-                style={{
-                  textDecoration: 'none',
-                  flexShrink: 0,
-                  width: '100px',
-                  textAlign: 'center',
-                  transition: 'transform 0.25s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-4px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
+                className="group flex-shrink-0 w-24 text-center"
               >
                 {/* Actor Photo (circular) */}
-                <div style={{
-                  width: '80px',
-                  height: '80px',
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                  margin: '0 auto 8px',
-                  background: '#1a1a1a',
-                  border: '2px solid rgba(255,255,255,0.08)',
-                  position: 'relative',
-                  transition: 'border-color 0.25s ease',
-                }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(229,9,20,0.5)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-                  }}
-                >
+                <div className="w-20 h-20 rounded-full overflow-hidden mx-auto mb-3 bg-white/5 ring-2 ring-white/5 group-hover:ring-red-600/50 group-hover:scale-105 transition-all duration-300 relative shadow-xl">
                   {actor.profile_path ? (
                     <Image
                       src={`https://image.tmdb.org/t/p/w185${actor.profile_path}`}
                       alt={actor.name}
                       fill
                       sizes="80px"
-                      style={{ objectFit: 'cover' }}
+                      className="object-cover"
                     />
                   ) : (
-                    <div style={{
-                      width: '100%', height: '100%',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: 'linear-gradient(135deg, #1a1a1a, #2a2a2a)',
-                    }}>
-                      <User style={{ width: 28, height: 28, color: '#444' }} />
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-white/5 to-white/10">
+                      <User className="w-7 h-7 text-white/10" />
                     </div>
                   )}
                 </div>
 
                 {/* Actor Name */}
-                <p style={{
-                  color: 'white',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  marginBottom: '2px',
-                }}>
+                <p className="text-white text-[11px] font-bold truncate mb-0.5 group-hover:text-red-500 transition-colors">
                   {actor.name}
                 </p>
 
                 {/* Character Name */}
-                <p style={{
-                  color: '#666',
-                  fontSize: '0.65rem',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}>
+                <p className="text-gray-500 text-[10px] font-medium truncate uppercase tracking-tighter">
                   {actor.character || 'Unknown'}
                 </p>
               </Link>
@@ -223,11 +124,6 @@ export default function CastSection({ credits }) {
           </div>
         </div>
       )}
-
-      {/* Hide scrollbar for webkit */}
-      <style jsx>{`
-        div::-webkit-scrollbar { display: none; }
-      `}</style>
     </div>
   );
 }

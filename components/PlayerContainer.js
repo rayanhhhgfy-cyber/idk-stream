@@ -1,20 +1,24 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Server, SkipForward, X, PictureInPicture2, PictureInPicture, Monitor } from 'lucide-react';
+import { Server, SkipForward, X, PictureInPicture2, PictureInPicture, Monitor, Zap, AlertTriangle, RefreshCw } from 'lucide-react';
 
 export default function PlayerContainer({ type, id, season, episode, autoPlayNext, onNextEpisode, nextEpisodeTitle, episodeRuntime, onSyncTime }) {
   const [currentServer, setCurrentServer] = useState(2);
-  const [server1Available, setServer1Available] = useState(true);
+  const [serverAvailability, setServerAvailability] = useState({});
   const [quality, setQuality] = useState('auto');
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const qualityMenuRef = useRef(null);
+
   const serverConfigs = {
-    1: { name: 'vidsrc.to', episodeOffset: -1, baseUrl: 'https://vidsrc.to' },
-    2: { name: 'vidking.net', episodeOffset: 0, baseUrl: 'https://www.vidking.net' },
-    3: { name: 'embed.su', episodeOffset: -1, baseUrl: 'https://embed.su' },
-    4: { name: 'vidsrc.pro', episodeOffset: -1, baseUrl: 'https://vidsrc.pro' },
-    5: { name: 'ezvidapi.com', episodeOffset: 0, baseUrl: 'https://ezvidapi.com' },
+    1: { name: 'Vidsrc.to', episodeOffset: -1, baseUrl: 'https://vidsrc.to', description: 'Fast, high quality' },
+    2: { name: 'Vidking', episodeOffset: 0, baseUrl: 'https://www.vidking.net', description: 'Most stable, red theme' },
+    3: { name: 'Embed.su', episodeOffset: -1, baseUrl: 'https://embed.su', description: 'Good for slow internet' },
+    4: { name: 'Vidsrc.pro', episodeOffset: -1, baseUrl: 'https://vidsrc.pro', description: 'Alternative link' },
+    5: { name: 'Ezvidapi', episodeOffset: 0, baseUrl: 'https://ezvidapi.com', description: 'Legacy support' },
+    6: { name: 'Vidsrc.xyz', episodeOffset: -1, baseUrl: 'https://vidsrc.xyz', description: 'Fast mirror' },
+    7: { name: 'Vidsrc.me', episodeOffset: -1, baseUrl: 'https://vidsrc.me', description: 'Reliable mirror' },
   };
+
   const qualityOptions = ['auto', '1080p', '720p', '480p', '360p'];
   const [iframeLoading, setIframeLoading] = useState(true);
   const [showCountdown, setShowCountdown] = useState(false);
@@ -24,26 +28,32 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const [embedBlocked, setEmbedBlocked] = useState(false);
   const [loadErrorMessage, setLoadErrorMessage] = useState('');
   const [isBuffering, setIsBuffering] = useState(false);
+  const [slowConnection, setSlowConnection] = useState(false);
+
   const iframeRef = useRef(null);
   const autoPlayTimerRef = useRef(null);
   const countdownRef = useRef(null);
   const pipWindowRef = useRef(null);
+  const loadTimeoutRef = useRef(null);
+  const iframeLoadingRef = useRef(true);
 
   const isTv = type === 'tv';
 
-  // Detect if user is on iOS
+  // Sync ref with state to ensure timeout closure sees the latest value
+  useEffect(() => {
+    iframeLoadingRef.current = iframeLoading;
+  }, [iframeLoading]);
+
   const getIsIos = () => {
     return typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
   };
 
-  // Check PiP support on mount
   useEffect(() => {
     const hasDocPip = typeof window !== 'undefined' && 'documentPictureInPicture' in window;
     const hasLegacyPip = typeof document !== 'undefined' && document.pictureInPictureEnabled;
     setPipSupported(!!(hasDocPip || hasLegacyPip));
   }, []);
 
-  // Close quality menu on outside click
   useEffect(() => {
     const handleClick = (e) => {
       if (qualityMenuRef.current && !qualityMenuRef.current.contains(e.target)) {
@@ -59,33 +69,18 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     if (!cfg) return '';
     const ep = isTv ? Number(episode) + cfg.episodeOffset : null;
     let url = '';
-    if (server === 1) {
-      url = isTv
-        ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
-        : `${cfg.baseUrl}/embed/movie/${id}`;
-    } else if (server === 2) {
-      url = isTv
-        ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
-        : `${cfg.baseUrl}/embed/movie/${id}`;
-    } else if (server === 3) {
-      url = isTv
-        ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
-        : `${cfg.baseUrl}/embed/movie/${id}`;
-    } else if (server === 4) {
-      url = isTv
-        ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
-        : `${cfg.baseUrl}/embed/movie/${id}`;
-    } else if (server === 5) {
+
+    // Most use the same pattern
+    if ([1, 2, 3, 4, 5, 6, 7].includes(server)) {
       url = isTv
         ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
         : `${cfg.baseUrl}/embed/movie/${id}`;
     }
+
     const params = [];
     if (server === 2) {
       params.push('color=e50914');
-      if (isTv) {
-        params.push('nextEpisode=true', 'episodeSelector=true');
-      }
+      if (isTv) params.push('nextEpisode=true', 'episodeSelector=true');
     }
     if (quality !== 'auto') params.push(`quality=${quality}`);
     if (autoPlayNext) params.push('autoplay=1', 'autoPlay=true');
@@ -93,15 +88,11 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     return url;
   };
 
-  // ── Document Picture-in-Picture ──
   const togglePiP = useCallback(async () => {
     const isIos = getIsIos();
-
-    // If already in PiP, close it
     if (pipActive && pipWindowRef.current) {
       try { 
         if (isIos && pipWindowRef.current.requestFullscreen) {
-          // Exit fullscreen on iOS
           if (document.fullscreenElement) document.exitFullscreen();
         } else {
           pipWindowRef.current.close();
@@ -115,15 +106,12 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     const iframe = iframeRef.current;
     if (!iframe) return;
 
-    // iOS: Use fullscreen as Picture-in-Picture alternative
     if (isIos) {
       try {
         if (iframe.requestFullscreen) {
           await iframe.requestFullscreen();
           setPipActive(true);
           pipWindowRef.current = iframe;
-
-          // Listen for fullscreen exit
           const handleFullscreenChange = () => {
             if (!document.fullscreenElement) {
               setPipActive(false);
@@ -133,43 +121,23 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           document.addEventListener('fullscreenchange', handleFullscreenChange);
           return;
         }
-      } catch (err) {
-        console.warn('iOS fullscreen failed:', err);
-      }
+      } catch (err) { console.warn('iOS fullscreen failed:', err); }
     }
 
-    // Method 1: Document Picture-in-Picture API (Chrome 116+, Edge 116+)
     if ('documentPictureInPicture' in window) {
       try {
         const pipWindow = await window.documentPictureInPicture.requestWindow({
           width: Math.min(640, window.screen.width - 100),
           height: Math.min(360, window.screen.height - 100),
         });
-
         pipWindowRef.current = pipWindow;
-
-        // Style the PiP window
         const style = pipWindow.document.createElement('style');
         style.textContent = `
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { 
-            background: #000; 
-            overflow: hidden; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            width: 100vw;
-            height: 100vh;
-          }
-          iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-          }
+          body { background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; width: 100vw; height: 100vh; }
+          iframe { width: 100%; height: 100%; border: none; }
         `;
         pipWindow.document.head.appendChild(style);
-
-        // Clone the iframe into the PiP window
         const pipIframe = pipWindow.document.createElement('iframe');
         pipIframe.src = iframe.src;
         pipIframe.allow = 'autoplay; fullscreen; encrypted-media; picture-in-picture';
@@ -178,70 +146,35 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         pipIframe.style.height = '100%';
         pipIframe.style.border = 'none';
         pipWindow.document.body.appendChild(pipIframe);
-
         setPipActive(true);
-
-        // Listen for PiP window close
         pipWindow.addEventListener('pagehide', () => {
           pipWindowRef.current = null;
           setPipActive(false);
         });
-
         return;
-      } catch (err) {
-        console.warn('Document PiP failed:', err);
-      }
+      } catch (err) { console.warn('Document PiP failed:', err); }
     }
 
-    // Method 2: Legacy PiP — try to find a video element inside the iframe
-    // This only works if the iframe is same-origin (unlikely but worth trying)
-    try {
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (iframeDoc) {
-        const video = iframeDoc.querySelector('video');
-        if (video && video.requestPictureInPicture) {
-          await video.requestPictureInPicture();
-          setPipActive(true);
-          video.addEventListener('leavepictureinpicture', () => setPipActive(false), { once: true });
-          return;
-        }
-      }
-    } catch {}
-
-    // Method 3: Popup window fallback — works everywhere (except iOS)
     if (!isIos) {
       try {
         const width = Math.min(640, window.screen.width - 100);
         const height = Math.min(360, window.screen.height - 100);
         const left = window.screen.width - width - 20;
         const top = window.screen.height - height - 100;
-        const popup = window.open(
-          iframe.src,
-          'idkstream_pip',
-          `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=no,toolbar=no,menubar=no,location=no,status=no`
-        );
+        const popup = window.open(iframe.src, 'idkstream_pip', `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=no,toolbar=no,menubar=no,location=no,status=no`);
         if (popup) {
           pipWindowRef.current = popup;
           setPipActive(true);
           const checkClosed = setInterval(() => {
-            if (popup.closed) {
-              clearInterval(checkClosed);
-              pipWindowRef.current = null;
-              setPipActive(false);
-            }
+            if (popup.closed) { clearInterval(checkClosed); pipWindowRef.current = null; setPipActive(false); }
           }, 1000);
           return;
         }
-      } catch (err) {
-        console.warn('PiP popup fallback failed:', err);
-      }
+      } catch (err) { console.warn('PiP popup fallback failed:', err); }
     }
-
-    // Final fallback: show message if nothing worked
-    alert('Picture-in-Picture is not supported on your device. Try rotating your device or using a different browser.');
+    alert('Picture-in-Picture is not supported on your device.');
   }, [pipActive]);
 
-  // Cleanup PiP on unmount or source change
   useEffect(() => {
     return () => {
       if (pipWindowRef.current) {
@@ -252,40 +185,46 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     };
   }, [currentServer, season, episode, type, id]);
 
-  // Reset player when parameters change
+  // Reset player and handle load timeouts
   useEffect(() => {
     setIframeLoading(true);
     setShowCountdown(false);
     setEmbedBlocked(false);
     setIsBuffering(false);
+    setSlowConnection(false);
     setLoadErrorMessage('');
     setCountdown(15);
-    setCurrentServer(2);
-    setServer1Available(true);
-    setQuality('auto');
     clearTimeout(autoPlayTimerRef.current);
     clearInterval(countdownRef.current);
-  }, [season, episode, type, id]);
+    clearTimeout(loadTimeoutRef.current);
 
-  // Reset loading overlay when switching servers or quality
-  useEffect(() => {
-    setIframeLoading(true);
-    setEmbedBlocked(false);
-    setLoadErrorMessage('');
-  }, [currentServer, quality]);
+    // Set a timeout for loading. If it takes > 15s, show "Slow Connection" warning.
+    loadTimeoutRef.current = setTimeout(() => {
+      if (iframeLoadingRef.current) {
+        setSlowConnection(true);
+      }
+    }, 15000);
+
+    return () => clearTimeout(loadTimeoutRef.current);
+  }, [season, episode, type, id, currentServer, quality]);
 
   const handleIframeLoad = () => {
     setEmbedBlocked(false);
     setLoadErrorMessage('');
     setIsBuffering(false);
     setIframeLoading(false);
+    setSlowConnection(false);
+    clearTimeout(loadTimeoutRef.current);
   };
 
   const handleIframeError = () => {
     const nextServer = currentServer + 1;
     const maxServers = Object.keys(serverConfigs).length;
+
+    // Mark current server as potentially down
+    setServerAvailability(prev => ({ ...prev, [currentServer]: false }));
+
     if (nextServer <= maxServers) {
-      if (currentServer === 1) setServer1Available(false);
       setCurrentServer(nextServer);
       setEmbedBlocked(false);
       setIframeLoading(true);
@@ -294,85 +233,47 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
 
     setEmbedBlocked(true);
     setIframeLoading(false);
-    setLoadErrorMessage('Failed to load player. The provider may be down.');
+    setLoadErrorMessage('Failed to load player. All providers seem to be unreachable.');
   };
 
-  // Auto-play timer & iframe message listener
   useEffect(() => {
-    clearTimeout(autoPlayTimerRef.current);
-    clearInterval(countdownRef.current);
-    setShowCountdown(false);
-    setCountdown(15);
-
-    if (autoPlayNext && isTv && onNextEpisode) {
-      const runtimeMs = episodeRuntime ? (episodeRuntime - 2) * 60 * 1000 : 25 * 60 * 1000;
-      let waitTime = Math.max(runtimeMs, 60000);
-      if (process.env.NODE_ENV === 'development') waitTime = 10000;
-
-      autoPlayTimerRef.current = setTimeout(() => {
-        setShowCountdown(true);
-        setCountdown(15);
-      }, waitTime);
-    }
-
     const handleMessage = (e) => {
       try {
         let data = e.data;
         if (typeof data === 'string') { try { data = JSON.parse(data); } catch {} }
 
-        // Vidking player events — hide loading overlay when playback starts
         if (data?.type === 'PLAYER_EVENT' && data?.data?.event) {
           const playerEvent = data.data.event;
           if (playerEvent === 'play' || playerEvent === 'timeupdate') {
             setIframeLoading(false);
             setIsBuffering(false);
+            setSlowConnection(false);
           }
           if (playerEvent === 'ended' && autoPlayNext && isTv && onNextEpisode) {
-            clearTimeout(autoPlayTimerRef.current);
             setShowCountdown(true);
             setCountdown(15);
           }
-          if (playerEvent === 'timeupdate' && typeof data.data.currentTime === 'number') {
-            if (onSyncTime) onSyncTime(data.data.currentTime, isBuffering);
-          }
         }
 
-        // Detect ended
         if (autoPlayNext && isTv && onNextEpisode) {
-          const isEnded = data === 'ended' || data === 'video_ended' || data?.event === 'ended' || data?.event === 'video_ended' || data?.type === 'ended' || data?.status === 'complete';
+          const isEnded = data === 'ended' || data === 'video_ended' || data?.event === 'ended' || data?.type === 'ended';
           if (isEnded) {
-            clearTimeout(autoPlayTimerRef.current);
             setShowCountdown(true);
             setCountdown(15);
           }
         }
 
-        // Detect buffering state
-        if (data?.event === 'buffering' || data?.type === 'buffering' || data?.status === 'buffering') {
-          setIsBuffering(true);
-        }
-        if (data?.event === 'playing' || data?.type === 'playing' || data?.status === 'playing') {
-          setIsBuffering(false);
-        }
-
-        // Sync time updates from iframe
-        if (data?.event === 'timeupdate' && typeof data?.currentTime === 'number') {
-          if (onSyncTime) onSyncTime(data.currentTime, isBuffering);
-        }
+        if (data?.event === 'buffering' || data?.type === 'buffering') setIsBuffering(true);
+        if (data?.event === 'playing' || data?.type === 'playing') setIsBuffering(false);
       } catch {}
     };
 
     window.addEventListener('message', handleMessage);
-    return () => {
-      clearTimeout(autoPlayTimerRef.current);
-      clearInterval(countdownRef.current);
-      window.removeEventListener('message', handleMessage);
-    };
-  }, [autoPlayNext, isTv, season, episode, onNextEpisode, episodeRuntime, onSyncTime, isBuffering]);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [autoPlayNext, isTv, onNextEpisode]);
 
-  // Countdown ticker
   useEffect(() => {
-    if (!showCountdown) { clearInterval(countdownRef.current); return; }
+    if (!showCountdown) return;
     countdownRef.current = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
@@ -387,243 +288,189 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     return () => clearInterval(countdownRef.current);
   }, [showCountdown, onNextEpisode]);
 
-  const dismissCountdown = () => { setShowCountdown(false); setCountdown(15); clearTimeout(autoPlayTimerRef.current); clearInterval(countdownRef.current); };
-  const skipToNext = () => { clearInterval(countdownRef.current); setShowCountdown(false); setCountdown(15); if (onNextEpisode) onNextEpisode(); };
-
-  const serverBtnStyle = (active, disabled) => ({
-    display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 22px', borderRadius: '10px',
-    border: active ? '1px solid rgba(229,9,20,0.5)' : '1px solid rgba(255,255,255,0.08)',
-    background: active ? 'linear-gradient(135deg, rgba(229,9,20,0.2), rgba(229,9,20,0.05))' : 'rgba(255,255,255,0.04)',
-    color: active ? '#ff4444' : '#888', fontWeight: 600, fontSize: '0.85rem', cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.25s ease',
-    opacity: disabled ? 0.45 : 1,
-  });
-
   const switchServer = (server) => {
-    if (server === 1 && !server1Available) return;
     setIframeLoading(true);
     setEmbedBlocked(false);
+    setSlowConnection(false);
     setCurrentServer(server);
-  };
-
-  const retryPlayer = () => {
-    setEmbedBlocked(false);
-    setIframeLoading(true);
   };
 
   const playerReady = isTv ? Boolean(season && episode) : Boolean(id);
 
   return (
-    <div>
-      <div data-player="true" style={{ position: 'relative', width: '100%', paddingTop: '56.25%', background: '#111', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
-
+    <div className="w-full">
+      {/* Player Frame */}
+      <div
+        data-player="true"
+        className="relative w-full aspect-video bg-[#111] rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
+      >
         {playerReady && (
           <iframe
             key={`${currentServer}-${id}-${season}-${episode}-${quality}`}
             ref={iframeRef}
             src={buildUrl(currentServer)}
             title="Video Player"
-            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+            className="absolute inset-0 w-full h-full border-none"
             allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope; clipboard-write"
             allowFullScreen
             referrerPolicy="no-referrer-when-downgrade"
             loading="eager"
-            data-player="true"
             onLoad={handleIframeLoad}
             onError={handleIframeError}
           />
         )}
 
+        {/* Loading Overlay */}
         {iframeLoading && playerReady && !embedBlocked && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111', zIndex: 5, pointerEvents: 'none' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ width: '36px', height: '36px', border: '3px solid rgba(229,9,20,0.2)', borderTopColor: '#e50914', borderRadius: '50%', animation: 'playerSpin 0.8s linear infinite', margin: '0 auto 10px' }} />
-              <p style={{ color: '#555', fontSize: '0.8rem' }}>Loading player...</p>
-            </div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0a0a0a] z-10">
+            <div className="w-12 h-12 border-4 border-red-600/20 border-t-red-600 rounded-full animate-spin mb-4" />
+            <p className="text-gray-400 text-sm font-medium animate-pulse">
+              {slowConnection ? "Connection is slow, please wait..." : "Initializing Stream..."}
+            </p>
+            {slowConnection && (
+              <div className="mt-6 flex flex-col items-center animate-fade-in">
+                <p className="text-xs text-gray-500 mb-3 text-center px-6">
+                  Still loading? Try a different server known for better low-bandwidth performance.
+                </p>
+                <button
+                  onClick={() => switchServer(3)}
+                  className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-xs transition-colors"
+                >
+                  <Zap className="w-3 h-3 text-yellow-500" /> Switch to Embed.su (Optimized)
+                </button>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Embed blocked / error fallback UI */}
+        {/* Buffering Indicator */}
+        {isBuffering && !iframeLoading && (
+          <div className="absolute top-4 left-4 z-20 flex items-center gap-2 bg-black/60 backdrop-blur-md border border-yellow-500/30 px-3 py-1.5 rounded-full text-yellow-500 text-[10px] font-bold uppercase tracking-wider">
+            <div className="w-2.5 h-2.5 border-2 border-yellow-500/30 border-t-yellow-500 rounded-full animate-spin" />
+            Buffering...
+          </div>
+        )}
+
+        {/* Error Fallback */}
         {embedBlocked && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0b0b0b' }}>
-            <div style={{ maxWidth: '720px', padding: '26px', borderRadius: '12px', background: 'rgba(20,20,20,0.95)', border: '1px solid rgba(255,255,255,0.04)', textAlign: 'center' }}>
-              <h3 style={{ color: 'white', margin: '0 0 8px' }}>Player Unavailable</h3>
-              <p style={{ color: '#aaa', margin: '0 0 16px' }}>{loadErrorMessage || 'The embed provider blocked playback or the content failed to load.'}</p>
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <button onClick={() => window.open(buildUrl(currentServer), '_blank')} style={{ background: '#e50914', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Open Player in New Tab</button>
-                <button onClick={retryPlayer} style={{ background: 'rgba(255,255,255,0.06)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Retry</button>
-                <button onClick={() => { const maxSrv = Object.keys(serverConfigs).length; const next = currentServer >= maxSrv ? 1 : currentServer + 1; if (next === 1) setServer1Available(true); switchServer(next); }} style={{ background: 'rgba(255,255,255,0.04)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Try Server {currentServer >= Object.keys(serverConfigs).length ? 1 : currentServer + 1}</button>
+          <div className="absolute inset-0 flex items-center justify-center bg-[#0b0b0b] z-20 p-6">
+            <div className="max-w-md w-full text-center">
+              <AlertTriangle className="w-12 h-12 text-red-600 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-white mb-2">Playback Failed</h3>
+              <p className="text-gray-400 text-sm mb-6">{loadErrorMessage}</p>
+              <div className="flex flex-col gap-3">
+                <button onClick={() => switchServer(currentServer === 7 ? 1 : currentServer + 1)} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-all">
+                  Try Next Server
+                </button>
+                <button onClick={() => window.location.reload()} className="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2">
+                  <RefreshCw className="w-4 h-4" /> Refresh Page
+                </button>
               </div>
             </div>
           </div>
-        )}
-
-        {/* PiP Button — top right of player */}
-        {playerReady && (
-          <button
-            onClick={togglePiP}
-            title={getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Enter Fullscreen') : (pipActive ? 'Exit Picture-in-Picture' : 'Picture-in-Picture')}
-            style={{
-              position: 'absolute',
-              top: '12px',
-              right: '12px',
-              zIndex: 25,
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
-              border: pipActive ? '1px solid rgba(229,9,20,0.6)' : '1px solid rgba(255,255,255,0.15)',
-              background: pipActive ? 'rgba(229,9,20,0.25)' : 'rgba(0,0,0,0.6)',
-              backdropFilter: 'blur(8px)',
-              color: pipActive ? '#ff6b6b' : 'rgba(255,255,255,0.85)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.25s ease',
-              padding: 0,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = pipActive ? 'rgba(229,9,20,0.4)' : 'rgba(255,255,255,0.15)';
-              e.currentTarget.style.transform = 'scale(1.08)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = pipActive ? 'rgba(229,9,20,0.25)' : 'rgba(0,0,0,0.6)';
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
-          >
-            {pipActive
-              ? <PictureInPicture style={{ width: 18, height: 18 }} />
-              : <PictureInPicture2 style={{ width: 18, height: 18 }} />
-            }
-          </button>
         )}
 
         {/* PiP Active Indicator */}
         {pipActive && playerReady && (
-          <div style={{
-            position: 'absolute',
-            top: '12px',
-            left: '12px',
-            zIndex: 25,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            background: 'rgba(229,9,20,0.2)',
-            border: '1px solid rgba(229,9,20,0.4)',
-            backdropFilter: 'blur(8px)',
-            borderRadius: '8px',
-            padding: '5px 12px',
-            animation: 'pipPulse 2s ease-in-out infinite',
-          }}>
-            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#e50914', boxShadow: '0 0 6px rgba(229,9,20,0.8)' }} />
-            <span style={{ color: '#ff6b6b', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase' }}>PiP Active</span>
-          </div>
-        )}
-
-        {/* Auto-play countdown overlay */}
-        {showCountdown && (
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 100%)', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', zIndex: 20, animation: 'fadeInUp 0.4s ease-out' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1 }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(229,9,20,0.15)', border: '3px solid #e50914', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>{countdown}</div>
-              <div>
-                <p style={{ color: '#aaa', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '2px' }}>Up Next</p>
-                <p style={{ color: 'white', fontSize: '0.95rem', fontWeight: 600 }}>{nextEpisodeTitle || 'Next Episode'}</p>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-              <button onClick={skipToNext} style={{ background: '#e50914', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <SkipForward style={{ width: 14, height: 14 }} /> Play Now
-              </button>
-              <button onClick={dismissCountdown} style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', padding: '10px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X style={{ width: 16, height: 16 }} />
-              </button>
-            </div>
+          <div className="absolute top-4 right-16 z-20 flex items-center gap-2 bg-red-600/20 border border-red-600/40 backdrop-blur-md px-3 py-1.5 rounded-full">
+            <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse shadow-[0_0_8px_rgba(229,9,20,0.8)]" />
+            <span className="text-red-400 text-[10px] font-bold uppercase tracking-widest">PiP Active</span>
           </div>
         )}
       </div>
 
-      {/* Buffering indicator */}
-      {isBuffering && !iframeLoading && (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-          marginTop: '10px', padding: '6px 14px',
-          background: 'rgba(255, 183, 3, 0.1)', border: '1px solid rgba(255, 183, 3, 0.3)',
-          borderRadius: '8px', color: '#ffb703', fontSize: '0.8rem', fontWeight: 600,
-        }}>
-          <div style={{ width: '12px', height: '12px', border: '2px solid rgba(255,183,3,0.3)', borderTopColor: '#ffb703', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
-          Buffering...
-        </div>
-      )}
+      {/* Control Bar & Server List */}
+      <div className="mt-6 space-y-6">
+        {/* Horizontal Server Scroll for Mobile */}
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between px-1">
+            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+              <Server className="w-4 h-4 text-red-600" /> Choose Server
+            </h3>
+            {slowConnection && <span className="text-[10px] text-yellow-500 font-bold bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20 animate-pulse">Slow connection detected</span>}
+          </div>
 
-      {/* Server buttons + Quality + PiP row */}
-      <div style={{ display: 'flex', gap: '10px', marginTop: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
-        <button onClick={() => switchServer(1)} disabled={!server1Available} style={serverBtnStyle(currentServer === 1, !server1Available)}>
-          <Server style={{ width: 14, height: 14 }} /> {server1Available ? 'Vidsrc' : 'Vidsrc (down)'}
-        </button>
-        <button onClick={() => switchServer(2)} style={serverBtnStyle(currentServer === 2, false)}><Server style={{ width: 14, height: 14 }} /> Vidking</button>
-        <button onClick={() => switchServer(3)} style={serverBtnStyle(currentServer === 3, false)}><Server style={{ width: 14, height: 14 }} /> Embed.su</button>
-        <button onClick={() => switchServer(4)} style={serverBtnStyle(currentServer === 4, false)}><Server style={{ width: 14, height: 14 }} /> Vidsrc.pro</button>
-        <button onClick={() => switchServer(5)} style={serverBtnStyle(currentServer === 5, false)}><Server style={{ width: 14, height: 14 }} /> Ezvidapi</button>
-
-        {/* Quality Chooser */}
-        <div ref={qualityMenuRef} style={{ position: 'relative' }}>
-          <button
-            onClick={() => setShowQualityMenu(!showQualityMenu)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 22px', borderRadius: '10px',
-              border: '1px solid rgba(255,255,255,0.08)',
-              background: showQualityMenu ? 'rgba(229,9,20,0.15)' : 'rgba(255,255,255,0.04)',
-              color: showQualityMenu ? '#ff4444' : '#888', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.25s ease',
-            }}
-          >
-            <Monitor style={{ width: 14, height: 14 }} />
-            {quality === 'auto' ? 'Auto' : quality}
-          </button>
-          {showQualityMenu && (
-            <div style={{
-              position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
-              marginBottom: '8px', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: '12px', padding: '6px', zIndex: 50, minWidth: '120px',
-              boxShadow: '0 10px 40px rgba(0,0,0,0.6)',
-            }}>
-              {qualityOptions.map(q => (
+          <div className="flex overflow-x-auto pb-2 gap-3 no-scrollbar scroll-smooth">
+            {Object.entries(serverConfigs).map(([id, cfg]) => {
+              const active = currentServer === parseInt(id);
+              return (
                 <button
-                  key={q}
-                  onClick={() => { setQuality(q); setShowQualityMenu(false); }}
-                  style={{
-                    display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px',
-                    border: 'none', borderRadius: '8px', background: q === quality ? 'rgba(229,9,20,0.2)' : 'transparent',
-                    color: q === quality ? '#ff4444' : '#ccc', fontWeight: q === quality ? 700 : 500,
-                    fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.15s',
-                  }}
-                  onMouseEnter={(e) => { if (q !== quality) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
-                  onMouseLeave={(e) => { if (q !== quality) e.currentTarget.style.background = 'transparent'; }}
+                  key={id}
+                  onClick={() => switchServer(parseInt(id))}
+                  className={`
+                    flex-shrink-0 flex flex-col items-start gap-1 p-3 min-w-[140px] rounded-xl border transition-all duration-300
+                    ${active
+                      ? 'bg-red-600/10 border-red-600/50 ring-1 ring-red-600/20'
+                      : 'bg-white/5 border-white/5 hover:border-white/20 hover:bg-white/10'}
+                  `}
                 >
-                  {q === 'auto' ? 'Auto (Up to 4K)' : q}
+                  <div className="flex items-center justify-between w-full">
+                    <span className={`text-xs font-bold ${active ? 'text-red-500' : 'text-gray-300'}`}>{cfg.name}</span>
+                    {active && <div className="w-1.5 h-1.5 rounded-full bg-red-600 shadow-[0_0_8px_rgba(229,9,20,0.8)]" />}
+                  </div>
+                  <span className="text-[10px] text-gray-500 font-medium">{cfg.description}</span>
                 </button>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
         </div>
 
-        <button
-          onClick={togglePiP}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 22px', borderRadius: '10px',
-            border: pipActive ? '1px solid rgba(229,9,20,0.5)' : '1px solid rgba(255,255,255,0.08)',
-            background: pipActive ? 'linear-gradient(135deg, rgba(229,9,20,0.2), rgba(229,9,20,0.05))' : 'rgba(255,255,255,0.04)',
-            color: pipActive ? '#ff4444' : '#888', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.25s ease',
-          }}
-        >
-          <PictureInPicture2 style={{ width: 14, height: 14 }} />
-          {pipActive ? 'Exit PiP' : 'Pop Out'}
-        </button>
+        {/* Secondary Controls */}
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+          {/* Quality Menu */}
+          <div ref={qualityMenuRef} className="relative">
+            <button
+              onClick={() => setShowQualityMenu(!showQualityMenu)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/10 text-gray-300 text-xs font-bold transition-all"
+            >
+              <Monitor className="w-4 h-4" />
+              Quality: {quality === 'auto' ? 'Auto' : quality}
+            </button>
+            {showQualityMenu && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 bg-[#1a1a1a] border border-white/10 rounded-xl p-1.5 z-50 min-w-[140px] shadow-2xl animate-fade-in">
+                {qualityOptions.map(q => (
+                  <button
+                    key={q}
+                    onClick={() => { setQuality(q); setShowQualityMenu(false); }}
+                    className={`
+                      w-full text-left px-3 py-2 rounded-lg text-xs transition-colors
+                      ${q === quality ? 'bg-red-600 text-white font-bold' : 'text-gray-400 hover:bg-white/5'}
+                    `}
+                  >
+                    {q === 'auto' ? 'Auto (Recommended)' : q}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={togglePiP}
+            className={`
+              flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all border
+              ${pipActive
+                ? 'bg-red-600/20 border-red-600/50 text-red-500'
+                : 'bg-white/5 border-white/5 hover:border-white/10 hover:bg-white/10 text-gray-300'}
+            `}
+          >
+            <PictureInPicture2 className="w-4 h-4" />
+            {pipActive ? 'Exit Pop-out' : 'Pop-out Player'}
+          </button>
+
+          <button
+            onClick={() => window.location.reload()}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/10 text-gray-300 text-xs font-bold transition-all"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Fix Lags / Reload
+          </button>
+        </div>
       </div>
 
       <style jsx>{`
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pipPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-        @keyframes playerSpin { to { transform: rotate(360deg); } }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(10px) translateX(-50%); } to { opacity: 1; transform: translateY(0) translateX(-50%); } }
       `}</style>
     </div>
   );

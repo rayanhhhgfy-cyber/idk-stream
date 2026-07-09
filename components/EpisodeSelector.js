@@ -38,104 +38,45 @@ export default function EpisodeSelector({
   }, [currentEpisode, episodes]);
 
   return (
-    <div
-      style={{
-        background: 'rgba(255,255,255,0.02)',
-        borderRadius: '20px',
-        border: '1px solid rgba(255,255,255,0.06)',
-        overflow: 'hidden',
-      }}
-    >
+    <div className="bg-white/[0.02] rounded-[20px] border border-white/5 overflow-hidden">
       {/* ── Now Playing Header ── */}
       {currentEpData && (
-        <div
-          style={{
-            padding: '20px 24px',
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
-            background: 'rgba(229,9,20,0.04)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-            <span
-              style={{
-                background: '#e50914',
-                color: 'white',
-                fontSize: '0.65rem',
-                fontWeight: 700,
-                padding: '2px 10px',
-                borderRadius: '6px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}
-            >
+        <div className="p-5 sm:p-6 border-b border-white/5 bg-red-600/[0.04]">
+          <div className="flex items-center gap-2 mb-2.5">
+            <span className="bg-red-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-md uppercase tracking-wider">
               Now Playing
             </span>
           </div>
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start">
             {currentEpData.still_path && (
-              <div
-                style={{
-                  position: 'relative',
-                  width: '160px',
-                  aspectRatio: '16/9',
-                  borderRadius: '10px',
-                  overflow: 'hidden',
-                  flexShrink: 0,
-                  border: '1px solid rgba(255,255,255,0.08)',
-                }}
-              >
+              <div className="relative w-full sm:w-40 aspect-video rounded-xl overflow-hidden flex-shrink-0 border border-white/10 shadow-lg">
                 <Image
                   src={`https://image.tmdb.org/t/p/w500${currentEpData.still_path}`}
                   alt={currentEpData.name}
                   fill
-                  style={{ objectFit: 'cover' }}
+                  sizes="(max-width: 640px) 100vw, 160px"
+                  className="object-cover"
                 />
               </div>
             )}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div
-                style={{
-                  color: 'white',
-                  fontSize: '1.05rem',
-                  fontWeight: 700,
-                  marginBottom: '4px',
-                }}
-              >
+            <div className="flex-1 min-w-0">
+              <h3 className="text-white text-lg font-bold mb-1 truncate">
                 S{currentSeason} : E{currentEpisode} — {currentEpData.name}
-              </div>
+              </h3>
               {currentEpData.vote_average > 0 && (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    color: '#fbbf24',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    marginBottom: '8px',
-                  }}
-                >
-                  <Star style={{ width: 13, height: 13, fill: '#fbbf24' }} />
-                  {currentEpData.vote_average.toFixed(1)}
+                <div className="flex items-center gap-2 text-yellow-500 text-xs font-bold mb-3">
+                  <div className="flex items-center gap-1">
+                    <Star className="w-3.5 h-3.5 fill-yellow-500" />
+                    {currentEpData.vote_average.toFixed(1)}
+                  </div>
                   {currentEpData.air_date && (
-                    <span style={{ color: '#666', fontWeight: 400, marginLeft: '8px' }}>
+                    <span className="text-gray-500 font-medium border-l border-white/10 pl-2">
                       {new Date(currentEpData.air_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </span>
                   )}
                 </div>
               )}
-              <p
-                style={{
-                  color: '#999',
-                  fontSize: '0.85rem',
-                  lineHeight: 1.6,
-                  display: '-webkit-box',
-                  WebkitLineClamp: 3,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                  margin: 0,
-                }}
-              >
+              <p className="text-gray-400 text-sm leading-relaxed line-clamp-3">
                 {currentEpData.overview || 'No description available.'}
               </p>
             </div>
@@ -144,72 +85,32 @@ export default function EpisodeSelector({
       )}
 
       {/* ── Season Controls Bar ── */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '14px 24px',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
-          background: 'rgba(255,255,255,0.02)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ color: '#888', fontSize: '0.85rem', fontWeight: 600 }}>Season</span>
-          <div style={{ position: 'relative' }}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:px-6 sm:py-4 border-b border-white/5 bg-white/[0.01]">
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Season</span>
+          <div className="relative flex-1 sm:flex-none">
             <select
               value={currentSeason}
               onChange={(e) => onSeasonChange(parseInt(e.target.value))}
-              style={{
-                background: 'rgba(255,255,255,0.06)',
-                color: 'white',
-                border: '1px solid rgba(255,255,255,0.1)',
-                padding: '8px 36px 8px 14px',
-                borderRadius: '10px',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                outline: 'none',
-                cursor: 'pointer',
-                appearance: 'none',
-                WebkitAppearance: 'none',
-                MozAppearance: 'none',
-              }}
+              className="w-full sm:w-auto bg-white/5 text-white border border-white/10 py-2.5 pl-4 pr-10 rounded-xl text-xs font-bold outline-none cursor-pointer hover:bg-white/10 transition-all appearance-none"
             >
               {seasons.map(s => (
-                <option key={s.season_number} value={s.season_number} style={{ background: '#1a1a1a', color: 'white' }}>
+                <option key={s.season_number} value={s.season_number} className="bg-[#141414]">
                   Season {s.season_number}{s.name !== `Season ${s.season_number}` ? ` — ${s.name}` : ''}
                 </option>
               ))}
             </select>
-            <ChevronDown
-              style={{
-                position: 'absolute',
-                right: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: 14,
-                height: 14,
-                color: '#888',
-                pointerEvents: 'none',
-              }}
-            />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           </div>
         </div>
-        <span style={{ color: '#555', fontSize: '0.8rem' }}>
+        <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest hidden sm:block">
           {episodes.length} {episodes.length === 1 ? 'episode' : 'episodes'}
         </span>
       </div>
 
       {/* ── Episode List ── */}
-      <div
-        ref={listRef}
-        style={{
-          maxHeight: '520px',
-          overflowY: 'auto',
-          padding: '8px',
-        }}
-      >
-        {episodes.map((episode, index) => {
+      <div ref={listRef} className="max-h-[520px] overflow-y-auto p-2 sm:p-3 space-y-2 scrollbar-hide">
+        {episodes.map((episode) => {
           const isActive = episode.episode_number === currentEpisode;
           const progressPct = getEpisodeProgress(episode.episode_number);
           const isHovered = hoveredEpisode === episode.episode_number;
@@ -221,201 +122,73 @@ export default function EpisodeSelector({
               onClick={() => onEpisodeSelect(episode.episode_number)}
               onMouseEnter={() => setHoveredEpisode(episode.episode_number)}
               onMouseLeave={() => setHoveredEpisode(null)}
-              style={{
-                display: 'flex',
-                gap: '14px',
-                padding: '10px 14px',
-                borderRadius: '14px',
-                cursor: 'pointer',
-                background: isActive
-                  ? 'rgba(229,9,20,0.08)'
-                  : isHovered
-                    ? 'rgba(255,255,255,0.04)'
-                    : 'transparent',
-                borderLeft: isActive ? '3px solid #e50914' : '3px solid transparent',
-                transition: 'all 0.2s ease',
-                marginBottom: '4px',
-                position: 'relative',
-                transform: isHovered ? 'scale(1.01)' : 'scale(1)',
-                boxShadow: isHovered ? '0 4px 20px rgba(0,0,0,0.3)' : 'none',
-              }}
+              className={`
+                group flex flex-col sm:flex-row gap-4 p-3 rounded-2xl cursor-pointer transition-all duration-300 relative
+                ${isActive ? 'bg-red-600/10 border-l-4 border-red-600 shadow-lg' : 'bg-transparent border-l-4 border-transparent hover:bg-white/5'}
+              `}
+              style={{ transform: isHovered && !isActive ? 'translateX(4px)' : 'none' }}
             >
               {/* ── Episode Thumbnail ── */}
-              <div
-                style={{
-                  position: 'relative',
-                  width: '180px',
-                  minWidth: '180px',
-                  aspectRatio: '16/9',
-                  borderRadius: '10px',
-                  overflow: 'hidden',
-                  background: 'linear-gradient(135deg, #1a1a1a, #2a2a2a)',
-                  flexShrink: 0,
-                }}
-              >
+              <div className="relative w-full sm:w-44 lg:w-48 aspect-video rounded-xl overflow-hidden bg-white/5 flex-shrink-0 shadow-md">
                 {episode.still_path ? (
                   <Image
-                    src={`https://image.tmdb.org/t/p/w500${episode.still_path}`}
+                    src={`https://image.tmdb.org/t/p/w342${episode.still_path}`}
                     alt={episode.name}
                     fill
-                    sizes="180px"
-                    style={{ objectFit: 'cover', transition: 'transform 0.3s ease', transform: isHovered ? 'scale(1.05)' : 'scale(1)' }}
+                    sizes="(max-width: 640px) 100vw, 192px"
+                    className={`object-cover transition-transform duration-500 ${isHovered ? 'scale-110' : 'scale-100'}`}
                   />
                 ) : (
-                  <div
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: `linear-gradient(135deg, #1a1a1a, #2a2a2a)`,
-                      color: '#444',
-                      fontSize: '1.5rem',
-                      fontWeight: 800,
-                    }}
-                  >
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-white/5 to-white/10 text-white/20 text-2xl font-black">
                     E{episode.episode_number}
                   </div>
                 )}
 
                 {/* ── Hover Play Overlay ── */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    background: 'rgba(0,0,0,0.5)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    opacity: isHovered ? 1 : 0,
-                    transition: 'opacity 0.2s ease',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '50%',
-                      background: 'rgba(229,9,20,0.9)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: '0 4px 15px rgba(229,9,20,0.4)',
-                    }}
-                  >
-                    <Play style={{ width: 18, height: 18, color: 'white', marginLeft: '2px' }} />
+                <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+                  <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center shadow-xl transform scale-90 group-hover:scale-100 transition-transform">
+                    <Play className="w-5 h-5 text-white fill-white ml-0.5" />
                   </div>
                 </div>
 
                 {/* ── Progress Bar ── */}
                 {progressPct !== null && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      height: '3px',
-                      background: 'rgba(255,255,255,0.12)',
-                      zIndex: 5,
-                    }}
-                  >
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
                     <div
-                      style={{
-                        height: '100%',
-                        width: `${Math.min(progressPct, 100)}%`,
-                        background: 'linear-gradient(90deg, #e50914, #ff3d3d)',
-                        borderRadius: '0 2px 2px 0',
-                        transition: 'width 0.3s ease',
-                        boxShadow: '0 0 6px rgba(229,9,20,0.5)',
-                      }}
+                      className="h-full bg-red-600 transition-all duration-300"
+                      style={{ width: `${progressPct}%` }}
                     />
                   </div>
                 )}
 
                 {/* ── Episode Number Badge ── */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '6px',
-                    left: '6px',
-                    background: 'rgba(0,0,0,0.75)',
-                    backdropFilter: 'blur(6px)',
-                    borderRadius: '6px',
-                    padding: '2px 8px',
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    color: 'white',
-                  }}
-                >
+                <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-black text-white uppercase tracking-tighter">
                   E{episode.episode_number}
                 </div>
               </div>
 
               {/* ── Episode Info ── */}
-              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    marginBottom: '4px',
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  <span style={{ color: 'white', fontSize: '0.95rem', fontWeight: 700 }}>
+              <div className="flex-1 min-w-0 flex flex-col justify-center">
+                <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                  <h4 className={`text-sm font-bold truncate ${isActive ? 'text-red-500' : 'text-white'}`}>
                     {episode.name}
-                  </span>
+                  </h4>
                   {episode.vote_average > 0 && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#fbbf24', fontSize: '0.75rem', fontWeight: 600 }}>
-                      <Star style={{ width: 11, height: 11, fill: '#fbbf24' }} />
+                    <div className="flex items-center gap-1 text-yellow-500 text-[10px] font-bold bg-yellow-500/10 px-1.5 py-0.5 rounded">
+                      <Star className="w-2.5 h-2.5 fill-yellow-500" />
                       {episode.vote_average.toFixed(1)}
-                    </span>
-                  )}
-                  {episode.air_date && (
-                    <span style={{ color: '#555', fontSize: '0.75rem' }}>
-                      {new Date(episode.air_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </span>
+                    </div>
                   )}
                 </div>
-                <p
-                  style={{
-                    color: '#888',
-                    fontSize: '0.8rem',
-                    lineHeight: 1.5,
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                    margin: 0,
-                  }}
-                >
-                  {episode.overview || 'No description available.'}
+                <p className="text-gray-500 text-[11px] leading-relaxed line-clamp-2 mb-2">
+                  {episode.overview || 'No description available for this episode.'}
                 </p>
                 {progressPct !== null && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
-                    <div
-                      style={{
-                        flex: 1,
-                        maxWidth: '120px',
-                        height: '3px',
-                        background: 'rgba(255,255,255,0.08)',
-                        borderRadius: '2px',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      <div
-                        style={{
-                          height: '100%',
-                          width: `${Math.min(progressPct, 100)}%`,
-                          background: '#e50914',
-                          borderRadius: '2px',
-                          transition: 'width 0.3s ease',
-                        }}
-                      />
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 max-w-[100px] h-1 bg-white/5 rounded-full overflow-hidden">
+                      <div className="h-full bg-red-600" style={{ width: `${progressPct}%` }} />
                     </div>
-                    <span style={{ color: '#666', fontSize: '0.7rem', fontWeight: 500 }}>{progressPct}%</span>
+                    <span className="text-[10px] font-bold text-gray-600">{progressPct}% watched</span>
                   </div>
                 )}
               </div>
@@ -424,15 +197,8 @@ export default function EpisodeSelector({
         })}
 
         {episodes.length === 0 && (
-          <div
-            style={{
-              textAlign: 'center',
-              padding: '40px 20px',
-              color: '#555',
-              fontSize: '0.9rem',
-            }}
-          >
-            No episodes found for this season.
+          <div className="text-center py-12">
+            <p className="text-gray-600 text-sm font-medium">No episodes found for this season.</p>
           </div>
         )}
       </div>
