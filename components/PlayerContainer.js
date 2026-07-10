@@ -2,19 +2,34 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Server, SkipForward, X, PictureInPicture2, PictureInPicture, Monitor } from 'lucide-react';
 
+const checkServerReachable = async (url) => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000); // 4 seconds timeout
+    // Using no-cors so we can request any domain without CORS blocking the promise resolution
+    await fetch(url, { method: 'GET', mode: 'no-cors', signal: controller.signal });
+    clearTimeout(timeoutId);
+    return true;
+  } catch (e) {
+    console.warn(`Server check failed for ${url}:`, e);
+    return false;
+  }
+};
+
+const serverConfigs = {
+  1: { name: 'vidsrc.to', episodeOffset: -1, baseUrl: 'https://vidsrc.to' },
+  2: { name: 'vidking.net', episodeOffset: 0, baseUrl: 'https://www.vidking.net' },
+  3: { name: 'embed.su', episodeOffset: -1, baseUrl: 'https://embed.su' },
+  4: { name: 'vidsrc.pro', episodeOffset: -1, baseUrl: 'https://vidsrc.pro' },
+  5: { name: 'ezvidapi.com', episodeOffset: 0, baseUrl: 'https://ezvidapi.com' },
+};
+
 export default function PlayerContainer({ type, id, season, episode, autoPlayNext, onNextEpisode, nextEpisodeTitle, episodeRuntime, onSyncTime }) {
   const [currentServer, setCurrentServer] = useState(2);
   const [server1Available, setServer1Available] = useState(true);
   const [quality, setQuality] = useState('auto');
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const qualityMenuRef = useRef(null);
-  const serverConfigs = {
-    1: { name: 'vidsrc.to', episodeOffset: -1, baseUrl: 'https://vidsrc.to' },
-    2: { name: 'vidking.net', episodeOffset: 0, baseUrl: 'https://www.vidking.net' },
-    3: { name: 'embed.su', episodeOffset: -1, baseUrl: 'https://embed.su' },
-    4: { name: 'vidsrc.pro', episodeOffset: -1, baseUrl: 'https://vidsrc.pro' },
-    5: { name: 'ezvidapi.com', episodeOffset: 0, baseUrl: 'https://ezvidapi.com' },
-  };
   const qualityOptions = ['auto', '1080p', '720p', '480p', '360p'];
   const [iframeLoading, setIframeLoading] = useState(true);
   const [showCountdown, setShowCountdown] = useState(false);
@@ -24,12 +39,33 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const [embedBlocked, setEmbedBlocked] = useState(false);
   const [loadErrorMessage, setLoadErrorMessage] = useState('');
   const [isBuffering, setIsBuffering] = useState(false);
+  const [loadDuration, setLoadDuration] = useState(0);
   const iframeRef = useRef(null);
   const autoPlayTimerRef = useRef(null);
   const countdownRef = useRef(null);
   const pipWindowRef = useRef(null);
 
   const isTv = type === 'tv';
+
+  // Track iframe loading duration for slow connections
+  useEffect(() => {
+    let timer;
+    if (iframeLoading) {
+      const start = Date.now();
+      timer = setInterval(() => {
+        setLoadDuration(Math.floor((Date.now() - start) / 1000));
+      }, 1000);
+    } else {
+      const timeoutId = setTimeout(() => {
+        setLoadDuration(0);
+      }, 0);
+      return () => {
+        clearInterval(timer);
+        clearTimeout(timeoutId);
+      };
+    }
+    return () => clearInterval(timer);
+  }, [iframeLoading]);
 
   // Detect if user is on iOS
   const getIsIos = () => {
@@ -274,6 +310,43 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     setLoadErrorMessage('');
   }, [currentServer, quality]);
 
+  // Pre-flight check active server reachability
+  useEffect(() => {
+    let active = true;
+    const checkReachability = async () => {
+      const cfg = serverConfigs[currentServer];
+      if (!cfg) return;
+
+      const isReachable = await checkServerReachable(cfg.baseUrl);
+      if (!active) return;
+
+      if (!isReachable) {
+        console.warn(`Server ${currentServer} (${cfg.name}) is unreachable. Trying next server...`);
+        if (currentServer === 1) {
+          setServer1Available(false);
+        }
+
+        const nextServer = currentServer + 1;
+        const maxServers = Object.keys(serverConfigs).length;
+        if (nextServer <= maxServers) {
+          setCurrentServer(nextServer);
+        } else {
+          setEmbedBlocked(true);
+          setIframeLoading(false);
+          setLoadErrorMessage('All streaming servers are unreachable. Please check your internet connection.');
+        }
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      checkReachability();
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [currentServer, id, season, episode]);
+
   const handleIframeLoad = () => {
     setEmbedBlocked(false);
     setLoadErrorMessage('');
@@ -434,10 +507,20 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         )}
 
         {iframeLoading && playerReady && !embedBlocked && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111', zIndex: 5, pointerEvents: 'none' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ width: '36px', height: '36px', border: '3px solid rgba(229,9,20,0.2)', borderTopColor: '#e50914', borderRadius: '50%', animation: 'playerSpin 0.8s linear infinite', margin: '0 auto 10px' }} />
-              <p style={{ color: '#555', fontSize: '0.8rem' }}>Loading player...</p>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111', zIndex: 5 }}>
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <div style={{ width: '36px', height: '36px', border: '3px solid rgba(229,9,20,0.2)', borderTopColor: '#e50914', borderRadius: '50%', animation: 'playerSpin 0.8s linear infinite', margin: '0 auto 16px' }} />
+              <p style={{ color: '#eee', fontSize: '0.95rem', fontWeight: 600 }}>Loading player...</p>
+              {loadDuration >= 5 && (
+                <p style={{ color: '#888', fontSize: '0.8rem', maxWidth: '300px', margin: '8px auto 0', lineHeight: 1.4, animation: 'fadeInUp 0.3s' }}>
+                  Taking longer than usual. Your internet connection might be slow or unstable.
+                </p>
+              )}
+              {loadDuration >= 10 && (
+                <p style={{ color: '#ffb703', fontSize: '0.75rem', maxWidth: '320px', margin: '8px auto 0', lineHeight: 1.4, fontWeight: 600, animation: 'fadeInUp 0.3s' }}>
+                  Tip: If the video is stuck on a black screen, try selecting another server below.
+                </p>
+              )}
             </div>
           </div>
         )}
