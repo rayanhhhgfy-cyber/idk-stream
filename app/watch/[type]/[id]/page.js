@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { fetchMovieDetails, fetchTVDetails, fetchMovieCredits, fetchTVCredits, fetchMovieVideos, fetchTVVideos } from '@/lib/tmdb';
+import { fetchMovieDetails, fetchTVDetails, fetchMovieCredits, fetchTVCredits, fetchMovieVideos, fetchTVVideos, fetchTVSeasonEpisodes } from '@/lib/tmdb';
 import { addToWatchHistory, updateWatchProgress, getWatchProgress, getWatchHistory } from '@/lib/watchHistory';
 import PlayerContainer from '@/components/PlayerContainer';
 import KeyboardShortcuts from '@/components/KeyboardShortcuts';
@@ -36,6 +36,13 @@ export default function Watch({ params }) {
   const isVisibleRef = useRef(true);
   const lastSaveTimeRef = useRef(0);
 
+  const fetchSeasonData = useCallback(async (seasonNum) => {
+    try {
+      const seasonData = await fetchTVSeasonEpisodes(id, seasonNum);
+      setEpisodes(seasonData.episodes || []);
+    } catch (err) { console.error('Error fetching season episodes:', err); }
+  }, [id]);
+
   // Fetch movie/show details + credits + trailers
   useEffect(() => {
     const fetchData = async () => {
@@ -47,14 +54,26 @@ export default function Watch({ params }) {
         if (type === 'movie') {
           [data, creds, vids] = await Promise.all([
             fetchMovieDetails(id),
-            fetchMovieCredits(id),
-            fetchMovieVideos(id),
+            fetchMovieCredits(id).catch(err => {
+              console.warn('Failed to load movie credits:', err);
+              return null;
+            }),
+            fetchMovieVideos(id).catch(err => {
+              console.warn('Failed to load movie videos:', err);
+              return [];
+            }),
           ]);
         } else if (type === 'tv') {
           [data, creds, vids] = await Promise.all([
             fetchTVDetails(id),
-            fetchTVCredits(id),
-            fetchTVVideos(id),
+            fetchTVCredits(id).catch(err => {
+              console.warn('Failed to load TV credits:', err);
+              return null;
+            }),
+            fetchTVVideos(id).catch(err => {
+              console.warn('Failed to load TV videos:', err);
+              return [];
+            }),
           ]);
           const tvSeasons = (data.seasons || []).filter(s => s.season_number > 0);
           setSeasons(tvSeasons);
@@ -88,7 +107,7 @@ export default function Watch({ params }) {
       }
     };
     fetchData();
-  }, [type, id]);
+  }, [type, id, fetchSeasonData]);
 
   // Save to watch history
   useEffect(() => {
@@ -105,7 +124,10 @@ export default function Watch({ params }) {
 
   // Load all watch progress for episode progress bars
   useEffect(() => {
-    setAllProgress(getAllWatchProgress());
+    const timer = setTimeout(() => {
+      setAllProgress(getAllWatchProgress());
+    }, 0);
+    return () => clearTimeout(timer);
   }, [currentSeason, currentEpisode]);
 
   // Track watch time — start timer when iframe loads, pause when tab hidden
@@ -171,14 +193,6 @@ export default function Watch({ params }) {
     };
   }, [details, id, type, currentSeason, currentEpisode]);
 
-  const fetchSeasonData = async (seasonNum) => {
-    try {
-      const response = await fetch(`https://api.themoviedb.org/3/tv/${id}/season/${seasonNum}?api_key=5ad947200f7bbf9bafa9fed1cf3991af`);
-      const seasonData = await response.json();
-      setEpisodes(seasonData.episodes || []);
-    } catch (err) { console.error('Error fetching season episodes:', err); }
-  };
-
   const handleSeasonChange = async (newSeason) => {
     setCurrentSeason(newSeason);
     setCurrentEpisode(1);
@@ -198,7 +212,7 @@ export default function Watch({ params }) {
         await fetchSeasonData(nextSeason);
       }
     }
-  }, [episodes, currentEpisode, seasons, currentSeason, id]);
+  }, [episodes, currentEpisode, seasons, currentSeason, fetchSeasonData]);
 
   const getNextEpisodeTitle = () => {
     if (type !== 'tv') return null;
