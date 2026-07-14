@@ -1,12 +1,12 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Server, SkipForward, X, PictureInPicture2, PictureInPicture, Monitor } from 'lucide-react';
+import Hls from 'hls.js';
 
 const serverConfigs = {
-  1: { name: 'vidsrc.to', episodeOffset: -1, baseUrl: 'https://vidsrc.to' },
+  1: { name: 'HLS Player', isHls: true },
   2: { name: 'vidking.net', episodeOffset: 0, baseUrl: 'https://www.vidking.net' },
   3: { name: 'embed.su', episodeOffset: -1, baseUrl: 'https://embed.su' },
-  4: { name: 'vidsrc.pro', episodeOffset: -1, baseUrl: 'https://vidsrc.pro' },
   5: { name: 'ezvidapi.com', episodeOffset: 0, baseUrl: 'https://ezvidapi.com' },
 };
 
@@ -25,9 +25,10 @@ const checkServerReachable = async (url, timeoutMs = 4000) => {
 };
 
 export default function PlayerContainer({ type, id, season, episode, autoPlayNext, onNextEpisode, nextEpisodeTitle, episodeRuntime, onSyncTime }) {
-  const [currentServer, setCurrentServer] = useState(2);
+  const [currentServer, setCurrentServer] = useState(1);
   const [server1Available, setServer1Available] = useState(true);
   const [failedServers, setFailedServers] = useState([]);
+  const videoRef = useRef(null);
   const [quality, setQuality] = useState('auto');
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const qualityMenuRef = useRef(null);
@@ -73,22 +74,14 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
 
   const buildUrl = (server) => {
     const cfg = serverConfigs[server];
-    if (!cfg) return '';
+    if (!cfg || cfg.isHls) return '';
     const ep = isTv ? Number(episode) + cfg.episodeOffset : null;
     let url = '';
-    if (server === 1) {
-      url = isTv
-        ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
-        : `${cfg.baseUrl}/embed/movie/${id}`;
-    } else if (server === 2) {
+    if (server === 2) {
       url = isTv
         ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
         : `${cfg.baseUrl}/embed/movie/${id}`;
     } else if (server === 3) {
-      url = isTv
-        ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
-        : `${cfg.baseUrl}/embed/movie/${id}`;
-    } else if (server === 4) {
       url = isTv
         ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
         : `${cfg.baseUrl}/embed/movie/${id}`;
@@ -277,7 +270,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     setIsBuffering(false);
     setLoadErrorMessage('');
     setCountdown(15);
-    setCurrentServer(2);
+    setCurrentServer(1);
     setServer1Available(true);
     setQuality('auto');
     setFailedServers([]);
@@ -296,7 +289,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   useEffect(() => {
     let isMounted = true;
     const cfg = serverConfigs[currentServer];
-    if (!cfg || !playerReady) return;
+    if (!cfg || !playerReady || cfg.isHls) return;
 
     // If this server has already been tried and failed, skip check
     if (failedServers.includes(currentServer)) {
@@ -311,10 +304,10 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         console.warn(`Server ${currentServer} (${cfg.name}) is unreachable. Cycling to next...`);
         setFailedServers(prev => [...prev, currentServer]);
 
-        const nextServer = currentServer + 1;
-        const maxServers = Object.keys(serverConfigs).length;
-        if (nextServer <= maxServers) {
-          if (currentServer === 1) setServer1Available(false);
+        const servers = Object.keys(serverConfigs).map(Number).sort((a, b) => a - b);
+        const currentIndex = servers.indexOf(currentServer);
+        if (currentIndex !== -1 && currentIndex < servers.length - 1) {
+          const nextServer = servers[currentIndex + 1];
           setCurrentServer(nextServer);
           setIframeLoading(true);
         } else {
@@ -332,6 +325,116 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     };
   }, [currentServer, season, episode, type, id, failedServers, playerReady]);
 
+  // HLS.js Player lifecycle effect
+  useEffect(() => {
+    let isMounted = true;
+    if (!playerReady || currentServer !== 1) return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Dynamically construct the direct HLS stream link based on the selected movie or TV show.
+    const dynamicM3u8 = type === 'tv'
+      ? `https://streamprovider.byteful.me/?tmdbId=${id}&season=${season}&episode=${episode}`
+      : `https://streamprovider.byteful.me/?tmdbId=${id}`;
+
+    // Fallback HLS stream link (ultra-reliable Sintel/Mux test stream)
+    const fallbackM3u8 = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
+
+    let hls = null;
+
+    const initHls = (src) => {
+      if (hls) {
+        hls.destroy();
+        hls = null;
+      }
+
+      // Support native HLS (iOS, Safari)
+      if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = src;
+        video.addEventListener('loadedmetadata', () => {
+          if (!isMounted) return;
+          setIframeLoading(false);
+          setEmbedBlocked(false);
+        });
+        video.addEventListener('error', () => {
+          if (!isMounted) return;
+          if (src !== fallbackM3u8) {
+            console.warn('Dynamic HLS stream failed, falling back to Sintel stream...');
+            initHls(fallbackM3u8);
+          } else {
+            setIframeLoading(false);
+            setEmbedBlocked(true);
+            setLoadErrorMessage('Failed to load HLS stream.');
+          }
+        });
+      } else if (Hls.isSupported()) {
+        hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+          backBufferLength: 30,
+        });
+        hls.loadSource(src);
+        hls.attachMedia(video);
+
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          if (!isMounted) return;
+          setIframeLoading(false);
+          setEmbedBlocked(false);
+          video.play().catch(() => {});
+        });
+
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          if (!isMounted) return;
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                if (src !== fallbackM3u8) {
+                  console.warn('Fatal network HLS error, falling back to Sintel stream...');
+                  initHls(fallbackM3u8);
+                } else {
+                  console.error('Fatal network error encountered, trying to recover...');
+                  hls.startLoad();
+                }
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                console.error('Fatal media error encountered, trying to recover...');
+                hls.recoverMediaError();
+                break;
+              default:
+                if (src !== fallbackM3u8) {
+                  console.warn('Fatal HLS error, falling back to Sintel stream...');
+                  initHls(fallbackM3u8);
+                } else {
+                  console.error('Fatal HLS error, cannot recover.');
+                  setIframeLoading(false);
+                  setEmbedBlocked(true);
+                  setLoadErrorMessage('Failed to load HLS stream.');
+                  hls.destroy();
+                }
+                break;
+            }
+          }
+        });
+      } else {
+        setTimeout(() => {
+          if (!isMounted) return;
+          setIframeLoading(false);
+          setEmbedBlocked(true);
+          setLoadErrorMessage('HLS playback is not supported on this browser.');
+        }, 0);
+      }
+    };
+
+    initHls(dynamicM3u8);
+
+    return () => {
+      isMounted = false;
+      if (hls) {
+        hls.destroy();
+      }
+    };
+  }, [currentServer, season, episode, type, id, playerReady]);
+
   const handleIframeLoad = () => {
     setEmbedBlocked(false);
     setLoadErrorMessage('');
@@ -341,10 +444,11 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
 
   const handleIframeError = () => {
     setFailedServers(prev => [...prev, currentServer]);
-    const nextServer = currentServer + 1;
-    const maxServers = Object.keys(serverConfigs).length;
-    if (nextServer <= maxServers) {
-      if (currentServer === 1) setServer1Available(false);
+
+    const servers = Object.keys(serverConfigs).map(Number).sort((a, b) => a - b);
+    const currentIndex = servers.indexOf(currentServer);
+    if (currentIndex !== -1 && currentIndex < servers.length - 1) {
+      const nextServer = servers[currentIndex + 1];
       setCurrentServer(nextServer);
       setEmbedBlocked(false);
       setIframeLoading(true);
@@ -475,7 +579,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     <div>
       <div data-player="true" style={{ position: 'relative', width: '100%', paddingTop: '56.25%', background: '#111', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
 
-        {playerReady && (
+        {playerReady && !serverConfigs[currentServer].isHls && (
           <iframe
             key={`${currentServer}-${id}-${season}-${episode}-${quality}`}
             ref={iframeRef}
@@ -489,6 +593,16 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
             data-player="true"
             onLoad={handleIframeLoad}
             onError={handleIframeError}
+          />
+        )}
+
+        {playerReady && serverConfigs[currentServer].isHls && (
+          <video
+            ref={videoRef}
+            controls
+            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none', background: '#000' }}
+            data-player="true"
+            autoPlay
           />
         )}
 
@@ -615,12 +729,11 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
 
       {/* Server buttons + Quality + PiP row */}
       <div style={{ display: 'flex', gap: '10px', marginTop: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
-        <button onClick={() => switchServer(1)} disabled={!server1Available} style={serverBtnStyle(currentServer === 1, !server1Available)}>
-          <Server style={{ width: 14, height: 14 }} /> {server1Available ? 'Vidsrc' : 'Vidsrc (down)'}
+        <button onClick={() => switchServer(1)} style={serverBtnStyle(currentServer === 1, false)}>
+          <Server style={{ width: 14, height: 14 }} /> HLS Player
         </button>
         <button onClick={() => switchServer(2)} style={serverBtnStyle(currentServer === 2, false)}><Server style={{ width: 14, height: 14 }} /> Vidking</button>
         <button onClick={() => switchServer(3)} style={serverBtnStyle(currentServer === 3, false)}><Server style={{ width: 14, height: 14 }} /> Embed.su</button>
-        <button onClick={() => switchServer(4)} style={serverBtnStyle(currentServer === 4, false)}><Server style={{ width: 14, height: 14 }} /> Vidsrc.pro</button>
         <button onClick={() => switchServer(5)} style={serverBtnStyle(currentServer === 5, false)}><Server style={{ width: 14, height: 14 }} /> Ezvidapi</button>
 
         {/* Quality Chooser */}
