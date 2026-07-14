@@ -337,7 +337,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       ? `https://streamprovider.byteful.me/?tmdbId=${id}&season=${season}&episode=${episode}`
       : `https://streamprovider.byteful.me/?tmdbId=${id}`;
 
-    // Fallback HLS stream link (ultra-reliable Sintel/Mux test stream)
+    // Fallback HLS stream link (ultra-reliable Sintel/Mux test stream - used ONLY in development/manual testing)
     const fallbackM3u8 = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
 
     let hls = null;
@@ -358,13 +358,13 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         });
         video.addEventListener('error', () => {
           if (!isMounted) return;
-          if (src !== fallbackM3u8) {
-            console.warn('Dynamic HLS stream failed, falling back to Sintel stream...');
+          if (src !== fallbackM3u8 && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+            console.warn('Dynamic HLS stream failed in development, falling back to Sintel stream...');
             initHls(fallbackM3u8);
           } else {
             setIframeLoading(false);
             setEmbedBlocked(true);
-            setLoadErrorMessage('Failed to load HLS stream.');
+            setLoadErrorMessage('The primary HLS Player stream is currently unavailable. Please click one of the buttons below to switch to other server mirrors (such as Vidking, Embed.su, or Ezvidapi).');
           }
         });
       } else if (Hls.isSupported()) {
@@ -388,12 +388,14 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           if (data.fatal) {
             switch (data.type) {
               case Hls.ErrorTypes.NETWORK_ERROR:
-                if (src !== fallbackM3u8) {
-                  console.warn('Fatal network HLS error, falling back to Sintel stream...');
+                if (src !== fallbackM3u8 && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+                  console.warn('Fatal network HLS error in development, falling back to Sintel stream...');
                   initHls(fallbackM3u8);
                 } else {
-                  console.error('Fatal network error encountered, trying to recover...');
-                  hls.startLoad();
+                  console.error('Fatal network error encountered.');
+                  setIframeLoading(false);
+                  setEmbedBlocked(true);
+                  setLoadErrorMessage('The primary HLS Player stream is currently unavailable. Please click one of the buttons below to switch to other server mirrors (such as Vidking, Embed.su, or Ezvidapi).');
                 }
                 break;
               case Hls.ErrorTypes.MEDIA_ERROR:
@@ -401,14 +403,14 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
                 hls.recoverMediaError();
                 break;
               default:
-                if (src !== fallbackM3u8) {
-                  console.warn('Fatal HLS error, falling back to Sintel stream...');
+                if (src !== fallbackM3u8 && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+                  console.warn('Fatal HLS error in development, falling back to Sintel stream...');
                   initHls(fallbackM3u8);
                 } else {
                   console.error('Fatal HLS error, cannot recover.');
                   setIframeLoading(false);
                   setEmbedBlocked(true);
-                  setLoadErrorMessage('Failed to load HLS stream.');
+                  setLoadErrorMessage('The primary HLS Player stream is currently unavailable. Please click one of the buttons below to switch to other server mirrors (such as Vidking, Embed.su, or Ezvidapi).');
                   hls.destroy();
                 }
                 break;
