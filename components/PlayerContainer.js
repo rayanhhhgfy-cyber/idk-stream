@@ -2,19 +2,35 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Server, SkipForward, X, PictureInPicture2, PictureInPicture, Monitor } from 'lucide-react';
 
+const serverConfigs = {
+  1: { name: 'vidsrc.to', episodeOffset: -1, baseUrl: 'https://vidsrc.to' },
+  2: { name: 'vidking.net', episodeOffset: 0, baseUrl: 'https://www.vidking.net' },
+  3: { name: 'embed.su', episodeOffset: -1, baseUrl: 'https://embed.su' },
+  4: { name: 'vidsrc.pro', episodeOffset: -1, baseUrl: 'https://vidsrc.pro' },
+  5: { name: 'ezvidapi.com', episodeOffset: 0, baseUrl: 'https://ezvidapi.com' },
+};
+
+// Active server reachability check with mode: 'no-cors' and a timeout
+const checkServerReachable = async (url, timeoutMs = 4000) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    await fetch(url, { method: 'GET', mode: 'no-cors', signal: controller.signal });
+    clearTimeout(timeoutId);
+    return true;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    return false;
+  }
+};
+
 export default function PlayerContainer({ type, id, season, episode, autoPlayNext, onNextEpisode, nextEpisodeTitle, episodeRuntime, onSyncTime }) {
   const [currentServer, setCurrentServer] = useState(2);
   const [server1Available, setServer1Available] = useState(true);
+  const [failedServers, setFailedServers] = useState([]);
   const [quality, setQuality] = useState('auto');
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const qualityMenuRef = useRef(null);
-  const serverConfigs = {
-    1: { name: 'vidsrc.to', episodeOffset: -1, baseUrl: 'https://vidsrc.to' },
-    2: { name: 'vidking.net', episodeOffset: 0, baseUrl: 'https://www.vidking.net' },
-    3: { name: 'embed.su', episodeOffset: -1, baseUrl: 'https://embed.su' },
-    4: { name: 'vidsrc.pro', episodeOffset: -1, baseUrl: 'https://vidsrc.pro' },
-    5: { name: 'ezvidapi.com', episodeOffset: 0, baseUrl: 'https://ezvidapi.com' },
-  };
   const qualityOptions = ['auto', '1080p', '720p', '480p', '360p'];
   const [iframeLoading, setIframeLoading] = useState(true);
   const [showCountdown, setShowCountdown] = useState(false);
@@ -30,6 +46,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const pipWindowRef = useRef(null);
 
   const isTv = type === 'tv';
+  const playerReady = isTv ? Boolean(season && episode) : Boolean(id);
 
   // Detect if user is on iOS
   const getIsIos = () => {
@@ -263,6 +280,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     setCurrentServer(2);
     setServer1Available(true);
     setQuality('auto');
+    setFailedServers([]);
     clearTimeout(autoPlayTimerRef.current);
     clearInterval(countdownRef.current);
   }, [season, episode, type, id]);
@@ -274,6 +292,46 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     setLoadErrorMessage('');
   }, [currentServer, quality]);
 
+  // Server reachability active check effect
+  useEffect(() => {
+    let isMounted = true;
+    const cfg = serverConfigs[currentServer];
+    if (!cfg || !playerReady) return;
+
+    // If this server has already been tried and failed, skip check
+    if (failedServers.includes(currentServer)) {
+      return;
+    }
+
+    const verifyServer = async () => {
+      const isReachable = await checkServerReachable(cfg.baseUrl, 4000);
+      if (!isMounted) return;
+
+      if (!isReachable) {
+        console.warn(`Server ${currentServer} (${cfg.name}) is unreachable. Cycling to next...`);
+        setFailedServers(prev => [...prev, currentServer]);
+
+        const nextServer = currentServer + 1;
+        const maxServers = Object.keys(serverConfigs).length;
+        if (nextServer <= maxServers) {
+          if (currentServer === 1) setServer1Available(false);
+          setCurrentServer(nextServer);
+          setIframeLoading(true);
+        } else {
+          setEmbedBlocked(true);
+          setIframeLoading(false);
+          setLoadErrorMessage('All streaming servers are unreachable or your internet connection is down. Please check your network and try again.');
+        }
+      }
+    };
+
+    verifyServer();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentServer, season, episode, type, id, failedServers, playerReady]);
+
   const handleIframeLoad = () => {
     setEmbedBlocked(false);
     setLoadErrorMessage('');
@@ -282,6 +340,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   };
 
   const handleIframeError = () => {
+    setFailedServers(prev => [...prev, currentServer]);
     const nextServer = currentServer + 1;
     const maxServers = Object.keys(serverConfigs).length;
     if (nextServer <= maxServers) {
@@ -400,17 +459,17 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
 
   const switchServer = (server) => {
     if (server === 1 && !server1Available) return;
+    setFailedServers(prev => prev.filter(s => s !== server));
     setIframeLoading(true);
     setEmbedBlocked(false);
     setCurrentServer(server);
   };
 
   const retryPlayer = () => {
+    setFailedServers([]);
     setEmbedBlocked(false);
     setIframeLoading(true);
   };
-
-  const playerReady = isTv ? Boolean(season && episode) : Boolean(id);
 
   return (
     <div>
