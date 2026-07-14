@@ -45,6 +45,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const autoPlayTimerRef = useRef(null);
   const countdownRef = useRef(null);
   const pipWindowRef = useRef(null);
+  const loadingTimeoutRef = useRef(null);
 
   const isTv = type === 'tv';
   const playerReady = isTv ? Boolean(season && episode) : Boolean(id);
@@ -71,6 +72,30 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
+
+  // Loading timeout effect to handle slow/unstable connection
+  useEffect(() => {
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+      loadingTimeoutRef.current = null;
+    }
+
+    if (iframeLoading && playerReady && !embedBlocked) {
+      loadingTimeoutRef.current = setTimeout(() => {
+        setEmbedBlocked(true);
+        setIframeLoading(false);
+        setLoadErrorMessage('The video stream is taking too long to load. This usually happens when your internet connection is slow or unstable, or the server is temporarily overloaded. Please try another server mirror (such as Vidking, Embed.su, or Ezvidapi) or refresh the page.');
+        console.warn('Playback load timeout reached (12s). Displaying error overlay.');
+      }, 12000);
+    }
+
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+    };
+  }, [iframeLoading, playerReady, embedBlocked]);
 
   const buildUrl = (server) => {
     const cfg = serverConfigs[server];
@@ -276,6 +301,10 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     setFailedServers([]);
     clearTimeout(autoPlayTimerRef.current);
     clearInterval(countdownRef.current);
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+      loadingTimeoutRef.current = null;
+    }
   }, [season, episode, type, id]);
 
   // Reset loading overlay when switching servers or quality
@@ -283,6 +312,10 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     setIframeLoading(true);
     setEmbedBlocked(false);
     setLoadErrorMessage('');
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+      loadingTimeoutRef.current = null;
+    }
   }, [currentServer, quality]);
 
   // Server reachability active check effect
@@ -331,6 +364,27 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     if (!playerReady || currentServer !== 1) return;
     const video = videoRef.current;
     if (!video) return;
+
+    // Direct video element events for better loading & buffering state updates
+    const handlePlaying = () => {
+      if (!isMounted) return;
+      setIframeLoading(false);
+      setIsBuffering(false);
+    };
+
+    const handleWaiting = () => {
+      if (!isMounted) return;
+      setIsBuffering(true);
+    };
+
+    const handleLoadStart = () => {
+      if (!isMounted) return;
+      setIframeLoading(true);
+    };
+
+    video.addEventListener('playing', handlePlaying);
+    video.addEventListener('waiting', handleWaiting);
+    video.addEventListener('loadstart', handleLoadStart);
 
     // Dynamically construct the direct HLS stream link based on the selected movie or TV show.
     const dynamicM3u8 = type === 'tv'
@@ -434,6 +488,9 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       if (hls) {
         hls.destroy();
       }
+      video.removeEventListener('playing', handlePlaying);
+      video.removeEventListener('waiting', handleWaiting);
+      video.removeEventListener('loadstart', handleLoadStart);
     };
   }, [currentServer, season, episode, type, id, playerReady]);
 
