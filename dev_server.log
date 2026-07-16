@@ -1,0 +1,11 @@
+
+> idkstream@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+✓ Ready in 595ms
+
+ HEAD / 200 in 965ms (next.js: 279ms, application-code: 687ms)
+ GET /watch/movie/27205 200 in 886ms (next.js: 650ms, application-code: 236ms)

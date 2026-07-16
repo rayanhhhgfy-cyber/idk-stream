@@ -342,7 +342,8 @@ export default function RedirectBlocker() {
               node.hasAttribute('data-player') || // Marked as our player
               src.includes('vidsrc') ||            // Our video provider #1 & #4
               src.includes('vidking') ||           // Our video provider #2
-              src.includes('embed.su');            // Our video provider #3
+              src.includes('embed.su') ||          // Our video provider #3
+              src.includes('ezvidapi');            // Our video provider #5
             if (!isOurPlayer) {
               node.remove(); // Delete the ad iframe!
               console.warn('[RedirectBlocker] Removed injected ad iframe:', src);
@@ -440,7 +441,7 @@ export default function RedirectBlocker() {
       document.querySelectorAll('iframe:not([data-player])').forEach((iframe) => {
         const src = iframe.getAttribute('src') || '';
         // Only remove if it's not one of our trusted video sources.
-        if (!src.includes('vidsrc') && !src.includes('vidking') && !src.includes('embed.su') && src !== '') {
+        if (!src.includes('vidsrc') && !src.includes('vidking') && !src.includes('embed.su') && !src.includes('ezvidapi') && src !== '') {
           iframe.remove();
           console.warn('[RedirectBlocker] Cleanup removed rogue iframe:', src);
         }
