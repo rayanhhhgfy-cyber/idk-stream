@@ -9,11 +9,11 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const qualityMenuRef = useRef(null);
   const serverConfigs = {
-    1: { name: 'Vidsrc.pm', episodeOffset: -1, baseUrl: 'https://vidsrc.to' },
-    2: { name: 'Vidking', episodeOffset: 0, baseUrl: 'https://www.vidking.net' },
-    3: { name: 'Autoembed', episodeOffset: -1, baseUrl: 'https://embed.su' },
-    4: { name: 'Vidsrc.cc', episodeOffset: -1, baseUrl: 'https://vidsrc.pro' },
-    5: { name: 'Ezvidapi', episodeOffset: 0, baseUrl: 'https://ezvidapi.com' },
+    1: { name: 'vidsrc.to', episodeOffset: -1, baseUrl: 'https://vidsrc.to' },
+    2: { name: 'vidking.net', episodeOffset: 0, baseUrl: 'https://www.vidking.net' },
+    3: { name: 'embed.su', episodeOffset: -1, baseUrl: 'https://embed.su' },
+    4: { name: 'vidsrc.pro', episodeOffset: -1, baseUrl: 'https://vidsrc.pro' },
+    5: { name: 'ezvidapi.com', episodeOffset: 0, baseUrl: 'https://ezvidapi.com' },
   };
   const qualityOptions = ['auto', '1080p', '720p', '480p', '360p'];
   const [iframeLoading, setIframeLoading] = useState(true);
@@ -21,6 +21,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const [countdown, setCountdown] = useState(15);
   const [pipActive, setPipActive] = useState(false);
   const [pipSupported, setPipSupported] = useState(false);
+  const [showIosPipModal, setShowIosPipModal] = useState(false);
   const [embedBlocked, setEmbedBlocked] = useState(false);
   const [loadErrorMessage, setLoadErrorMessage] = useState('');
   const [isBuffering, setIsBuffering] = useState(false);
@@ -97,15 +98,15 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const togglePiP = useCallback(async () => {
     const isIos = getIsIos();
 
+    if (isIos) {
+      setShowIosPipModal(true);
+      return;
+    }
+
     // If already in PiP, close it
     if (pipActive && pipWindowRef.current) {
       try { 
-        if (isIos && pipWindowRef.current.requestFullscreen) {
-          // Exit fullscreen on iOS
-          if (document.fullscreenElement) document.exitFullscreen();
-        } else {
-          pipWindowRef.current.close();
-        }
+        pipWindowRef.current.close();
       } catch {}
       pipWindowRef.current = null;
       setPipActive(false);
@@ -114,29 +115,6 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
 
     const iframe = iframeRef.current;
     if (!iframe) return;
-
-    // iOS: Use fullscreen as Picture-in-Picture alternative
-    if (isIos) {
-      try {
-        if (iframe.requestFullscreen) {
-          await iframe.requestFullscreen();
-          setPipActive(true);
-          pipWindowRef.current = iframe;
-
-          // Listen for fullscreen exit
-          const handleFullscreenChange = () => {
-            if (!document.fullscreenElement) {
-              setPipActive(false);
-              pipWindowRef.current = null;
-            }
-          };
-          document.addEventListener('fullscreenchange', handleFullscreenChange);
-          return;
-        }
-      } catch (err) {
-        console.warn('iOS fullscreen failed:', err);
-      }
-    }
 
     // Method 1: Document Picture-in-Picture API (Chrome 116+, Edge 116+)
     if ('documentPictureInPicture' in window) {
@@ -263,6 +241,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     setCurrentServer(2);
     setServer1Available(true);
     setQuality('auto');
+    setShowIosPipModal(false);
     clearTimeout(autoPlayTimerRef.current);
     clearInterval(countdownRef.current);
   }, [season, episode, type, id]);
@@ -557,11 +536,11 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       {/* Server buttons + Quality + PiP row */}
       <div style={{ display: 'flex', gap: '10px', marginTop: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
         <button onClick={() => switchServer(1)} disabled={!server1Available} style={serverBtnStyle(currentServer === 1, !server1Available)}>
-          <Server style={{ width: 14, height: 14 }} /> {server1Available ? 'Vidsrc.pm' : 'Vidsrc.pm (down)'}
+          <Server style={{ width: 14, height: 14 }} /> {server1Available ? 'Vidsrc' : 'Vidsrc (down)'}
         </button>
         <button onClick={() => switchServer(2)} style={serverBtnStyle(currentServer === 2, false)}><Server style={{ width: 14, height: 14 }} /> Vidking</button>
-        <button onClick={() => switchServer(3)} style={serverBtnStyle(currentServer === 3, false)}><Server style={{ width: 14, height: 14 }} /> Autoembed</button>
-        <button onClick={() => switchServer(4)} style={serverBtnStyle(currentServer === 4, false)}><Server style={{ width: 14, height: 14 }} /> Vidsrc.cc</button>
+        <button onClick={() => switchServer(3)} style={serverBtnStyle(currentServer === 3, false)}><Server style={{ width: 14, height: 14 }} /> Embed.su</button>
+        <button onClick={() => switchServer(4)} style={serverBtnStyle(currentServer === 4, false)}><Server style={{ width: 14, height: 14 }} /> Vidsrc.pro</button>
         <button onClick={() => switchServer(5)} style={serverBtnStyle(currentServer === 5, false)}><Server style={{ width: 14, height: 14 }} /> Ezvidapi</button>
 
         {/* Quality Chooser */}
@@ -618,6 +597,144 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           {pipActive ? 'Exit PiP' : 'Pop Out'}
         </button>
       </div>
+
+      {showIosPipModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          backdropFilter: 'blur(10px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '20px',
+          animation: 'fadeInUp 0.3s ease-out'
+        }}>
+          <div style={{
+            background: '#141414',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            borderRadius: '20px',
+            padding: '24px',
+            maxWidth: '440px',
+            width: '100%',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
+            position: 'relative'
+          }}>
+            {/* Close Button */}
+            <button
+              onClick={() => setShowIosPipModal(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: 'rgba(255, 255, 255, 0.06)',
+                border: 'none',
+                color: '#aaa',
+                cursor: 'pointer',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'}
+            >
+              <X style={{ width: 16, height: 16 }} />
+            </button>
+
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
+              <div style={{
+                background: 'rgba(229, 9, 20, 0.15)',
+                border: '1px solid rgba(229, 9, 20, 0.3)',
+                borderRadius: '12px',
+                width: '40px',
+                height: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#e50914'
+              }}>
+                <PictureInPicture2 style={{ width: 22, height: 22 }} />
+              </div>
+              <div style={{ textAlign: 'left' }}>
+                <h3 style={{ color: 'white', fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>Picture-in-Picture on iOS</h3>
+                <p style={{ color: '#888', fontSize: '0.8rem', margin: '2px 0 0' }}>Easy steps for iPhone & iPad</p>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div style={{ color: '#ccc', fontSize: '0.9rem', lineHeight: '1.5', marginBottom: '24px', textAlign: 'left' }}>
+              <p style={{ marginBottom: '16px', color: '#aaa' }}>
+                Due to iOS Safari security policies, Picture-in-Picture for nested player frames requires opening the stream directly.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <span style={{ fontWeight: 700, color: '#e50914' }}>1.</span>
+                  <span>Tap <strong>&quot;Open Direct Stream&quot;</strong> below to open the video in a dedicated tab.</span>
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <span style={{ fontWeight: 700, color: '#e50914' }}>2.</span>
+                  <span>Start playing the video in the new tab.</span>
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <span style={{ fontWeight: 700, color: '#e50914' }}>3.</span>
+                  <span>Tap the native <strong>Picture-in-Picture button</strong> in Safari, or simply swipe up to go home.</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button
+                onClick={() => {
+                  window.open(buildUrl(currentServer), '_blank');
+                  setShowIosPipModal(false);
+                }}
+                style={{
+                  background: '#e50914',
+                  color: 'white',
+                  border: 'none',
+                  padding: '12px',
+                  borderRadius: '10px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  fontSize: '0.9rem',
+                  transition: 'background 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#ff1e27'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#e50914'}
+              >
+                Open Direct Stream
+              </button>
+              <button
+                onClick={() => setShowIosPipModal(false)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  color: '#aaa',
+                  border: 'none',
+                  padding: '12px',
+                  borderRadius: '10px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  fontSize: '0.9rem',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.color = 'white'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'; e.currentTarget.style.color = '#aaa'; }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
