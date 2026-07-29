@@ -9,11 +9,11 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const qualityMenuRef = useRef(null);
   const serverConfigs = {
-    1: { name: 'vidsrc.to', episodeOffset: -1, baseUrl: 'https://vidsrc.to' },
-    2: { name: 'vidking.net', episodeOffset: 0, baseUrl: 'https://www.vidking.net' },
-    3: { name: 'embed.su', episodeOffset: -1, baseUrl: 'https://embed.su' },
-    4: { name: 'vidsrc.pro', episodeOffset: -1, baseUrl: 'https://vidsrc.pro' },
-    5: { name: 'ezvidapi.com', episodeOffset: 0, baseUrl: 'https://ezvidapi.com' },
+    1: { name: 'Vidsrc.pm', episodeOffset: -1, baseUrl: 'https://vidsrc.to' },
+    2: { name: 'Vidking', episodeOffset: 0, baseUrl: 'https://www.vidking.net' },
+    3: { name: 'Autoembed', episodeOffset: -1, baseUrl: 'https://embed.su' },
+    4: { name: 'Vidsrc.cc', episodeOffset: -1, baseUrl: 'https://vidsrc.pro' },
+    5: { name: 'Ezvidapi', episodeOffset: 0, baseUrl: 'https://ezvidapi.com' },
   };
   const qualityOptions = ['auto', '1080p', '720p', '480p', '360p'];
   const [iframeLoading, setIframeLoading] = useState(true);
@@ -557,11 +557,11 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       {/* Server buttons + Quality + PiP row */}
       <div style={{ display: 'flex', gap: '10px', marginTop: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
         <button onClick={() => switchServer(1)} disabled={!server1Available} style={serverBtnStyle(currentServer === 1, !server1Available)}>
-          <Server style={{ width: 14, height: 14 }} /> {server1Available ? 'Vidsrc' : 'Vidsrc (down)'}
+          <Server style={{ width: 14, height: 14 }} /> {server1Available ? 'Vidsrc.pm' : 'Vidsrc.pm (down)'}
         </button>
         <button onClick={() => switchServer(2)} style={serverBtnStyle(currentServer === 2, false)}><Server style={{ width: 14, height: 14 }} /> Vidking</button>
-        <button onClick={() => switchServer(3)} style={serverBtnStyle(currentServer === 3, false)}><Server style={{ width: 14, height: 14 }} /> Embed.su</button>
-        <button onClick={() => switchServer(4)} style={serverBtnStyle(currentServer === 4, false)}><Server style={{ width: 14, height: 14 }} /> Vidsrc.pro</button>
+        <button onClick={() => switchServer(3)} style={serverBtnStyle(currentServer === 3, false)}><Server style={{ width: 14, height: 14 }} /> Autoembed</button>
+        <button onClick={() => switchServer(4)} style={serverBtnStyle(currentServer === 4, false)}><Server style={{ width: 14, height: 14 }} /> Vidsrc.cc</button>
         <button onClick={() => switchServer(5)} style={serverBtnStyle(currentServer === 5, false)}><Server style={{ width: 14, height: 14 }} /> Ezvidapi</button>
 
         {/* Quality Chooser */}
