@@ -3,17 +3,17 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Server, SkipForward, X, PictureInPicture2, PictureInPicture, Monitor } from 'lucide-react';
 
 export default function PlayerContainer({ type, id, season, episode, autoPlayNext, onNextEpisode, nextEpisodeTitle, episodeRuntime, onSyncTime }) {
-  const [currentServer, setCurrentServer] = useState(2);
+  const [currentServer, setCurrentServer] = useState('vidking');
   const [server1Available, setServer1Available] = useState(true);
   const [quality, setQuality] = useState('auto');
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const qualityMenuRef = useRef(null);
   const serverConfigs = {
-    1: { name: 'vidsrc.to', episodeOffset: -1, baseUrl: 'https://vidsrc.to' },
-    2: { name: 'vidking.net', episodeOffset: 0, baseUrl: 'https://www.vidking.net' },
-    3: { name: 'embed.su', episodeOffset: -1, baseUrl: 'https://embed.su' },
-    4: { name: 'vidsrc.pro', episodeOffset: -1, baseUrl: 'https://vidsrc.pro' },
-    5: { name: 'ezvidapi.com', episodeOffset: 0, baseUrl: 'https://ezvidapi.com' },
+    vidsrc: { name: 'vidsrc.to', episodeOffset: -1, baseUrl: 'https://vidsrc.to' },
+    vidking: { name: 'vidking.net', episodeOffset: 0, baseUrl: 'https://vidking.link' },
+    'embed.su': { name: 'embed.su', episodeOffset: -1, baseUrl: 'https://embed.su' },
+    'vidsrc.pro': { name: 'vidsrc.pro', episodeOffset: -1, baseUrl: 'https://vidsrc.pro' },
+    ezvidapi: { name: 'ezvidapi.com', episodeOffset: 0, baseUrl: 'https://ezvidapi.com' },
   };
   const qualityOptions = ['auto', '1080p', '720p', '480p', '360p'];
   const [iframeLoading, setIframeLoading] = useState(true);
@@ -24,6 +24,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const [embedBlocked, setEmbedBlocked] = useState(false);
   const [loadErrorMessage, setLoadErrorMessage] = useState('');
   const [isBuffering, setIsBuffering] = useState(false);
+  const [showPipModal, setShowPipModal] = useState(false);
   const iframeRef = useRef(null);
   const autoPlayTimerRef = useRef(null);
   const countdownRef = useRef(null);
@@ -34,6 +35,11 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   // Detect if user is on iOS
   const getIsIos = () => {
     return typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+  };
+
+  // Detect if user is on iPhone
+  const getIsIphone = () => {
+    return typeof window !== 'undefined' && /iPhone|iPod/.test(navigator.userAgent);
   };
 
   // Check PiP support on mount
@@ -59,29 +65,29 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     if (!cfg) return '';
     const ep = isTv ? Number(episode) + cfg.episodeOffset : null;
     let url = '';
-    if (server === 1) {
+    if (server === 'vidsrc') {
       url = isTv
         ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
         : `${cfg.baseUrl}/embed/movie/${id}`;
-    } else if (server === 2) {
+    } else if (server === 'vidking') {
       url = isTv
         ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
         : `${cfg.baseUrl}/embed/movie/${id}`;
-    } else if (server === 3) {
+    } else if (server === 'embed.su') {
       url = isTv
         ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
         : `${cfg.baseUrl}/embed/movie/${id}`;
-    } else if (server === 4) {
+    } else if (server === 'vidsrc.pro') {
       url = isTv
         ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
         : `${cfg.baseUrl}/embed/movie/${id}`;
-    } else if (server === 5) {
+    } else if (server === 'ezvidapi') {
       url = isTv
         ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
         : `${cfg.baseUrl}/embed/movie/${id}`;
     }
     const params = [];
-    if (server === 2) {
+    if (server === 'vidking') {
       params.push('color=e50914');
       if (isTv) {
         params.push('nextEpisode=true', 'episodeSelector=true');
@@ -93,8 +99,24 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     return url;
   };
 
+  // Grab the currently active player URL and open in a new tab
+  const handlePopOut = useCallback(() => {
+    const activeUrl = buildUrl(currentServer);
+    if (activeUrl) {
+      window.open(activeUrl, '_blank', 'noopener,noreferrer');
+    }
+  }, [currentServer, id, season, episode, type, quality, autoPlayNext]);
+
   // ── Document Picture-in-Picture ──
   const togglePiP = useCallback(async () => {
+    const isIphone = getIsIphone();
+
+    // Intercept iPhone users to display helpful instruction modal instead
+    if (isIphone) {
+      setShowPipModal(true);
+      return;
+    }
+
     const isIos = getIsIos();
 
     // If already in PiP, close it
@@ -260,7 +282,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     setIsBuffering(false);
     setLoadErrorMessage('');
     setCountdown(15);
-    setCurrentServer(2);
+    setCurrentServer('vidking');
     setServer1Available(true);
     setQuality('auto');
     clearTimeout(autoPlayTimerRef.current);
@@ -282,11 +304,12 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   };
 
   const handleIframeError = () => {
-    const nextServer = currentServer + 1;
-    const maxServers = Object.keys(serverConfigs).length;
-    if (nextServer <= maxServers) {
-      if (currentServer === 1) setServer1Available(false);
-      setCurrentServer(nextServer);
+    const serversOrder = ['vidsrc', 'vidking', 'embed.su', 'vidsrc.pro', 'ezvidapi'];
+    const currentIndex = serversOrder.indexOf(currentServer);
+    const nextIndex = currentIndex + 1;
+    if (nextIndex < serversOrder.length) {
+      if (currentServer === 'vidsrc') setServer1Available(false);
+      setCurrentServer(serversOrder[nextIndex]);
       setEmbedBlocked(false);
       setIframeLoading(true);
       return;
@@ -399,7 +422,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   });
 
   const switchServer = (server) => {
-    if (server === 1 && !server1Available) return;
+    if (server === 'vidsrc' && !server1Available) return;
     setIframeLoading(true);
     setEmbedBlocked(false);
     setCurrentServer(server);
@@ -451,7 +474,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <button onClick={() => window.open(buildUrl(currentServer), '_blank')} style={{ background: '#e50914', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Open Player in New Tab</button>
                 <button onClick={retryPlayer} style={{ background: 'rgba(255,255,255,0.06)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Retry</button>
-                <button onClick={() => { const maxSrv = Object.keys(serverConfigs).length; const next = currentServer >= maxSrv ? 1 : currentServer + 1; if (next === 1) setServer1Available(true); switchServer(next); }} style={{ background: 'rgba(255,255,255,0.04)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Try Server {currentServer >= Object.keys(serverConfigs).length ? 1 : currentServer + 1}</button>
+                <button onClick={() => { const serversOrder = ['vidsrc', 'vidking', 'embed.su', 'vidsrc.pro', 'ezvidapi']; const currentIndex = serversOrder.indexOf(currentServer); const nextIndex = (currentIndex + 1) % serversOrder.length; const next = serversOrder[nextIndex]; if (next === 'vidsrc') setServer1Available(true); switchServer(next); }} style={{ background: 'rgba(255,255,255,0.04)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Try Next Server</button>
               </div>
             </div>
           </div>
@@ -556,13 +579,13 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
 
       {/* Server buttons + Quality + PiP row */}
       <div style={{ display: 'flex', gap: '10px', marginTop: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
-        <button onClick={() => switchServer(1)} disabled={!server1Available} style={serverBtnStyle(currentServer === 1, !server1Available)}>
+        <button onClick={() => switchServer('vidsrc')} disabled={!server1Available} style={serverBtnStyle(currentServer === 'vidsrc', !server1Available)}>
           <Server style={{ width: 14, height: 14 }} /> {server1Available ? 'Vidsrc' : 'Vidsrc (down)'}
         </button>
-        <button onClick={() => switchServer(2)} style={serverBtnStyle(currentServer === 2, false)}><Server style={{ width: 14, height: 14 }} /> Vidking</button>
-        <button onClick={() => switchServer(3)} style={serverBtnStyle(currentServer === 3, false)}><Server style={{ width: 14, height: 14 }} /> Embed.su</button>
-        <button onClick={() => switchServer(4)} style={serverBtnStyle(currentServer === 4, false)}><Server style={{ width: 14, height: 14 }} /> Vidsrc.pro</button>
-        <button onClick={() => switchServer(5)} style={serverBtnStyle(currentServer === 5, false)}><Server style={{ width: 14, height: 14 }} /> Ezvidapi</button>
+        <button onClick={() => switchServer('vidking')} style={serverBtnStyle(currentServer === 'vidking', false)}><Server style={{ width: 14, height: 14 }} /> Vidking</button>
+        <button onClick={() => switchServer('embed.su')} style={serverBtnStyle(currentServer === 'embed.su', false)}><Server style={{ width: 14, height: 14 }} /> Embed.su</button>
+        <button onClick={() => switchServer('vidsrc.pro')} style={serverBtnStyle(currentServer === 'vidsrc.pro', false)}><Server style={{ width: 14, height: 14 }} /> Vidsrc.pro</button>
+        <button onClick={() => switchServer('ezvidapi')} style={serverBtnStyle(currentServer === 'ezvidapi', false)}><Server style={{ width: 14, height: 14 }} /> Ezvidapi</button>
 
         {/* Quality Chooser */}
         <div ref={qualityMenuRef} style={{ position: 'relative' }}>
@@ -613,13 +636,89 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
             background: pipActive ? 'linear-gradient(135deg, rgba(229,9,20,0.2), rgba(229,9,20,0.05))' : 'rgba(255,255,255,0.04)',
             color: pipActive ? '#ff4444' : '#888', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.25s ease',
           }}
+          onMouseEnter={(e) => {
+            if (!pipActive) {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+              e.currentTarget.style.color = '#fff';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!pipActive) {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+              e.currentTarget.style.color = '#888';
+            }
+          }}
         >
           <PictureInPicture2 style={{ width: 14, height: 14 }} />
-          {pipActive ? 'Exit PiP' : 'Pop Out'}
+          {pipActive ? 'Exit PiP' : 'Picture-in-Picture'}
+        </button>
+
+        <button
+          onClick={handlePopOut}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 22px', borderRadius: '10px',
+            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'rgba(255,255,255,0.04)',
+            color: '#888', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.25s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+            e.currentTarget.style.color = '#fff';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+            e.currentTarget.style.color = '#888';
+          }}
+        >
+          <PictureInPicture style={{ width: 14, height: 14 }} />
+          Pop Out
         </button>
       </div>
 
+      {/* iPhone PiP Fallback warning modal */}
+      {showPipModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(8px)',
+          animation: 'fadeIn 0.2s ease-out'
+        }}>
+          <div className="w-11/12 max-w-md p-6 rounded-2xl bg-zinc-900 border border-zinc-800 text-center shadow-2xl">
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-500/10 text-red-500 mb-4">
+              <PictureInPicture2 className="h-6 w-6" />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">Picture-in-Picture Restrained</h3>
+            <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
+              Picture-in-Picture is restricted inside embedded frames on iOS. Click &quot;Pop Out&quot; to open the server directly and use native PiP, or try rotating your device.
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:gap-3 justify-center">
+              <button
+                onClick={() => {
+                  setShowPipModal(false);
+                  handlePopOut();
+                }}
+                className="w-full sm:w-auto px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-semibold transition-colors duration-200"
+              >
+                Go to Pop Out
+              </button>
+              <button
+                onClick={() => setShowPipModal(false)}
+                className="w-full sm:w-auto px-5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-xl text-sm font-semibold transition-colors duration-200"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pipPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
         @keyframes playerSpin { to { transform: rotate(360deg); } }
