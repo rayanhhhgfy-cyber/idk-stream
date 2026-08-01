@@ -26,12 +26,27 @@ export default function Footer() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstalled, setIsInstalled] = useState(true); // Default true to avoid flash
   const [showInstructions, setShowInstructions] = useState(false);
+  const [deviceType, setDeviceType] = useState('other'); // 'ios', 'android', 'other'
 
   useEffect(() => {
     // Check if app is already installed/running in standalone mode
     if (typeof window !== 'undefined') {
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-      setIsInstalled(isStandalone);
+
+      // Wrap state updates in setTimeout to avoid calling setState synchronously inside an effect
+      setTimeout(() => {
+        setIsInstalled(isStandalone);
+
+        // Detect user device platform
+        const ua = window.navigator.userAgent.toLowerCase();
+        if (/iphone|ipad|ipod/.test(ua)) {
+          setDeviceType('ios');
+        } else if (/android/.test(ua)) {
+          setDeviceType('android');
+        } else {
+          setDeviceType('other');
+        }
+      }, 0);
     }
 
     const handleBeforeInstallPrompt = (e) => {
@@ -56,7 +71,7 @@ export default function Footer() {
       if (outcome === 'accepted') setIsInstalled(true);
       setDeferredPrompt(null);
     } else {
-      // Fallback for iOS/Safari where automatic prompts are blocked by Apple
+      // Fallback instructions when browser native installer is blocked/unsupported
       setShowInstructions(true);
       setTimeout(() => setShowInstructions(false), 8000);
     }
@@ -224,17 +239,32 @@ export default function Footer() {
             {showInstructions && (
               <div style={{
                 marginTop: '12px',
-                padding: '10px 14px',
-                background: 'rgba(255,255,255,0.1)',
-                borderRadius: '8px',
-                fontSize: '0.8rem',
-                color: '#ddd',
-                maxWidth: '280px',
+                padding: '12px 16px',
+                background: 'rgba(255,255,255,0.08)',
+                borderRadius: '12px',
+                fontSize: '0.825rem',
+                color: '#eee',
+                maxWidth: '320px',
                 textAlign: 'center',
-                border: '1px solid rgba(255,255,255,0.2)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
                 animation: 'fadeInUp 0.3s ease-out'
               }}>
-                <strong>iOS / iPhone:</strong> Tap the <strong>Share</strong> button at the bottom of Safari and select <strong>"Add to Home Screen"</strong>.
+                {deviceType === 'ios' && (
+                  <>
+                    <strong>iOS / iPad:</strong> Tap the <strong>Share</strong> button at the bottom of Safari and select <strong>&quot;Add to Home Screen&quot;</strong>.
+                  </>
+                )}
+                {deviceType === 'android' && (
+                  <>
+                    <strong>Android / Projector:</strong> Tap your browser&apos;s menu (three dots icon <strong>⋮</strong> in the corner) and select <strong>&quot;Add to Home screen&quot;</strong> or <strong>&quot;Install app&quot;</strong>.
+                  </>
+                )}
+                {deviceType === 'other' && (
+                  <>
+                    <strong>To Install:</strong> Click your browser&apos;s options/menu icon (usually <strong>⋮</strong> or three lines) and select <strong>&quot;Install idkstream&quot;</strong> or <strong>&quot;Add to Home screen&quot;</strong>.
+                  </>
+                )}
               </div>
             )}
           </div>

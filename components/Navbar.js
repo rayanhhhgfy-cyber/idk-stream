@@ -118,6 +118,14 @@ export default function Navbar() {
       // Close the search bar and clear the text.
       setSearchOpen(false);
       setSearchQuery('');
+
+      // Dismiss virtual keyboard by blurring the active element (e.g., input)
+      if (typeof document !== 'undefined') {
+        const activeEl = document.activeElement;
+        if (activeEl && activeEl.tagName === 'INPUT') {
+          activeEl.blur();
+        }
+      }
     }
   };
 
@@ -271,17 +279,35 @@ export default function Navbar() {
               onClick={() => setSearchOpen(true)}  // Click to expand
               onBlur={() => !searchQuery && setSearchOpen(false)} // Collapse if empty when clicking away
             />
-            {/* Magnifying glass icon inside the search bar */}
-            <Search
+            {/* Clickable Search icon inside the search bar.
+                If open, it behaves as a submit button. If closed, it triggers focus. */}
+            <button
+              type={searchOpen ? "submit" : "button"}
+              onClick={() => {
+                if (!searchOpen) {
+                  setSearchOpen(true);
+                }
+              }}
               style={{
                 position: 'absolute',
                 left: searchOpen ? '12px' : '9px',
-                width: 18,
-                height: 18,
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 color: 'rgba(255,255,255,0.7)',
-                pointerEvents: 'none' // Click passes through the icon to the input
               }}
-            />
+            >
+              <Search
+                style={{
+                  width: 18,
+                  height: 18,
+                }}
+              />
+            </button>
           </form>
 
           {/* HAMBURGER MENU BUTTON — Toggles the mobile menu */}
