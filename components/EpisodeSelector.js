@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { Star, Play, ChevronDown } from 'lucide-react';
+import { Star, Play, ChevronDown, Eye, EyeOff } from 'lucide-react';
 
 export default function EpisodeSelector({
   episodes,
@@ -15,6 +15,35 @@ export default function EpisodeSelector({
 }) {
   const listRef = useRef(null);
   const [hoveredEpisode, setHoveredEpisode] = useState(null);
+  const [hideUnwatchedDescriptions, setHideUnwatchedDescriptions] = useState(true);
+  const [revealedEpisodes, setRevealedEpisodes] = useState({});
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('idk_hide_unwatched_descriptions');
+      if (saved !== null) {
+        setHideUnwatchedDescriptions(saved === 'true');
+      }
+    }
+  }, []);
+
+  const toggleHideUnwatched = () => {
+    setHideUnwatchedDescriptions(prev => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('idk_hide_unwatched_descriptions', String(next));
+      }
+      return next;
+    });
+  };
+
+  const toggleRevealEpisode = (epNum, e) => {
+    if (e) e.stopPropagation();
+    setRevealedEpisodes(prev => ({
+      ...prev,
+      [epNum]: !prev[epNum]
+    }));
+  };
 
   const getEpisodeProgress = (episodeNum) => {
     const key = `tv_${showId}_${currentSeason}_${episodeNum}`;
@@ -27,6 +56,9 @@ export default function EpisodeSelector({
   };
 
   const currentEpData = episodes.find(e => e.episode_number === currentEpisode);
+  const currentProgressPct = currentEpData ? getEpisodeProgress(currentEpData.episode_number) : null;
+  const isCurrentWatched = currentProgressPct !== null && currentProgressPct > 0;
+  const isCurrentBlurred = hideUnwatchedDescriptions && !isCurrentWatched && !revealedEpisodes[currentEpisode];
 
   useEffect(() => {
     if (listRef.current) {
@@ -124,20 +156,49 @@ export default function EpisodeSelector({
                   )}
                 </div>
               )}
-              <p
-                style={{
-                  color: '#999',
-                  fontSize: '0.85rem',
-                  lineHeight: 1.6,
-                  display: '-webkit-box',
-                  WebkitLineClamp: 3,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                  margin: 0,
-                }}
-              >
-                {currentEpData.overview || 'No description available.'}
-              </p>
+              <div style={{ position: 'relative' }}>
+                <p
+                  onClick={(e) => {
+                    if (isCurrentBlurred) {
+                      toggleRevealEpisode(currentEpisode, e);
+                    }
+                  }}
+                  title={isCurrentBlurred ? "Unwatched episode description blurred to prevent spoilers. Click to reveal." : undefined}
+                  style={{
+                    color: '#999',
+                    fontSize: '0.85rem',
+                    lineHeight: 1.6,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    margin: 0,
+                    filter: isCurrentBlurred ? 'blur(6px)' : 'none',
+                    userSelect: isCurrentBlurred ? 'none' : 'auto',
+                    cursor: isCurrentBlurred ? 'pointer' : 'default',
+                    transition: 'filter 0.2s ease',
+                  }}
+                >
+                  {currentEpData.overview || 'No description available.'}
+                </p>
+                {isCurrentBlurred && (
+                  <span
+                    onClick={(e) => toggleRevealEpisode(currentEpisode, e)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      color: '#e50914',
+                      fontSize: '0.72rem',
+                      fontWeight: 600,
+                      marginTop: '4px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <EyeOff style={{ width: 12, height: 12 }} /> Click to reveal description
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -195,9 +256,41 @@ export default function EpisodeSelector({
             />
           </div>
         </div>
-        <span style={{ color: '#555', fontSize: '0.8rem' }}>
-          {episodes.length} {episodes.length === 1 ? 'episode' : 'episodes'}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <button
+            onClick={toggleHideUnwatched}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: hideUnwatchedDescriptions ? 'rgba(229, 9, 20, 0.12)' : 'rgba(255, 255, 255, 0.06)',
+              border: `1px solid ${hideUnwatchedDescriptions ? 'rgba(229, 9, 20, 0.4)' : 'rgba(255, 255, 255, 0.1)'}`,
+              color: hideUnwatchedDescriptions ? '#ff4d4d' : '#888',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            title={hideUnwatchedDescriptions ? 'Unwatched episode descriptions are blurred to prevent spoilers. Click to show all.' : 'Click to blur unwatched episode descriptions.'}
+          >
+            {hideUnwatchedDescriptions ? (
+              <>
+                <EyeOff style={{ width: 14, height: 14 }} />
+                <span>Blur Unwatched</span>
+              </>
+            ) : (
+              <>
+                <Eye style={{ width: 14, height: 14 }} />
+                <span>Show All Descriptions</span>
+              </>
+            )}
+          </button>
+          <span style={{ color: '#555', fontSize: '0.8rem' }}>
+            {episodes.length} {episodes.length === 1 ? 'episode' : 'episodes'}
+          </span>
+        </div>
       </div>
 
       {/* ── Episode List ── */}
@@ -379,20 +472,55 @@ export default function EpisodeSelector({
                     </span>
                   )}
                 </div>
-                <p
-                  style={{
-                    color: '#888',
-                    fontSize: '0.8rem',
-                    lineHeight: 1.5,
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                    margin: 0,
-                  }}
-                >
-                  {episode.overview || 'No description available.'}
-                </p>
+                {(() => {
+                  const isWatched = progressPct !== null && progressPct > 0;
+                  const isBlurred = hideUnwatchedDescriptions && !isWatched && !revealedEpisodes[episode.episode_number];
+                  return (
+                    <div style={{ position: 'relative' }}>
+                      <p
+                        onClick={(e) => {
+                          if (isBlurred) {
+                            toggleRevealEpisode(episode.episode_number, e);
+                          }
+                        }}
+                        title={isBlurred ? "Unwatched episode description blurred to prevent spoilers. Click to reveal." : undefined}
+                        style={{
+                          color: '#888',
+                          fontSize: '0.8rem',
+                          lineHeight: 1.5,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          margin: 0,
+                          filter: isBlurred ? 'blur(5px)' : 'none',
+                          userSelect: isBlurred ? 'none' : 'auto',
+                          cursor: isBlurred ? 'pointer' : 'default',
+                          transition: 'filter 0.2s ease',
+                        }}
+                      >
+                        {episode.overview || 'No description available.'}
+                      </p>
+                      {isBlurred && (
+                        <span
+                          onClick={(e) => toggleRevealEpisode(episode.episode_number, e)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            color: '#e50914',
+                            fontSize: '0.7rem',
+                            fontWeight: 600,
+                            marginTop: '2px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <EyeOff style={{ width: 11, height: 11 }} /> Click to reveal
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
                 {progressPct !== null && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
                     <div
