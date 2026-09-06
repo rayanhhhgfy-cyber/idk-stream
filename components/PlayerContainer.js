@@ -9,11 +9,11 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const qualityMenuRef = useRef(null);
   const serverConfigs = {
-    1: { name: 'vidsrc.to', episodeOffset: -1, baseUrl: 'https://vidsrc.to' },
+    1: { name: 'vidsrc.to', episodeOffset: 0, baseUrl: 'https://vidsrc.to' },
     2: { name: 'vidking.net', episodeOffset: 0, baseUrl: 'https://www.vidking.net' },
-    3: { name: 'embed.su', episodeOffset: -1, baseUrl: 'https://embed.su' },
-    4: { name: 'vidsrc.pro', episodeOffset: -1, baseUrl: 'https://vidsrc.pro' },
-    5: { name: 'ezvidapi.com', episodeOffset: 0, baseUrl: 'https://ezvidapi.com' },
+    3: { name: 'vidsrc.pm', episodeOffset: 0, baseUrl: 'https://vidsrc.pm' },
+    4: { name: 'autoembed.co', episodeOffset: 0, baseUrl: 'https://autoembed.co' },
+    5: { name: 'vidsrc.me', episodeOffset: 0, baseUrl: 'https://vidsrc.me' },
   };
   const qualityOptions = ['auto', '1080p', '720p', '480p', '360p'];
   const [iframeLoading, setIframeLoading] = useState(true);
@@ -73,12 +73,12 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         : `${cfg.baseUrl}/embed/movie/${id}`;
     } else if (server === 4) {
       url = isTv
-        ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
-        : `${cfg.baseUrl}/embed/movie/${id}`;
+        ? `${cfg.baseUrl}/tv/tmdb/${id}-${season}-${ep}`
+        : `${cfg.baseUrl}/movie/tmdb/${id}`;
     } else if (server === 5) {
       url = isTv
-        ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
-        : `${cfg.baseUrl}/embed/movie/${id}`;
+        ? `${cfg.baseUrl}/embed/tv?tmdb=${id}&season=${season}&episode=${ep}`
+        : `${cfg.baseUrl}/embed/movie?tmdb=${id}`;
     }
     const params = [];
     if (server === 2) {
@@ -560,9 +560,9 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           <Server style={{ width: 14, height: 14 }} /> {server1Available ? 'Vidsrc' : 'Vidsrc (down)'}
         </button>
         <button onClick={() => switchServer(2)} style={serverBtnStyle(currentServer === 2, false)}><Server style={{ width: 14, height: 14 }} /> Vidking</button>
-        <button onClick={() => switchServer(3)} style={serverBtnStyle(currentServer === 3, false)}><Server style={{ width: 14, height: 14 }} /> Embed.su</button>
-        <button onClick={() => switchServer(4)} style={serverBtnStyle(currentServer === 4, false)}><Server style={{ width: 14, height: 14 }} /> Vidsrc.pro</button>
-        <button onClick={() => switchServer(5)} style={serverBtnStyle(currentServer === 5, false)}><Server style={{ width: 14, height: 14 }} /> Ezvidapi</button>
+        <button onClick={() => switchServer(3)} style={serverBtnStyle(currentServer === 3, false)}><Server style={{ width: 14, height: 14 }} /> Vidsrc.pm</button>
+        <button onClick={() => switchServer(4)} style={serverBtnStyle(currentServer === 4, false)}><Server style={{ width: 14, height: 14 }} /> Autoembed</button>
+        <button onClick={() => switchServer(5)} style={serverBtnStyle(currentServer === 5, false)}><Server style={{ width: 14, height: 14 }} /> Vidsrc.me</button>
 
         {/* Quality Chooser */}
         <div ref={qualityMenuRef} style={{ position: 'relative' }}>

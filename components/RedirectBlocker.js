@@ -456,7 +456,7 @@ export default function RedirectBlocker() {
       document.querySelectorAll('iframe:not([data-player])').forEach((iframe) => {
         const src = iframe.getAttribute('src') || '';
         // Only remove if it's not one of our trusted video sources.
-        if (!src.includes('vidsrc') && !src.includes('vidking') && !src.includes('embed.su') && src !== '') {
+        if (!src.includes('vidsrc') && !src.includes('vidking') && !src.includes('autoembed') && !src.includes('embed.su') && !src.includes('nextgencloudfabric') && src !== '') {
           iframe.remove();
           console.warn('[RedirectBlocker] Cleanup removed rogue iframe:', src);
         }

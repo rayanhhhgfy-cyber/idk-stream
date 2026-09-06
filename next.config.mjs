@@ -131,7 +131,7 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "frame-ancestors 'self'",
-              "frame-src 'self' https://www.vidking.net https://vidking.net https://vidsrc.to https://vidsrc.cc https://vidsrc.pro https://embed.su https://ezvidapi.com https://*.vidking.net https://*.vidsrc.to https://*.vidsrc.cc https://*.vidsrc.pro https://*.embed.su https://*.ezvidapi.com",
+              "frame-src 'self' https://www.vidking.net https://vidking.net https://vidsrc.to https://vidsrc.pm https://vidsrc.me https://vidsrc.cc https://vidsrc.pro https://autoembed.co https://embed.su https://ezvidapi.com https://*.vidking.net https://*.vidsrc.to https://*.vidsrc.pm https://*.vidsrc.me https://*.vidsrc.cc https://*.vidsrc.pro https://*.autoembed.co https://*.nextgencloudfabric.com https://*.embed.su https://*.ezvidapi.com",
             ].join('; '),
           },
 
