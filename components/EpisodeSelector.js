@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { Star, Play, ChevronDown } from 'lucide-react';
+import { Star, Play, ChevronDown, Eye, EyeOff } from 'lucide-react';
 
 export default function EpisodeSelector({
   episodes,
@@ -15,6 +15,20 @@ export default function EpisodeSelector({
 }) {
   const listRef = useRef(null);
   const [hoveredEpisode, setHoveredEpisode] = useState(null);
+  const [hideUnwatchedDescriptions, setHideUnwatchedDescriptions] = useState(true);
+
+  useEffect(() => {
+    const savedSetting = localStorage.getItem('idk_hide_unwatched_descriptions');
+    if (savedSetting !== null) {
+      setHideUnwatchedDescriptions(savedSetting === 'true');
+    }
+  }, []);
+
+  const toggleHideUnwatched = () => {
+    const nextState = !hideUnwatchedDescriptions;
+    setHideUnwatchedDescriptions(nextState);
+    localStorage.setItem('idk_hide_unwatched_descriptions', String(nextState));
+  };
 
   const getEpisodeProgress = (episodeNum) => {
     const key = `tv_${showId}_${currentSeason}_${episodeNum}`;
@@ -27,6 +41,8 @@ export default function EpisodeSelector({
   };
 
   const currentEpData = episodes.find(e => e.episode_number === currentEpisode);
+  const isCurrentEpWatched = currentEpData ? getEpisodeProgress(currentEpData.episode_number) !== null : false;
+  const isCurrentEpBlurred = hideUnwatchedDescriptions && !isCurrentEpWatched;
 
   useEffect(() => {
     if (listRef.current) {
@@ -134,6 +150,9 @@ export default function EpisodeSelector({
                   WebkitBoxOrient: 'vertical',
                   overflow: 'hidden',
                   margin: 0,
+                  filter: isCurrentEpBlurred ? 'blur(5px)' : 'none',
+                  userSelect: isCurrentEpBlurred ? 'none' : 'auto',
+                  transition: 'filter 0.2s ease',
                 }}
               >
                 {currentEpData.overview || 'No description available.'}
@@ -195,9 +214,32 @@ export default function EpisodeSelector({
             />
           </div>
         </div>
-        <span style={{ color: '#555', fontSize: '0.8rem' }}>
-          {episodes.length} {episodes.length === 1 ? 'episode' : 'episodes'}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <button
+            onClick={toggleHideUnwatched}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: hideUnwatchedDescriptions ? 'rgba(229,9,20,0.15)' : 'rgba(255,255,255,0.06)',
+              border: hideUnwatchedDescriptions ? '1px solid rgba(229,9,20,0.4)' : '1px solid rgba(255,255,255,0.1)',
+              color: hideUnwatchedDescriptions ? '#ff4d4d' : '#888',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            title={hideUnwatchedDescriptions ? 'Unwatched descriptions are blurred. Click to unblur.' : 'Blur unwatched descriptions. Click to blur.'}
+          >
+            {hideUnwatchedDescriptions ? <EyeOff style={{ width: 14, height: 14 }} /> : <Eye style={{ width: 14, height: 14 }} />}
+            <span>{hideUnwatchedDescriptions ? 'Unwatched Blurred' : 'Blur Unwatched'}</span>
+          </button>
+          <span style={{ color: '#555', fontSize: '0.8rem' }}>
+            {episodes.length} {episodes.length === 1 ? 'episode' : 'episodes'}
+          </span>
+        </div>
       </div>
 
       {/* ── Episode List ── */}
@@ -212,6 +254,8 @@ export default function EpisodeSelector({
         {episodes.map((episode, index) => {
           const isActive = episode.episode_number === currentEpisode;
           const progressPct = getEpisodeProgress(episode.episode_number);
+          const isWatched = progressPct !== null;
+          const isBlurred = hideUnwatchedDescriptions && !isWatched;
           const isHovered = hoveredEpisode === episode.episode_number;
 
           return (
@@ -389,6 +433,9 @@ export default function EpisodeSelector({
                     WebkitBoxOrient: 'vertical',
                     overflow: 'hidden',
                     margin: 0,
+                    filter: isBlurred ? 'blur(5px)' : 'none',
+                    userSelect: isBlurred ? 'none' : 'auto',
+                    transition: 'filter 0.2s ease',
                   }}
                 >
                   {episode.overview || 'No description available.'}

@@ -82,8 +82,21 @@ export default function RedirectBlocker() {
     window.open = function (...args) {
       // Print a warning message so developers know a popup was blocked.
       console.warn('[RedirectBlocker] Blocked window.open:', args[0]);
-      // Return null = "no window was opened" — the ad script gets nothing.
-      return null;
+      // Return a mock window object so ad scripts perceive the popup/redirect as successful without opening anything
+      const mockWindow = {
+        closed: false,
+        focus: function () {},
+        blur: function () {},
+        close: function () { this.closed = true; },
+        postMessage: function () {},
+        location: {
+          href: args[0] || '',
+          assign: function () {},
+          replace: function () {},
+          reload: function () {},
+        },
+      };
+      return mockWindow;
     };
 
 
