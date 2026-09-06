@@ -79,11 +79,27 @@ export default function RedirectBlocker() {
     // "...args" captures any arguments the ad script tried to pass.
     // We log a warning to the console (the developer's debug panel)
     // so developers can see what was blocked.
+    const createMockWindow = (url) => {
+      const mockWin = {
+        closed: false,
+        focus: () => {},
+        blur: () => {},
+        close: () => { mockWin.closed = true; },
+        postMessage: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        location: {
+          href: url || '',
+          replace: () => {},
+          assign: () => {},
+        },
+      };
+      return mockWin;
+    };
+
     window.open = function (...args) {
-      // Print a warning message so developers know a popup was blocked.
-      console.warn('[RedirectBlocker] Blocked window.open:', args[0]);
-      // Return null = "no window was opened" — the ad script gets nothing.
-      return null;
+      console.warn('[RedirectBlocker] Intercepted window.open with mock window:', args[0]);
+      return createMockWindow(args[0]);
     };
 
 
