@@ -516,11 +516,12 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const skipToNext = () => { clearInterval(countdownRef.current); setShowCountdown(false); setCountdown(15); if (onNextEpisode) onNextEpisode(); };
 
   const serverBtnStyle = (active, disabled) => ({
-    display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 22px', borderRadius: '10px',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+    padding: '10px 16px', borderRadius: '10px', flex: '1 1 auto', minWidth: '110px',
     border: active ? '1px solid rgba(229,9,20,0.5)' : '1px solid rgba(255,255,255,0.08)',
     background: active ? 'linear-gradient(135deg, rgba(229,9,20,0.2), rgba(229,9,20,0.05))' : 'rgba(255,255,255,0.04)',
     color: active ? '#ff4444' : '#888', fontWeight: 600, fontSize: '0.85rem', cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.25s ease',
-    opacity: disabled ? 0.45 : 1,
+    opacity: disabled ? 0.45 : 1, touchAction: 'manipulation',
   });
 
   const switchServer = (server) => {
@@ -694,7 +695,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       )}
 
       {/* Server buttons + Quality + PiP row */}
-      <div style={{ display: 'flex', gap: '10px', marginTop: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '10px', marginTop: '14px', justifyContent: 'center', flexWrap: 'wrap', width: '100%' }}>
         {isDev && (
           <button onClick={() => switchServer(1)} style={serverBtnStyle(currentServer === 1, false)}>
             <Server style={{ width: 14, height: 14 }} /> HLS Player
@@ -706,14 +707,15 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         <button onClick={() => switchServer(5)} style={serverBtnStyle(currentServer === 5, false)}><Server style={{ width: 14, height: 14 }} /> Vidsrc.cc</button>
 
         {/* Quality Chooser */}
-        <div ref={qualityMenuRef} style={{ position: 'relative' }}>
+        <div ref={qualityMenuRef} style={{ position: 'relative', flex: '1 1 auto', minWidth: '110px' }}>
           <button
             onClick={() => setShowQualityMenu(!showQualityMenu)}
             style={{
-              display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 22px', borderRadius: '10px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', padding: '10px 16px', borderRadius: '10px',
               border: '1px solid rgba(255,255,255,0.08)',
               background: showQualityMenu ? 'rgba(229,9,20,0.15)' : 'rgba(255,255,255,0.04)',
               color: showQualityMenu ? '#ff4444' : '#888', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.25s ease',
+              touchAction: 'manipulation',
             }}
           >
             <Monitor style={{ width: 14, height: 14 }} />
@@ -723,7 +725,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
             <div style={{
               position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
               marginBottom: '8px', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: '12px', padding: '6px', zIndex: 50, minWidth: '120px',
+              borderRadius: '12px', padding: '6px', zIndex: 50, minWidth: '130px',
               boxShadow: '0 10px 40px rgba(0,0,0,0.6)',
             }}>
               {qualityOptions.map(q => (
@@ -731,10 +733,10 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
                   key={q}
                   onClick={() => { setQuality(q); setShowQualityMenu(false); }}
                   style={{
-                    display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px',
+                    display: 'block', width: '100%', textAlign: 'left', padding: '10px 14px',
                     border: 'none', borderRadius: '8px', background: q === quality ? 'rgba(229,9,20,0.2)' : 'transparent',
                     color: q === quality ? '#ff4444' : '#ccc', fontWeight: q === quality ? 700 : 500,
-                    fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.15s',
+                    fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.15s',
                   }}
                   onMouseEnter={(e) => { if (q !== quality) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
                   onMouseLeave={(e) => { if (q !== quality) e.currentTarget.style.background = 'transparent'; }}
@@ -749,10 +751,11 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         <button
           onClick={togglePiP}
           style={{
-            display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 22px', borderRadius: '10px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flex: '1 1 auto', minWidth: '110px', padding: '10px 16px', borderRadius: '10px',
             border: pipActive ? '1px solid rgba(229,9,20,0.5)' : '1px solid rgba(255,255,255,0.08)',
             background: pipActive ? 'linear-gradient(135deg, rgba(229,9,20,0.2), rgba(229,9,20,0.05))' : 'rgba(255,255,255,0.04)',
             color: pipActive ? '#ff4444' : '#888', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.25s ease',
+            touchAction: 'manipulation',
           }}
         >
           <PictureInPicture2 style={{ width: 14, height: 14 }} />

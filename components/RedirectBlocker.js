@@ -75,15 +75,86 @@ export default function RedirectBlocker() {
     // └────────────────────────────────────────────────────────────────┘
     const originalWindowOpen = window.open;
 
-    // Replace window.open with our blocking version.
-    // "...args" captures any arguments the ad script tried to pass.
-    // We log a warning to the console (the developer's debug panel)
-    // so developers can see what was blocked.
+    // Create a stealth mock Window object that deceives ad scripts into believing
+    // their window.open popup/redirect attempt was completely successful.
+    const createMockWindow = (url) => {
+      const mockLocation = {
+        href: url || 'about:blank',
+        assign: function (newUrl) {
+          console.warn('[RedirectBlocker] Stealth blocked mockLocation.assign:', newUrl);
+        },
+        replace: function (newUrl) {
+          console.warn('[RedirectBlocker] Stealth blocked mockLocation.replace:', newUrl);
+        },
+        reload: function () {},
+        toString: function () {
+          return this.href;
+        },
+      };
+
+      const mockWindow = {
+        closed: false,
+        opener: window,
+        name: '_blank',
+        status: 'ok',
+        top: null,
+        parent: null,
+        frames: [],
+        self: null,
+        window: null,
+        length: 0,
+        focus: function () {},
+        blur: function () {},
+        close: function () {
+          this.closed = true;
+        },
+        postMessage: function (msg, targetOrigin) {
+          console.warn('[RedirectBlocker] Stealth blocked mockWindow.postMessage:', msg, targetOrigin);
+        },
+        addEventListener: function () {},
+        removeEventListener: function () {},
+        dispatchEvent: function () {
+          return true;
+        },
+        document: {
+          referrer: window.location.href,
+          location: mockLocation,
+          write: function () {},
+          writeln: function () {},
+          open: function () {},
+          close: function () {},
+          querySelector: function () { return null; },
+          querySelectorAll: function () { return []; },
+          getElementById: function () { return null; },
+        },
+      };
+
+      // Set circular references for realistic window object structure
+      mockWindow.top = mockWindow;
+      mockWindow.parent = mockWindow;
+      mockWindow.self = mockWindow;
+      mockWindow.window = mockWindow;
+
+      Object.defineProperty(mockWindow, 'location', {
+        get: function () {
+          return mockLocation;
+        },
+        set: function (newUrl) {
+          console.warn('[RedirectBlocker] Stealth blocked setting mockWindow.location:', newUrl);
+          mockLocation.href = String(newUrl);
+        },
+        configurable: true,
+        enumerable: true,
+      });
+
+      return mockWindow;
+    };
+
+    // Replace window.open with our stealth blocking version.
     window.open = function (...args) {
-      // Print a warning message so developers know a popup was blocked.
-      console.warn('[RedirectBlocker] Blocked window.open:', args[0]);
-      // Return null = "no window was opened" — the ad script gets nothing.
-      return null;
+      const targetUrl = args[0] || '';
+      console.warn('[RedirectBlocker] Stealth intercepting window.open:', targetUrl);
+      return createMockWindow(targetUrl);
     };
 
 

@@ -64,6 +64,7 @@
   padding: 0;          /* Remove default padding */
   box-sizing: border-box; /* Make width/height include padding and borders
                             (this makes sizing much more intuitive!) */
+  -webkit-tap-highlight-color: transparent; /* Prevent grey box on mobile tap */
 }
 
 /* Body styles — the main page container */
