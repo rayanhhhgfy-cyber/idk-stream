@@ -479,6 +479,45 @@ export default function RedirectBlocker() {
     // │  catch and block events BEFORE ad scripts can react to them.  │
     // └────────────────────────────────────────────────────────────────┘
 
+    // Protect prototype methods against programmatic script invocations
+    const originalAnchorClick = HTMLAnchorElement.prototype.click;
+    HTMLAnchorElement.prototype.click = function (...args) {
+      const href = this.getAttribute('href') || '';
+      const target = this.getAttribute('target') || '';
+      const isExternal = href.startsWith('http') && !href.startsWith(window.location.origin);
+      const isTopNav = target === '_top' || target === '_parent';
+      if (isExternal || isTopNav) {
+        console.warn('[RedirectBlocker] Stealth blocked programmatic anchor click:', href, target);
+        return;
+      }
+      return originalAnchorClick.apply(this, args);
+    };
+
+    const originalFormSubmit = HTMLFormElement.prototype.submit;
+    HTMLFormElement.prototype.submit = function (...args) {
+      const action = this.getAttribute('action') || '';
+      const target = this.getAttribute('target') || '';
+      const isExternal = action.startsWith('http') && !action.startsWith(window.location.origin);
+      const isTopNav = target === '_top' || target === '_parent';
+      if (isExternal || isTopNav) {
+        console.warn('[RedirectBlocker] Stealth blocked programmatic form submit:', action, target);
+        return;
+      }
+      return originalFormSubmit.apply(this, args);
+    };
+
+    // Prevent ad scripts from setting onbeforeunload prompts or navigation traps
+    const originalOnBeforeUnloadSetter = Object.getOwnPropertyDescriptor(window, 'onbeforeunload')?.set;
+    try {
+      Object.defineProperty(window, 'onbeforeunload', {
+        get: () => null,
+        set: (fn) => {
+          console.warn('[RedirectBlocker] Blocked ad script onbeforeunload setter');
+        },
+        configurable: true,
+      });
+    } catch (e) {}
+
     // Listen for ALL clicks on the page (Protection #3).
     document.addEventListener('click', handleClick, true);
 
@@ -551,8 +590,10 @@ export default function RedirectBlocker() {
     // │    - Cancel the cleaning schedule (clear interval)             │
     // └────────────────────────────────────────────────────────────────┘
     return () => {
-      // Restore the original window.open function.
+      // Restore original prototypes
       window.open = originalWindowOpen;
+      HTMLAnchorElement.prototype.click = originalAnchorClick;
+      HTMLFormElement.prototype.submit = originalFormSubmit;
 
       // Remove all our event listeners.
       document.removeEventListener('click', handleClick, true);

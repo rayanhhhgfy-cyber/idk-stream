@@ -551,6 +551,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
             referrerPolicy="no-referrer-when-downgrade"
             loading="eager"
             data-player="true"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock"
             onLoad={handleIframeLoad}
             onError={handleIframeError}
           />
