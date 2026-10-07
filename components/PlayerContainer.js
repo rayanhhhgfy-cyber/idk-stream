@@ -24,7 +24,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     }
   }, []);
 
-  const [currentServer, setCurrentServer] = useState(2);
+  const [currentServer, setCurrentServer] = useState(4);
 
   const [quality, setQuality] = useState('auto');
   const [showQualityMenu, setShowQualityMenu] = useState(false);
