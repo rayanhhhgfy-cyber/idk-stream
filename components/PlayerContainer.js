@@ -5,10 +5,10 @@ import Hls from 'hls.js';
 
 const serverConfigs = {
   1: { name: 'HLS Player', isHls: true, badge: 'Dev' },
-  2: { name: 'vidsrc.to', episodeOffset: 0, baseUrl: 'https://vidsrc.to', badge: 'Fast' },
-  3: { name: 'vidsrc.pm', episodeOffset: 0, baseUrl: 'https://vidsrc.pm', badge: 'HD' },
+  2: { name: 'Vidking', episodeOffset: 0, baseUrl: 'https://www.vidking.net', badge: '4K Ultra' },
+  3: { name: 'vidsrc.pm', episodeOffset: 0, baseUrl: 'https://vidsrc.pm', badge: 'HD Speed' },
   4: { name: 'autoembed.co', episodeOffset: 0, baseUrl: 'https://autoembed.co', badge: 'Backup' },
-  5: { name: 'vidsrc.me', episodeOffset: 0, baseUrl: 'https://vidsrc.me', badge: 'Multi' },
+  5: { name: 'vidsrc.me', episodeOffset: 0, baseUrl: 'https://vidsrc.me', badge: 'Multi-Lang' },
   6: { name: 'VAPlayer', episodeOffset: 0, baseUrl: 'https://vaplayer.ru', badge: 'VidAPI' },
 };
 
@@ -24,7 +24,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     }
   }, []);
 
-  const [currentServer, setCurrentServer] = useState(3);
+  const [currentServer, setCurrentServer] = useState(2);
 
   const [quality, setQuality] = useState('auto');
   const [showQualityMenu, setShowQualityMenu] = useState(false);
@@ -710,7 +710,9 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
             <div className="server-icon-pulse">
               <Server style={{ width: 15, height: 15, color: '#e50914' }} />
             </div>
-            <span className="server-title">Streaming Mirrors</span>
+            <span className="server-title">
+              <span className="status-dot" /> Streaming Mirrors
+            </span>
           </div>
           <span className="server-active-label">
             Active: <strong style={{ color: '#ff4444' }}>{serverConfigs[currentServer]?.name}</strong>
@@ -951,6 +953,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         }
 
         .server-icon-pulse {
+          position: relative;
           width: 28px;
           height: 28px;
           border-radius: 8px;
@@ -959,6 +962,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           display: flex;
           align-items: center;
           justify-content: center;
+          box-shadow: 0 0 12px rgba(229, 9, 20, 0.25);
         }
 
         .server-title {
@@ -967,12 +971,34 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           font-weight: 700;
           letter-spacing: 0.5px;
           text-transform: uppercase;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .status-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #10b981;
+          box-shadow: 0 0 8px #10b981;
+          display: inline-block;
+          animation: statusGlow 2s infinite alternate;
+        }
+
+        @keyframes statusGlow {
+          0% { opacity: 0.6; transform: scale(0.9); }
+          100% { opacity: 1; transform: scale(1.1); box-shadow: 0 0 12px #10b981; }
         }
 
         .server-active-label {
-          color: #888;
-          font-size: 0.75rem;
+          color: #a0a0a0;
+          font-size: 0.78rem;
           font-weight: 500;
+          background: rgba(255, 255, 255, 0.03);
+          padding: 4px 10px;
+          border-radius: 20px;
+          border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .server-btn-grid {
