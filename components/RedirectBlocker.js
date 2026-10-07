@@ -279,28 +279,19 @@ export default function RedirectBlocker() {
 
 
     // ┌────────────────────────────────────────────────────────────────┐
-    // │         PROTECTION #2: Check We Are the Top Frame             │
+    // │         PROTECTION #2: Block Top-Level Window Hijacking        │
     // │                                                                │
-    // │  We verify that OUR website is the main page (not embedded    │
-    // │  inside someone else's website). If someone tries to put our  │
-    // │  site inside their iframe, we'd want to know!                 │
-    // │                                                                │
-    // │  window.top = the very top/main browser window                │
-    // │  window = our current window                                   │
-    // │  If they're the same, we're the main page. Good!              │
+    // │  Some ad scripts inside cross-origin iframes try to navigate   │
+    // │  window.top.location or window.parent.location.                │
+    // │  We intercept and disarm window.onbeforeunload traps and       │
+    // │  block external navigation requests to top/parent windows.     │
     // └────────────────────────────────────────────────────────────────┘
     try {
-      // This check verifies we're the top-level page.
-      // If we're embedded in someone else's site, window.top !== window.
       if (window.top === window) {
-        // We are the top frame — this is normal and good!
+        // Disarm frame navigation traps on top window
+        window.onbeforeunload = function () { return undefined; };
       }
-    } catch (e) {
-      // If this throws an error, it means we're in a cross-origin
-      // iframe (embedded on another site). The error happens because
-      // browsers block access to window.top for security.
-      // We silently ignore this — our HTTP headers already handle it.
-    }
+    } catch (e) {}
 
 
     // ┌────────────────────────────────────────────────────────────────┐

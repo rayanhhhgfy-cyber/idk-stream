@@ -5,7 +5,7 @@ import Hls from 'hls.js';
 
 const serverConfigs = {
   1: { name: 'HLS Player', isHls: true, badge: 'Dev' },
-  2: { name: 'Vidking', episodeOffset: 0, baseUrl: 'https://www.vidking.net', badge: '4K Ultra' },
+  2: { name: 'Vidking', episodeOffset: 0, baseUrl: 'https://www.vidking.net', fallbackUrl: 'https://vidsrc.cc', badge: '4K Ultra' },
   3: { name: 'vidsrc.pm', episodeOffset: 0, baseUrl: 'https://vidsrc.pm', badge: 'HD Speed' },
   4: { name: 'autoembed.co', episodeOffset: 0, baseUrl: 'https://autoembed.co', badge: 'Backup' },
   5: { name: 'vidsrc.me', episodeOffset: 0, baseUrl: 'https://vidsrc.me', badge: 'Multi-Lang' },
@@ -102,15 +102,18 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     };
   }, [iframeLoading, playerReady, embedBlocked]);
 
+  const [server2Failed, setServer2Failed] = useState(false);
+
   const buildUrl = (server) => {
     const cfg = serverConfigs[server];
     if (!cfg || cfg.isHls) return '';
     const ep = isTv ? Number(episode) + cfg.episodeOffset : null;
     let url = '';
     if (server === 2) {
+      const activeBase = server2Failed && cfg.fallbackUrl ? cfg.fallbackUrl : cfg.baseUrl;
       url = isTv
-        ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
-        : `${cfg.baseUrl}/embed/movie/${id}`;
+        ? `${activeBase}/embed/tv/${id}/${season}/${ep}`
+        : `${activeBase}/embed/movie/${id}`;
     } else if (server === 3) {
       url = isTv
         ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
@@ -420,6 +423,12 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   };
 
   const handleIframeError = () => {
+    if (currentServer === 2 && !server2Failed) {
+      console.warn('Primary Vidking URL unreachable. Activating high-availability mirror fallback...');
+      setServer2Failed(true);
+      setIframeLoading(true);
+      return;
+    }
     setEmbedBlocked(true);
     setIframeLoading(false);
     setLoadErrorMessage('Failed to load player. The provider may be down.');
