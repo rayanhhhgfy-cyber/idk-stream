@@ -556,7 +556,6 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
             title="Video Player"
             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
             allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope; clipboard-write"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock"
             allowFullScreen
             referrerPolicy="no-referrer-when-downgrade"
             loading="eager"

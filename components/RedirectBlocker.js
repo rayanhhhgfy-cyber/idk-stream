@@ -75,24 +75,66 @@ export default function RedirectBlocker() {
     // └────────────────────────────────────────────────────────────────┘
     const originalWindowOpen = window.open;
 
-    // Replace window.open with an undetectable mock window object.
-    // Many anti-adblock scripts test `const win = window.open(...)` and check if `win` is null, or access properties on `win`.
-    // Returning a realistic dummy window object deceives ad scripts into thinking the popup opened successfully!
+    // Stealth Helper: Disguise overridden functions so anti-adblock scripts inspecting fn.toString() see native code
+    const makeNativeStealth = (fn, name) => {
+      try {
+        Object.defineProperty(fn, 'name', { value: name, configurable: true });
+        const nativeString = `function ${name}() { [native code] }`;
+        fn.toString = function toString() { return nativeString; };
+        Object.defineProperty(fn.toString, 'name', { value: 'toString', configurable: true });
+        fn.toString.toString = function toString() { return 'function toString() { [native code] }'; };
+      } catch {}
+      return fn;
+    };
+
+    // Realistic Mock Window Object that mimics a real Window instance to pass property & type checks
     const createDummyWindow = () => {
       const dummy = {
         closed: false,
-        focus: () => {},
-        blur: () => {},
-        close: function () { this.closed = true; },
-        postMessage: () => {},
-        location: { href: 'about:blank', replace: () => {}, assign: () => {} },
-        document: { write: () => {}, writeln: () => {}, open: () => {}, close: () => {} },
+        focus: function focus() {},
+        blur: function blur() {},
+        close: function close() { this.closed = true; },
+        postMessage: function postMessage() {},
+        opener: window,
+        window: null,
+        self: null,
+        top: null,
+        parent: null,
+        frames: [],
+        length: 0,
+        location: {
+          href: 'about:blank',
+          host: '',
+          hostname: '',
+          protocol: 'about:',
+          pathname: 'blank',
+          search: '',
+          hash: '',
+          replace: function replace() {},
+          assign: function assign() {},
+          reload: function reload() {},
+        },
+        document: {
+          write: function write() {},
+          writeln: function writeln() {},
+          open: function open() {},
+          close: function close() {},
+          location: { href: 'about:blank' },
+          createElement: function createElement() { return document.createElement('div'); },
+        },
       };
+
+      dummy.window = dummy;
+      dummy.self = dummy;
+      dummy.top = dummy;
+      dummy.parent = dummy;
+
       try {
         return new Proxy(dummy, {
           get(target, prop) {
+            if (prop === Symbol.toStringTag) return 'Window';
             if (prop in target) return target[prop];
-            return () => {};
+            return function noop() {};
           },
           set(target, prop, value) {
             target[prop] = value;
@@ -104,14 +146,15 @@ export default function RedirectBlocker() {
       }
     };
 
-    window.open = function (...args) {
-      console.warn('[RedirectBlocker] Intercepted window.open popup attempt:', args[0]);
+    const interceptedOpen = function open(...args) {
+      console.warn('[RedirectBlocker] Stealthily intercepted window.open popup attempt:', args[0]);
       return createDummyWindow();
     };
+    window.open = makeNativeStealth(interceptedOpen, 'open');
 
-    // Override prototype methods for programmatic click and submit actions commonly used by popunder scripts
+    // Override prototype methods stealthily for programmatic click and submit actions
     const originalAnchorClick = HTMLAnchorElement.prototype.click;
-    HTMLAnchorElement.prototype.click = function () {
+    const interceptedAnchorClick = function click() {
       const href = this.getAttribute('href') || '';
       if (
         href &&
@@ -125,9 +168,10 @@ export default function RedirectBlocker() {
       }
       return originalAnchorClick.apply(this, arguments);
     };
+    HTMLAnchorElement.prototype.click = makeNativeStealth(interceptedAnchorClick, 'click');
 
     const originalFormSubmit = HTMLFormElement.prototype.submit;
-    HTMLFormElement.prototype.submit = function () {
+    const interceptedFormSubmit = function submit() {
       const action = this.getAttribute('action') || '';
       if (
         action &&
@@ -140,6 +184,7 @@ export default function RedirectBlocker() {
       }
       return originalFormSubmit.apply(this, arguments);
     };
+    HTMLFormElement.prototype.submit = makeNativeStealth(interceptedFormSubmit, 'submit');
 
     // Prevent popunder or unmount redirect traps
     const handleBeforeUnload = (e) => {
