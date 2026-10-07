@@ -150,7 +150,27 @@ export default function RedirectBlocker() {
       console.warn('[RedirectBlocker] Stealthily intercepted window.open popup attempt:', args[0]);
       return createDummyWindow();
     };
-    window.open = makeNativeStealth(interceptedOpen, 'open');
+    const stealthOpen = makeNativeStealth(interceptedOpen, 'open');
+    window.open = stealthOpen;
+
+    // Patch document.createElement and HTMLIFrameElement contentWindow getter so ad scripts creating clean iframes cannot steal unpatched window.open
+    const originalCreateElement = document.createElement;
+    const interceptedCreateElement = function createElement(tagName, options) {
+      const element = originalCreateElement.call(document, tagName, options);
+      if (typeof tagName === 'string' && tagName.toLowerCase() === 'iframe') {
+        try {
+          element.addEventListener('load', () => {
+            try {
+              if (element.contentWindow) {
+                element.contentWindow.open = stealthOpen;
+              }
+            } catch {}
+          });
+        } catch {}
+      }
+      return element;
+    };
+    document.createElement = makeNativeStealth(interceptedCreateElement, 'createElement');
 
     // Override prototype methods stealthily for programmatic click and submit actions
     const originalAnchorClick = HTMLAnchorElement.prototype.click;
@@ -186,12 +206,76 @@ export default function RedirectBlocker() {
     };
     HTMLFormElement.prototype.submit = makeNativeStealth(interceptedFormSubmit, 'submit');
 
-    // Prevent popunder or unmount redirect traps
+    // Prevent popunder or unmount redirect traps and disarm blur/visibilitychange popunders
     const handleBeforeUnload = (e) => {
       // Clear out any custom leave messages injected by ad scripts
       if (e) e.returnValue = undefined;
     };
     window.addEventListener('beforeunload', handleBeforeUnload, true);
+
+    const handleDisarmPopunder = (e) => {
+      // Stop popunder scripts from executing on window blur or tab hide
+      if (e) e.stopImmediatePropagation();
+    };
+    window.addEventListener('blur', handleDisarmPopunder, true);
+    window.addEventListener('pagehide', handleDisarmPopunder, true);
+    document.addEventListener('visibilitychange', handleDisarmPopunder, true);
+
+    // Stealthily intercept location.assign and location.replace to block external location redirects
+    try {
+      const originalAssign = window.location.assign;
+      const originalReplace = window.location.replace;
+
+      const interceptedAssign = function assign(url) {
+        if (typeof url === 'string' && url.startsWith('http') && !url.startsWith(window.location.origin)) {
+          console.warn('[RedirectBlocker] Blocked location.assign redirect:', url);
+          return;
+        }
+        return originalAssign.call(window.location, url);
+      };
+
+      const interceptedReplace = function replace(url) {
+        if (typeof url === 'string' && url.startsWith('http') && !url.startsWith(window.location.origin)) {
+          console.warn('[RedirectBlocker] Blocked location.replace redirect:', url);
+          return;
+        }
+        return originalReplace.call(window.location, url);
+      };
+
+      window.location.assign = makeNativeStealth(interceptedAssign, 'assign');
+      window.location.replace = makeNativeStealth(interceptedReplace, 'replace');
+    } catch {}
+
+    // Intercept Node.prototype.appendChild and insertBefore to disarm programmatically injected ad elements
+    const originalAppendChild = Node.prototype.appendChild;
+    const interceptedAppendChild = function appendChild(node) {
+      if (node && node.nodeType === 1) {
+        if (node.tagName === 'A') {
+          const href = node.getAttribute('href') || '';
+          if (href.startsWith('http') && !href.startsWith(window.location.origin) && !node.hasAttribute('data-safe-link')) {
+            node.removeAttribute('target');
+            node.onclick = (e) => { e.preventDefault(); e.stopImmediatePropagation(); };
+          }
+        }
+      }
+      return originalAppendChild.call(this, node);
+    };
+    Node.prototype.appendChild = makeNativeStealth(interceptedAppendChild, 'appendChild');
+
+    const originalInsertBefore = Node.prototype.insertBefore;
+    const interceptedInsertBefore = function insertBefore(node, child) {
+      if (node && node.nodeType === 1) {
+        if (node.tagName === 'A') {
+          const href = node.getAttribute('href') || '';
+          if (href.startsWith('http') && !href.startsWith(window.location.origin) && !node.hasAttribute('data-safe-link')) {
+            node.removeAttribute('target');
+            node.onclick = (e) => { e.preventDefault(); e.stopImmediatePropagation(); };
+          }
+        }
+      }
+      return originalInsertBefore.call(this, node, child);
+    };
+    Node.prototype.insertBefore = makeNativeStealth(interceptedInsertBefore, 'insertBefore');
 
 
     // ┌────────────────────────────────────────────────────────────────┐
@@ -515,8 +599,11 @@ export default function RedirectBlocker() {
     // │  catch and block events BEFORE ad scripts can react to them.  │
     // └────────────────────────────────────────────────────────────────┘
 
-    // Listen for ALL clicks on the page (Protection #3).
-    document.addEventListener('click', handleClick, true);
+    // Listen for ALL pointer, touch, and click events on the page to capture pre-click ad triggers (Protection #3).
+    const eventTypes = ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup', 'touchstart', 'touchend', 'auxclick'];
+    eventTypes.forEach(evtName => {
+      document.addEventListener(evtName, handleClick, true);
+    });
 
     // Listen for ALL form submissions (Protection #4).
     document.addEventListener('submit', handleSubmit, true);
@@ -589,14 +676,22 @@ export default function RedirectBlocker() {
     return () => {
       // Restore the original window.open function and prototypes.
       window.open = originalWindowOpen;
+      document.createElement = originalCreateElement;
       HTMLAnchorElement.prototype.click = originalAnchorClick;
       HTMLFormElement.prototype.submit = originalFormSubmit;
+      Node.prototype.appendChild = originalAppendChild;
+      Node.prototype.insertBefore = originalInsertBefore;
 
       // Remove all our event listeners.
-      document.removeEventListener('click', handleClick, true);
+      eventTypes.forEach(evtName => {
+        document.removeEventListener(evtName, handleClick, true);
+      });
       document.removeEventListener('submit', handleSubmit, true);
       window.removeEventListener('message', handleMessage, true);
       window.removeEventListener('beforeunload', handleBeforeUnload, true);
+      window.removeEventListener('blur', handleDisarmPopunder, true);
+      window.removeEventListener('pagehide', handleDisarmPopunder, true);
+      document.removeEventListener('visibilitychange', handleDisarmPopunder, true);
 
       // Stop watching for DOM changes.
       observer.disconnect();
