@@ -75,16 +75,78 @@ export default function RedirectBlocker() {
     // └────────────────────────────────────────────────────────────────┘
     const originalWindowOpen = window.open;
 
-    // Replace window.open with our blocking version.
-    // "...args" captures any arguments the ad script tried to pass.
-    // We log a warning to the console (the developer's debug panel)
-    // so developers can see what was blocked.
-    window.open = function (...args) {
-      // Print a warning message so developers know a popup was blocked.
-      console.warn('[RedirectBlocker] Blocked window.open:', args[0]);
-      // Return null = "no window was opened" — the ad script gets nothing.
-      return null;
+    // Replace window.open with an undetectable mock window object.
+    // Many anti-adblock scripts test `const win = window.open(...)` and check if `win` is null, or access properties on `win`.
+    // Returning a realistic dummy window object deceives ad scripts into thinking the popup opened successfully!
+    const createDummyWindow = () => {
+      const dummy = {
+        closed: false,
+        focus: () => {},
+        blur: () => {},
+        close: function () { this.closed = true; },
+        postMessage: () => {},
+        location: { href: 'about:blank', replace: () => {}, assign: () => {} },
+        document: { write: () => {}, writeln: () => {}, open: () => {}, close: () => {} },
+      };
+      try {
+        return new Proxy(dummy, {
+          get(target, prop) {
+            if (prop in target) return target[prop];
+            return () => {};
+          },
+          set(target, prop, value) {
+            target[prop] = value;
+            return true;
+          }
+        });
+      } catch {
+        return dummy;
+      }
     };
+
+    window.open = function (...args) {
+      console.warn('[RedirectBlocker] Intercepted window.open popup attempt:', args[0]);
+      return createDummyWindow();
+    };
+
+    // Override prototype methods for programmatic click and submit actions commonly used by popunder scripts
+    const originalAnchorClick = HTMLAnchorElement.prototype.click;
+    HTMLAnchorElement.prototype.click = function () {
+      const href = this.getAttribute('href') || '';
+      if (
+        href &&
+        !href.startsWith('/') &&
+        !href.startsWith('#') &&
+        !href.startsWith(window.location.origin) &&
+        !this.hasAttribute('data-safe-link')
+      ) {
+        console.warn('[RedirectBlocker] Intercepted programmatic anchor click:', href);
+        return;
+      }
+      return originalAnchorClick.apply(this, arguments);
+    };
+
+    const originalFormSubmit = HTMLFormElement.prototype.submit;
+    HTMLFormElement.prototype.submit = function () {
+      const action = this.getAttribute('action') || '';
+      if (
+        action &&
+        !action.startsWith('/') &&
+        !action.startsWith('#') &&
+        !action.startsWith(window.location.origin)
+      ) {
+        console.warn('[RedirectBlocker] Intercepted programmatic form submission:', action);
+        return;
+      }
+      return originalFormSubmit.apply(this, arguments);
+    };
+
+    // Prevent popunder or unmount redirect traps
+    const handleBeforeUnload = (e) => {
+      // Clear out any custom leave messages injected by ad scripts
+      if (e) e.returnValue = undefined;
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload, true);
 
 
     // ┌────────────────────────────────────────────────────────────────┐
@@ -442,7 +504,7 @@ export default function RedirectBlocker() {
       document.querySelectorAll('iframe:not([data-player])').forEach((iframe) => {
         const src = iframe.getAttribute('src') || '';
         // Only remove if it's not one of our trusted video sources.
-        if (!src.includes('vidsrc') && !src.includes('vidking') && !src.includes('embed.su') && !src.includes('ezvidapi') && !src.includes('autoembed') && src !== '') {
+        if (!src.includes('vidsrc') && !src.includes('vidking') && !src.includes('embed.su') && !src.includes('ezvidapi') && !src.includes('autoembed') && !src.includes('vaplayer') && !src.includes('vidapi') && src !== '') {
           iframe.remove();
           console.warn('[RedirectBlocker] Cleanup removed rogue iframe:', src);
         }
@@ -480,13 +542,16 @@ export default function RedirectBlocker() {
     // │    - Cancel the cleaning schedule (clear interval)             │
     // └────────────────────────────────────────────────────────────────┘
     return () => {
-      // Restore the original window.open function.
+      // Restore the original window.open function and prototypes.
       window.open = originalWindowOpen;
+      HTMLAnchorElement.prototype.click = originalAnchorClick;
+      HTMLFormElement.prototype.submit = originalFormSubmit;
 
       // Remove all our event listeners.
       document.removeEventListener('click', handleClick, true);
       document.removeEventListener('submit', handleSubmit, true);
       window.removeEventListener('message', handleMessage, true);
+      window.removeEventListener('beforeunload', handleBeforeUnload, true);
 
       // Stop watching for DOM changes.
       observer.disconnect();
