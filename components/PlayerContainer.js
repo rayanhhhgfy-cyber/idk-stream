@@ -5,10 +5,10 @@ import Hls from 'hls.js';
 
 const serverConfigs = {
   1: { name: 'HLS Player', isHls: true, badge: 'Dev' },
-  2: { name: 'vidking.net', episodeOffset: 0, baseUrl: 'https://www.vidking.net', badge: 'Fast' },
+  2: { name: 'vidsrc.to', episodeOffset: 0, baseUrl: 'https://vidsrc.to', badge: 'Fast' },
   3: { name: 'vidsrc.pm', episodeOffset: 0, baseUrl: 'https://vidsrc.pm', badge: 'HD' },
   4: { name: 'autoembed.co', episodeOffset: 0, baseUrl: 'https://autoembed.co', badge: 'Backup' },
-  5: { name: 'vidsrc.cc', episodeOffset: 0, baseUrl: 'https://vidsrc.cc', badge: 'Multi' },
+  5: { name: 'vidsrc.me', episodeOffset: 0, baseUrl: 'https://vidsrc.me', badge: 'Multi' },
   6: { name: 'VAPlayer', episodeOffset: 0, baseUrl: 'https://vaplayer.ru', badge: 'VidAPI' },
 };
 
@@ -121,8 +121,8 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         : `${cfg.baseUrl}/movie/tmdb/${id}`;
     } else if (server === 5) {
       url = isTv
-        ? `${cfg.baseUrl}/vidsrc/tv/${id}/${season}/${ep}`
-        : `${cfg.baseUrl}/vidsrc/movie/${id}`;
+        ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
+        : `${cfg.baseUrl}/embed/movie/${id}`;
     } else if (server === 6) {
       url = isTv
         ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
@@ -703,134 +703,79 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         </div>
       )}
 
-      {/* Modern Server Selection Bar */}
-      <div style={{
-        marginTop: '18px',
-        padding: '16px 20px',
-        background: 'rgba(18, 18, 22, 0.75)',
-        backdropFilter: 'blur(16px)',
-        borderRadius: '16px',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '14px',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Server style={{ width: 16, height: 16, color: '#e50914' }} />
-            <span style={{ color: '#fff', fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase' }}>Select Streaming Server</span>
+      {/* Modern Ultra-Responsive Server Selection Bar */}
+      <div className="server-selector-card">
+        <div className="server-selector-header">
+          <div className="server-title-group">
+            <div className="server-icon-pulse">
+              <Server style={{ width: 15, height: 15, color: '#e50914' }} />
+            </div>
+            <span className="server-title">Streaming Mirrors</span>
           </div>
-          <span style={{ color: '#888', fontSize: '0.75rem', fontWeight: 500 }}>
+          <span className="server-active-label">
             Active: <strong style={{ color: '#ff4444' }}>{serverConfigs[currentServer]?.name}</strong>
           </span>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-start', flexWrap: 'wrap', alignItems: 'center' }}>
-          {Object.keys(serverConfigs)
-            .map(Number)
-            .filter(srvNum => isDev || srvNum !== 1)
-            .map(srvNum => {
-              const cfg = serverConfigs[srvNum];
-              const active = currentServer === srvNum;
-              return (
-                <button
-                  key={srvNum}
-                  onClick={() => switchServer(srvNum)}
-                  className={`server-btn ${active ? 'active' : ''}`}
-                  style={{
-                    position: 'relative',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '10px 18px',
-                    borderRadius: '12px',
-                    border: active ? '1px solid rgba(229,9,20,0.8)' : '1px solid rgba(255,255,255,0.08)',
-                    background: active
-                      ? 'linear-gradient(135deg, rgba(229,9,20,0.3) 0%, rgba(180,0,10,0.15) 100%)'
-                      : 'rgba(255,255,255,0.04)',
-                    color: active ? '#ffffff' : '#a0a0a0',
-                    fontWeight: active ? 700 : 600,
-                    fontSize: '0.85rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                    boxShadow: active ? '0 0 20px rgba(229,9,20,0.35)' : 'none',
-                  }}
-                >
-                  <Server style={{ width: 14, height: 14, color: active ? '#ff4444' : '#777' }} />
-                  <span>{cfg.name}</span>
-                  {cfg.badge && (
-                    <span style={{
-                      fontSize: '0.65rem',
-                      fontWeight: 800,
-                      padding: '2px 6px',
-                      borderRadius: '6px',
-                      background: active ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)',
-                      color: active ? '#fff' : '#888',
-                      letterSpacing: '0.5px',
-                    }}>
-                      {cfg.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-
-          {/* Quality Chooser */}
-          <div ref={qualityMenuRef} style={{ position: 'relative', marginLeft: 'auto' }}>
-            <button
-              onClick={() => setShowQualityMenu(!showQualityMenu)}
-              className="action-btn"
-              style={{
-                display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', borderRadius: '12px',
-                border: '1px solid rgba(255,255,255,0.08)',
-                background: showQualityMenu ? 'rgba(229,9,20,0.25)' : 'rgba(255,255,255,0.04)',
-                color: showQualityMenu ? '#ff4444' : '#ccc', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.25s ease',
-              }}
-            >
-              <Monitor style={{ width: 14, height: 14 }} />
-              {quality === 'auto' ? 'Auto Quality' : quality}
-            </button>
-            {showQualityMenu && (
-              <div style={{
-                position: 'absolute', bottom: '100%', right: 0,
-                marginBottom: '8px', background: '#16161a', border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: '12px', padding: '6px', zIndex: 50, minWidth: '140px',
-                boxShadow: '0 10px 40px rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)',
-              }}>
-                {qualityOptions.map(q => (
+        <div className="server-btn-grid">
+          <div className="server-btn-scroll-container">
+            {Object.keys(serverConfigs)
+              .map(Number)
+              .filter(srvNum => isDev || srvNum !== 1)
+              .map(srvNum => {
+                const cfg = serverConfigs[srvNum];
+                const active = currentServer === srvNum;
+                return (
                   <button
-                    key={q}
-                    onClick={() => { setQuality(q); setShowQualityMenu(false); }}
-                    style={{
-                      display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px',
-                      border: 'none', borderRadius: '8px', background: q === quality ? 'rgba(229,9,20,0.25)' : 'transparent',
-                      color: q === quality ? '#ff4444' : '#ccc', fontWeight: q === quality ? 700 : 500,
-                      fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.15s',
-                    }}
-                    onMouseEnter={(e) => { if (q !== quality) e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
-                    onMouseLeave={(e) => { if (q !== quality) e.currentTarget.style.background = 'transparent'; }}
+                    key={srvNum}
+                    onClick={() => switchServer(srvNum)}
+                    className={`server-btn ${active ? 'active' : ''}`}
                   >
-                    {q === 'auto' ? 'Auto (Up to 4K)' : q}
+                    <Server className="srv-icon" style={{ width: 14, height: 14, color: active ? '#ff4444' : '#888' }} />
+                    <span className="srv-name">{cfg.name}</span>
+                    {cfg.badge && (
+                      <span className="srv-badge">
+                        {cfg.badge}
+                      </span>
+                    )}
                   </button>
-                ))}
-              </div>
-            )}
+                );
+              })}
           </div>
 
-          <button
-            onClick={togglePiP}
-            className="action-btn"
-            style={{
-              display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', borderRadius: '12px',
-              border: pipActive ? '1px solid rgba(229,9,20,0.6)' : '1px solid rgba(255,255,255,0.08)',
-              background: pipActive ? 'linear-gradient(135deg, rgba(229,9,20,0.3), rgba(229,9,20,0.1))' : 'rgba(255,255,255,0.04)',
-              color: pipActive ? '#ff4444' : '#ccc', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.25s ease',
-            }}
-          >
-            <PictureInPicture2 style={{ width: 14, height: 14 }} />
-            {pipActive ? 'Exit PiP' : 'Pop Out'}
-          </button>
+          <div className="utility-actions-group">
+            {/* Quality Chooser */}
+            <div ref={qualityMenuRef} style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowQualityMenu(!showQualityMenu)}
+                className="action-btn"
+              >
+                <Monitor style={{ width: 14, height: 14 }} />
+                <span>{quality === 'auto' ? 'Auto Quality' : quality}</span>
+              </button>
+              {showQualityMenu && (
+                <div className="quality-dropdown-menu">
+                  {qualityOptions.map(q => (
+                    <button
+                      key={q}
+                      onClick={() => { setQuality(q); setShowQualityMenu(false); }}
+                      className={`quality-opt-btn ${q === quality ? 'selected' : ''}`}
+                    >
+                      {q === 'auto' ? 'Auto (Up to 4K)' : q}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={togglePiP}
+              className={`action-btn ${pipActive ? 'pip-active' : ''}`}
+            >
+              <PictureInPicture2 style={{ width: 14, height: 14 }} />
+              <span>{pipActive ? 'Exit PiP' : 'Pop Out'}</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -978,18 +923,231 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         @keyframes playerSpin { to { transform: rotate(360deg); } }
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        .server-selector-card {
+          margin-top: 18px;
+          padding: 16px 20px;
+          background: rgba(18, 18, 22, 0.85);
+          backdrop-filter: blur(20px);
+          border-radius: 18px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+
+        .server-selector-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+
+        .server-title-group {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .server-icon-pulse {
+          width: 28px;
+          height: 28px;
+          border-radius: 8px;
+          background: rgba(229, 9, 20, 0.15);
+          border: 1px solid rgba(229, 9, 20, 0.3);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .server-title {
+          color: #fff;
+          font-size: 0.85rem;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+        }
+
+        .server-active-label {
+          color: #888;
+          font-size: 0.75rem;
+          font-weight: 500;
+        }
+
+        .server-btn-grid {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+        }
+
+        .server-btn-scroll-container {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+          align-items: center;
+          flex: 1;
+        }
+
+        .utility-actions-group {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+        }
+
+        .server-btn {
+          position: relative;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 16px;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: rgba(255, 255, 255, 0.04);
+          color: #a0a0a0;
+          font-weight: 600;
+          font-size: 0.85rem;
+          cursor: pointer;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          white-space: nowrap;
+        }
+
         .server-btn:hover:not(.active) {
-          border-color: rgba(255, 255, 255, 0.25) !important;
-          background: rgba(255, 255, 255, 0.08) !important;
-          color: #ffffff !important;
+          border-color: rgba(255, 255, 255, 0.25);
+          background: rgba(255, 255, 255, 0.08);
+          color: #ffffff;
           transform: translateY(-2px);
         }
 
+        .server-btn.active {
+          border-color: rgba(229, 9, 20, 0.8);
+          background: linear-gradient(135deg, rgba(229, 9, 20, 0.35) 0%, rgba(180, 0, 10, 0.18) 100%);
+          color: #ffffff;
+          font-weight: 700;
+          box-shadow: 0 0 20px rgba(229, 9, 20, 0.35);
+        }
+
+        .srv-badge {
+          font-size: 0.65rem;
+          font-weight: 800;
+          padding: 2px 6px;
+          border-radius: 6px;
+          background: rgba(255, 255, 255, 0.08);
+          color: #888;
+          letter-spacing: 0.5px;
+        }
+
+        .server-btn.active .srv-badge {
+          background: rgba(255, 255, 255, 0.2);
+          color: #fff;
+        }
+
+        .action-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 10px 16px;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: rgba(255, 255, 255, 0.04);
+          color: #ccc;
+          font-weight: 600;
+          font-size: 0.85rem;
+          cursor: pointer;
+          transition: all 0.25s ease;
+          white-space: nowrap;
+        }
+
         .action-btn:hover {
-          border-color: rgba(255, 255, 255, 0.25) !important;
-          background: rgba(255, 255, 255, 0.08) !important;
-          color: #ffffff !important;
+          border-color: rgba(255, 255, 255, 0.25);
+          background: rgba(255, 255, 255, 0.08);
+          color: #ffffff;
           transform: translateY(-2px);
+        }
+
+        .action-btn.pip-active {
+          border-color: rgba(229, 9, 20, 0.6);
+          background: linear-gradient(135deg, rgba(229, 9, 20, 0.3), rgba(229, 9, 20, 0.1));
+          color: #ff4444;
+        }
+
+        .quality-dropdown-menu {
+          position: absolute;
+          bottom: 100%;
+          right: 0;
+          margin-bottom: 8px;
+          background: #16161a;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 12px;
+          padding: 6px;
+          z-index: 50;
+          min-width: 140px;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+          backdrop-filter: blur(10px);
+        }
+
+        .quality-opt-btn {
+          display: block;
+          width: 100%;
+          text-align: left;
+          padding: 8px 14px;
+          border: none;
+          border-radius: 8px;
+          background: transparent;
+          color: #ccc;
+          font-weight: 500;
+          font-size: 0.8rem;
+          cursor: pointer;
+          transition: all 0.15s;
+        }
+
+        .quality-opt-btn:hover {
+          background: rgba(255, 255, 255, 0.08);
+          color: #fff;
+        }
+
+        .quality-opt-btn.selected {
+          background: rgba(229, 9, 20, 0.25);
+          color: #ff4444;
+          font-weight: 700;
+        }
+
+        @media (max-width: 768px) {
+          .server-selector-card {
+            padding: 14px;
+            border-radius: 14px;
+          }
+
+          .server-btn-scroll-container {
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            padding-bottom: 4px;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+          }
+
+          .server-btn {
+            scroll-snap-align: start;
+            flex-shrink: 0;
+            padding: 8px 14px;
+            font-size: 0.8rem;
+          }
+
+          .utility-actions-group {
+            width: 100%;
+            justify-content: space-between;
+            margin-top: 4px;
+          }
+
+          .action-btn {
+            flex: 1;
+            justify-content: center;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+          }
         }
       `}</style>
     </div>
