@@ -131,7 +131,7 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "frame-ancestors 'self'",
-              "frame-src 'self' https://www.vidking.net https://vidking.net https://vidsrc.to https://vidsrc.cc https://vidsrc.pro https://embed.su https://ezvidapi.com https://vidsrc.pm https://autoembed.co https://player.autoembed.co https://*.vidking.net https://*.vidsrc.to https://*.vidsrc.cc https://*.vidsrc.pro https://*.embed.su https://*.ezvidapi.com https://*.vidsrc.pm https://*.autoembed.co https://*.player.autoembed.co",
+              "frame-src 'self' https://www.vidking.net https://vidking.net https://vidsrc.to https://vidsrc.cc https://vidsrc.pro https://embed.su https://ezvidapi.com https://vidsrc.pm https://autoembed.co https://player.autoembed.co https://vaplayer.ru https://vidapi.ru https://*.vidking.net https://*.vidsrc.to https://*.vidsrc.cc https://*.vidsrc.pro https://*.embed.su https://*.ezvidapi.com https://*.vidsrc.pm https://*.autoembed.co https://*.player.autoembed.co https://*.vaplayer.ru https://*.vidapi.ru",
             ].join('; '),
           },
 

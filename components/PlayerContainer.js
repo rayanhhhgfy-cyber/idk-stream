@@ -4,11 +4,12 @@ import { Server, SkipForward, X, PictureInPicture2, PictureInPicture, Monitor } 
 import Hls from 'hls.js';
 
 const serverConfigs = {
-  1: { name: 'HLS Player', isHls: true },
-  2: { name: 'vidking.net', episodeOffset: 0, baseUrl: 'https://www.vidking.net' },
-  3: { name: 'vidsrc.pm', episodeOffset: 0, baseUrl: 'https://vidsrc.pm' },
-  4: { name: 'autoembed.co', episodeOffset: 0, baseUrl: 'https://autoembed.co' },
-  5: { name: 'vidsrc.cc', episodeOffset: 0, baseUrl: 'https://vidsrc.cc' },
+  1: { name: 'HLS Player', isHls: true, badge: 'Dev' },
+  2: { name: 'vidking.net', episodeOffset: 0, baseUrl: 'https://www.vidking.net', badge: 'Fast' },
+  3: { name: 'vidsrc.pm', episodeOffset: 0, baseUrl: 'https://vidsrc.pm', badge: 'HD' },
+  4: { name: 'autoembed.co', episodeOffset: 0, baseUrl: 'https://autoembed.co', badge: 'Backup' },
+  5: { name: 'vidsrc.cc', episodeOffset: 0, baseUrl: 'https://vidsrc.cc', badge: 'Multi' },
+  6: { name: 'VAPlayer', episodeOffset: 0, baseUrl: 'https://vaplayer.ru', badge: 'VidAPI' },
 };
 
 export default function PlayerContainer({ type, id, season, episode, autoPlayNext, onNextEpisode, nextEpisodeTitle, episodeRuntime, onSyncTime }) {
@@ -122,6 +123,10 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       url = isTv
         ? `${cfg.baseUrl}/vidsrc/tv/${id}/${season}/${ep}`
         : `${cfg.baseUrl}/vidsrc/movie/${id}`;
+    } else if (server === 6) {
+      url = isTv
+        ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
+        : `${cfg.baseUrl}/embed/movie/${id}`;
     }
     const params = [];
     if (server === 2) {
@@ -515,14 +520,6 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const dismissCountdown = () => { setShowCountdown(false); setCountdown(15); clearTimeout(autoPlayTimerRef.current); clearInterval(countdownRef.current); };
   const skipToNext = () => { clearInterval(countdownRef.current); setShowCountdown(false); setCountdown(15); if (onNextEpisode) onNextEpisode(); };
 
-  const serverBtnStyle = (active, disabled) => ({
-    display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 22px', borderRadius: '10px',
-    border: active ? '1px solid rgba(229,9,20,0.5)' : '1px solid rgba(255,255,255,0.08)',
-    background: active ? 'linear-gradient(135deg, rgba(229,9,20,0.2), rgba(229,9,20,0.05))' : 'rgba(255,255,255,0.04)',
-    color: active ? '#ff4444' : '#888', fontWeight: 600, fontSize: '0.85rem', cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.25s ease',
-    opacity: disabled ? 0.45 : 1,
-  });
-
   const switchServer = (server) => {
     setIframeLoading(true);
     setEmbedBlocked(false);
@@ -535,8 +532,21 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   };
 
   return (
-    <div>
-      <div data-player="true" style={{ position: 'relative', width: '100%', paddingTop: '56.25%', background: '#111', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
+    <div style={{ width: '100%' }}>
+      <div
+        data-player="true"
+        style={{
+          position: 'relative',
+          width: '100%',
+          paddingTop: '56.25%',
+          background: 'linear-gradient(180deg, #0d0d0f 0%, #050507 100%)',
+          borderRadius: '20px',
+          overflow: 'hidden',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 30px rgba(229, 9, 20, 0.08)',
+          backdropFilter: 'blur(10px)',
+        }}
+      >
 
         {playerReady && !serverConfigs[currentServer].isHls && (
           <iframe
@@ -693,71 +703,135 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         </div>
       )}
 
-      {/* Server buttons + Quality + PiP row */}
-      <div style={{ display: 'flex', gap: '10px', marginTop: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
-        {isDev && (
-          <button onClick={() => switchServer(1)} style={serverBtnStyle(currentServer === 1, false)}>
-            <Server style={{ width: 14, height: 14 }} /> HLS Player
-          </button>
-        )}
-        <button onClick={() => switchServer(2)} style={serverBtnStyle(currentServer === 2, false)}><Server style={{ width: 14, height: 14 }} /> Vidking</button>
-        <button onClick={() => switchServer(3)} style={serverBtnStyle(currentServer === 3, false)}><Server style={{ width: 14, height: 14 }} /> Vidsrc.pm</button>
-        <button onClick={() => switchServer(4)} style={serverBtnStyle(currentServer === 4, false)}><Server style={{ width: 14, height: 14 }} /> Autoembed</button>
-        <button onClick={() => switchServer(5)} style={serverBtnStyle(currentServer === 5, false)}><Server style={{ width: 14, height: 14 }} /> Vidsrc.cc</button>
-
-        {/* Quality Chooser */}
-        <div ref={qualityMenuRef} style={{ position: 'relative' }}>
-          <button
-            onClick={() => setShowQualityMenu(!showQualityMenu)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 22px', borderRadius: '10px',
-              border: '1px solid rgba(255,255,255,0.08)',
-              background: showQualityMenu ? 'rgba(229,9,20,0.15)' : 'rgba(255,255,255,0.04)',
-              color: showQualityMenu ? '#ff4444' : '#888', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.25s ease',
-            }}
-          >
-            <Monitor style={{ width: 14, height: 14 }} />
-            {quality === 'auto' ? 'Auto' : quality}
-          </button>
-          {showQualityMenu && (
-            <div style={{
-              position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
-              marginBottom: '8px', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: '12px', padding: '6px', zIndex: 50, minWidth: '120px',
-              boxShadow: '0 10px 40px rgba(0,0,0,0.6)',
-            }}>
-              {qualityOptions.map(q => (
-                <button
-                  key={q}
-                  onClick={() => { setQuality(q); setShowQualityMenu(false); }}
-                  style={{
-                    display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px',
-                    border: 'none', borderRadius: '8px', background: q === quality ? 'rgba(229,9,20,0.2)' : 'transparent',
-                    color: q === quality ? '#ff4444' : '#ccc', fontWeight: q === quality ? 700 : 500,
-                    fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.15s',
-                  }}
-                  onMouseEnter={(e) => { if (q !== quality) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
-                  onMouseLeave={(e) => { if (q !== quality) e.currentTarget.style.background = 'transparent'; }}
-                >
-                  {q === 'auto' ? 'Auto (Up to 4K)' : q}
-                </button>
-              ))}
-            </div>
-          )}
+      {/* Modern Server Selection Bar */}
+      <div style={{
+        marginTop: '18px',
+        padding: '16px 20px',
+        background: 'rgba(18, 18, 22, 0.75)',
+        backdropFilter: 'blur(16px)',
+        borderRadius: '16px',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '14px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Server style={{ width: 16, height: 16, color: '#e50914' }} />
+            <span style={{ color: '#fff', fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase' }}>Select Streaming Server</span>
+          </div>
+          <span style={{ color: '#888', fontSize: '0.75rem', fontWeight: 500 }}>
+            Active: <strong style={{ color: '#ff4444' }}>{serverConfigs[currentServer]?.name}</strong>
+          </span>
         </div>
 
-        <button
-          onClick={togglePiP}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 22px', borderRadius: '10px',
-            border: pipActive ? '1px solid rgba(229,9,20,0.5)' : '1px solid rgba(255,255,255,0.08)',
-            background: pipActive ? 'linear-gradient(135deg, rgba(229,9,20,0.2), rgba(229,9,20,0.05))' : 'rgba(255,255,255,0.04)',
-            color: pipActive ? '#ff4444' : '#888', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.25s ease',
-          }}
-        >
-          <PictureInPicture2 style={{ width: 14, height: 14 }} />
-          {pipActive ? 'Exit PiP' : 'Pop Out'}
-        </button>
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-start', flexWrap: 'wrap', alignItems: 'center' }}>
+          {Object.keys(serverConfigs)
+            .map(Number)
+            .filter(srvNum => isDev || srvNum !== 1)
+            .map(srvNum => {
+              const cfg = serverConfigs[srvNum];
+              const active = currentServer === srvNum;
+              return (
+                <button
+                  key={srvNum}
+                  onClick={() => switchServer(srvNum)}
+                  className={`server-btn ${active ? 'active' : ''}`}
+                  style={{
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 18px',
+                    borderRadius: '12px',
+                    border: active ? '1px solid rgba(229,9,20,0.8)' : '1px solid rgba(255,255,255,0.08)',
+                    background: active
+                      ? 'linear-gradient(135deg, rgba(229,9,20,0.3) 0%, rgba(180,0,10,0.15) 100%)'
+                      : 'rgba(255,255,255,0.04)',
+                    color: active ? '#ffffff' : '#a0a0a0',
+                    fontWeight: active ? 700 : 600,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: active ? '0 0 20px rgba(229,9,20,0.35)' : 'none',
+                  }}
+                >
+                  <Server style={{ width: 14, height: 14, color: active ? '#ff4444' : '#777' }} />
+                  <span>{cfg.name}</span>
+                  {cfg.badge && (
+                    <span style={{
+                      fontSize: '0.65rem',
+                      fontWeight: 800,
+                      padding: '2px 6px',
+                      borderRadius: '6px',
+                      background: active ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)',
+                      color: active ? '#fff' : '#888',
+                      letterSpacing: '0.5px',
+                    }}>
+                      {cfg.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+
+          {/* Quality Chooser */}
+          <div ref={qualityMenuRef} style={{ position: 'relative', marginLeft: 'auto' }}>
+            <button
+              onClick={() => setShowQualityMenu(!showQualityMenu)}
+              className="action-btn"
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', borderRadius: '12px',
+                border: '1px solid rgba(255,255,255,0.08)',
+                background: showQualityMenu ? 'rgba(229,9,20,0.25)' : 'rgba(255,255,255,0.04)',
+                color: showQualityMenu ? '#ff4444' : '#ccc', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.25s ease',
+              }}
+            >
+              <Monitor style={{ width: 14, height: 14 }} />
+              {quality === 'auto' ? 'Auto Quality' : quality}
+            </button>
+            {showQualityMenu && (
+              <div style={{
+                position: 'absolute', bottom: '100%', right: 0,
+                marginBottom: '8px', background: '#16161a', border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: '12px', padding: '6px', zIndex: 50, minWidth: '140px',
+                boxShadow: '0 10px 40px rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)',
+              }}>
+                {qualityOptions.map(q => (
+                  <button
+                    key={q}
+                    onClick={() => { setQuality(q); setShowQualityMenu(false); }}
+                    style={{
+                      display: 'block', width: '100%', textAlign: 'left', padding: '8px 14px',
+                      border: 'none', borderRadius: '8px', background: q === quality ? 'rgba(229,9,20,0.25)' : 'transparent',
+                      color: q === quality ? '#ff4444' : '#ccc', fontWeight: q === quality ? 700 : 500,
+                      fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={(e) => { if (q !== quality) e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+                    onMouseLeave={(e) => { if (q !== quality) e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    {q === 'auto' ? 'Auto (Up to 4K)' : q}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={togglePiP}
+            className="action-btn"
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', borderRadius: '12px',
+              border: pipActive ? '1px solid rgba(229,9,20,0.6)' : '1px solid rgba(255,255,255,0.08)',
+              background: pipActive ? 'linear-gradient(135deg, rgba(229,9,20,0.3), rgba(229,9,20,0.1))' : 'rgba(255,255,255,0.04)',
+              color: pipActive ? '#ff4444' : '#ccc', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.25s ease',
+            }}
+          >
+            <PictureInPicture2 style={{ width: 14, height: 14 }} />
+            {pipActive ? 'Exit PiP' : 'Pop Out'}
+          </button>
+        </div>
       </div>
 
       {showIosPipModal && (
@@ -903,6 +977,20 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         @keyframes pipPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
         @keyframes playerSpin { to { transform: rotate(360deg); } }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        .server-btn:hover:not(.active) {
+          border-color: rgba(255, 255, 255, 0.25) !important;
+          background: rgba(255, 255, 255, 0.08) !important;
+          color: #ffffff !important;
+          transform: translateY(-2px);
+        }
+
+        .action-btn:hover {
+          border-color: rgba(255, 255, 255, 0.25) !important;
+          background: rgba(255, 255, 255, 0.08) !important;
+          color: #ffffff !important;
+          transform: translateY(-2px);
+        }
       `}</style>
     </div>
   );
