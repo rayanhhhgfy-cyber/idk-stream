@@ -1,0 +1,374 @@
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║                    🎨  GLOBAL STYLES  🎨                           ║
+   ║                                                                    ║
+   ║  This CSS file contains ALL the styles that apply to EVERY page.   ║
+   ║  It's like the "paint and wallpaper" for the entire house.         ║
+   ║                                                                    ║
+   ║  WHAT'S IN THIS FILE:                                              ║
+   ║    1. Custom Properties (CSS Variables) — our color palette        ║
+   ║    2. Base Styles — resets and body defaults                       ║
+   ║    3. Scrollbar Styling — custom red scrollbar                     ║
+   ║    4. Animations — keyframe animations for visual effects          ║
+   ║    5. Animation Classes — reusable CSS classes for animations      ║
+   ║    6. Layout Helpers — movie rows, cards, glassmorphism            ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+
+/* This imports Tailwind CSS. Tailwind provides utility classes
+   like "flex", "p-4", "text-white", etc. Even though we mostly use
+   inline styles, Tailwind is still imported as part of the project setup. */
+@import "tailwindcss";
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SECTION 1: CUSTOM PROPERTIES (CSS Variables)
+   ═══════════════════════════════════════════════════════════════════════
+   CSS variables are like "shortcuts" for colors and values.
+   Instead of typing "#e50914" every time we want our red color,
+   we can just type "var(--accent)" — it's shorter AND if we ever
+   want to change the red color, we only change it in ONE place!
+
+   The ":root" selector means these variables are available EVERYWHERE
+   on the entire website.
+
+   Think of it like naming your crayons:
+     --accent = "Netflix Red"
+     --bg-primary = "Really Dark Black"
+     --text-primary = "White"
+*/
+:root {
+  --accent: #e50914;             /* Our brand red color (Netflix-style red) */
+  --accent-hover: #b20710;       /* A darker red for hover states */
+  --bg-primary: #0a0a0a;         /* The main background color (nearly black) */
+  --bg-secondary: #141414;       /* A slightly lighter dark background */
+  --bg-card: #1a1a1a;            /* Background for card elements */
+  --text-primary: #ffffff;       /* Main text color (white) */
+  --text-secondary: #a1a1a1;     /* Secondary text color (gray) */
+  --glass: rgba(10, 10, 10, 0.7); /* Semi-transparent dark for glass effects */
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SECTION 2: BASE STYLES
+   ═══════════════════════════════════════════════════════════════════════
+   These styles reset browser defaults and set up the foundation.
+   
+   Every browser has its own default styles (margins, padding, etc.)
+   that can cause inconsistencies. The "reset" below makes every
+   browser start from the same baseline — like giving everyone
+   a blank piece of paper before they start drawing.
+*/
+
+/* Universal reset — applies to ALL elements */
+* {
+  margin: 0;           /* Remove default margins */
+  padding: 0;          /* Remove default padding */
+  box-sizing: border-box; /* Make width/height include padding and borders
+                            (this makes sizing much more intuitive!) */
+}
+
+/* Body styles — the main page container */
+body {
+  background-color: var(--bg-primary);  /* Dark background */
+  color: var(--text-primary);           /* White text */
+  /* Font stack: try Inter first, then fall back to system fonts */
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  /* Font smoothing makes text look sharper on Mac/iOS */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden; /* Prevent horizontal scrollbar */
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SECTION 3: CUSTOM SCROLLBAR
+   ═══════════════════════════════════════════════════════════════════════
+   By default, scrollbars are ugly gray bars. We make them match
+   our site's dark theme with a red thumb (the draggable part).
+
+   These only work in Chrome, Safari, and Edge (WebKit browsers).
+   Firefox uses "scrollbar-width" and "scrollbar-color" properties
+   which are set inline in the components.
+*/
+
+/* The scrollbar track (the background groove) */
+::-webkit-scrollbar {
+  width: 6px;    /* Vertical scrollbar width */
+  height: 6px;   /* Horizontal scrollbar height */
+}
+
+/* The track background (the groove the thumb slides in) */
+::-webkit-scrollbar-track {
+  background: transparent; /* Invisible track */
+}
+
+/* The thumb (the draggable part you click and drag) */
+::-webkit-scrollbar-thumb {
+  background: var(--accent);  /* Our red color! */
+  border-radius: 999px;       /* Fully rounded (pill shape) */
+}
+
+/* The thumb when you hover over it — slightly darker red */
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-hover);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SECTION 4: KEYFRAME ANIMATIONS
+   ═══════════════════════════════════════════════════════════════════════
+   Keyframe animations define how something moves or changes over time.
+   They're like flipbook animations — you define the start and end
+   states, and the browser figures out all the in-between frames.
+
+   "from" = the starting state (0% of the animation)
+   "to" = the ending state (100% of the animation)
+
+   These are reusable — any element can use them via CSS classes.
+*/
+
+/* fadeInUp: Element fades in while sliding up from below.
+   Used for: content appearing on the hero section, page transitions.
+   Visual: starts invisible and 30px below, ends visible at normal position. */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;                    /* Start invisible */
+    transform: translateY(30px);   /* Start 30px below */
+  }
+  to {
+    opacity: 1;                    /* End fully visible */
+    transform: translateY(0);      /* End at normal position */
+  }
+}
+
+/* fadeIn: Simple fade in (no movement, just transparency change).
+   Used for: subtle element appearances.
+   Visual: starts invisible, ends visible. */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* slideInLeft: Element slides in from the left side.
+   Used for: elements entering from the left edge of the screen.
+   Visual: starts invisible and 40px to the left, slides to normal position. */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);  /* Start 40px to the left */
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);     /* End at normal position */
+  }
+}
+
+/* slideInRight: Element slides in from the right side.
+   Used for: elements entering from the right edge of the screen. */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(40px);   /* Start 40px to the right */
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* scaleIn: Element starts smaller and grows to full size.
+   Used for: the video player container appearing.
+   Visual: starts at 90% size and invisible, grows to 100% and visible. */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);        /* Start at 90% size */
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);          /* End at full size */
+  }
+}
+
+/* shimmer: A shiny sweep effect (like light reflecting off metal).
+   Used for: loading skeleton placeholders.
+   Visual: a bright spot sweeps from left to right across the element. */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }   /* Light is far left */
+  100% { background-position: 200% 0; }  /* Light sweeps to far right */
+}
+
+/* pulse-glow: A pulsing red glow that gets brighter and dimmer.
+   Used for: the "Trending Now" badge's glowing dot.
+   Visual: the glow alternates between subtle and strong. */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(229, 9, 20, 0.2); } /* Subtle glow */
+  50% { box-shadow: 0 0 40px rgba(229, 9, 20, 0.4); }      /* Stronger glow */
+}
+
+/* spin: A continuous spinning/rotating animation.
+   Used for: loading spinners, buffering indicators, sync icons.
+   Visual: element rotates 360 degrees continuously. */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* float: A gentle up-and-down bobbing motion.
+   Used for: the logo in the footer.
+   Visual: element gently floats up 6px then back down, like a buoy. */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }    /* Normal position */
+  50% { transform: translateY(-6px); }      /* 6px up */
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SECTION 5: ANIMATION UTILITY CLASSES
+   ═══════════════════════════════════════════════════════════════════════
+   These are CSS classes that apply the animations defined above.
+   Add these class names to any HTML element to animate it.
+
+   For example:
+     <div className="animate-fade-in-up">Hello!</div>
+     This div will fade in while sliding up when it first appears.
+
+   "animation-fill-mode: both" means the element keeps the final
+   state of the animation after it finishes (doesn't snap back).
+*/
+
+/* Fade in while sliding up — 0.6 seconds */
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out both;
+}
+
+/* Simple fade in — 0.5 seconds */
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out both;
+}
+
+/* Slide in from left — 0.5 seconds */
+.animate-slide-in-left {
+  animation: slideInLeft 0.5s ease-out both;
+}
+
+/* Slide in from right — 0.5 seconds */
+.animate-slide-in-right {
+  animation: slideInRight 0.5s ease-out both;
+}
+
+/* Scale in (grow from 90% to 100%) — 0.4 seconds */
+.animate-scale-in {
+  animation: scaleIn 0.4s ease-out both;
+}
+
+/* Shimmer loading effect — repeats forever */
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.08) 50%, transparent 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Pulsing red glow — repeats forever */
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Gentle floating/bobbing — repeats forever */
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SECTION 5b: STAGGERED CHILDREN ANIMATIONS
+   ═══════════════════════════════════════════════════════════════════════
+   When you have multiple items (like a list of cards), you often want
+   them to animate in ONE BY ONE instead of all at once.
+
+   The "stagger-children" class adds increasing delays to each child:
+     1st child: 0.05s delay
+     2nd child: 0.10s delay
+     3rd child: 0.15s delay
+     ...and so on.
+
+   This creates a beautiful "wave" or "cascade" effect where items
+   appear sequentially from left to right.
+*/
+
+.stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
+.stagger-children > *:nth-child(7) { animation-delay: 0.35s; }
+.stagger-children > *:nth-child(8) { animation-delay: 0.4s; }
+.stagger-children > *:nth-child(9) { animation-delay: 0.45s; }
+.stagger-children > *:nth-child(10) { animation-delay: 0.5s; }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SECTION 6: LAYOUT HELPERS
+   ═══════════════════════════════════════════════════════════════════════
+   Reusable CSS classes for common layout patterns used across
+   multiple components.
+*/
+
+/* ── Movie Row: Horizontal scrolling container ──
+   Used to display a row of movie cards that scrolls horizontally.
+   Scrollbar is hidden for a cleaner look. */
+.movie-row {
+  display: flex;              /* Items in a horizontal row */
+  gap: 16px;                  /* Space between cards */
+  overflow-x: auto;           /* Enable horizontal scrolling */
+  overflow-y: hidden;         /* Disable vertical scrolling */
+  padding: 16px 0;
+  scroll-behavior: smooth;    /* Smooth scrolling animation */
+  scrollbar-width: none;      /* Hide scrollbar (Firefox) */
+  -ms-overflow-style: none;   /* Hide scrollbar (IE/Edge) */
+}
+/* Hide scrollbar in Chrome/Safari */
+.movie-row::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Movie Card Hover Effect ──
+   Adds a scale-up and lift effect when hovering over a card.
+   "will-change: transform" tells the browser to optimize for
+   the transform animation (makes it smoother). */
+.movie-card {
+  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.35s ease;
+  will-change: transform;
+}
+.movie-card:hover {
+  transform: scale(1.08) translateY(-8px);  /* Scale up 8% and lift 8px */
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(229, 9, 20, 0.15);
+  z-index: 10;  /* Appear above neighboring cards */
+}
+
+/* ── Glassmorphism Effect ──
+   Creates a "frosted glass" look — semi-transparent background with
+   a blur effect behind it. Looks like looking through a frosted window.
+   Very trendy in modern UI design! */
+.glass {
+  background: rgba(20, 20, 20, 0.6);       /* Semi-transparent dark */
+  backdrop-filter: blur(20px);              /* Blur what's behind it */
+  -webkit-backdrop-filter: blur(20px);      /* Same thing for Safari */
+  border: 1px solid rgba(255, 255, 255, 0.05); /* Subtle white border */
+}
+
+/* ── Gradient Text Effect ──
+   Makes text have a gradient color (white to red) instead of a
+   single solid color. Works by creating a gradient background,
+   then clipping it to only show through the text characters. */
+.gradient-text {
+  background: linear-gradient(135deg, #ffffff 0%, #e50914 100%);
+  -webkit-background-clip: text;            /* Clip gradient to text (Chrome/Safari) */
+  -webkit-text-fill-color: transparent;     /* Make text fill transparent */
+  background-clip: text;                    /* Standard property */
+}
+
+/* ── Hide Scrollbar Utility ──
+   A reusable class to hide scrollbars on any element. */
+.hide-scrollbar::-webkit-scrollbar { display: none; }             /* Chrome/Safari */
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; } /* IE/Firefox */
