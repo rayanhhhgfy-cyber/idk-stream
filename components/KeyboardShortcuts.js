@@ -2,8 +2,7 @@
 // ║                  ⌨️  KEYBOARD SHORTCUTS  ⌨️                        ║
 // ║                                                                    ║
 // ║  This component adds keyboard controls to the video player.       ║
-// ║  Since the video is inside an iframe from external providers,     ║
-// ║  we can't directly control play/pause/seek. Instead we:           ║
+// ║  The direct video element is controlled for play/pause/seek.       ║
 // ║    - Show visual indicator overlays when shortcuts are pressed    ║
 // ║    - Control fullscreen (we own the container div)                ║
 // ║    - Trigger next episode navigation                              ║
@@ -48,8 +47,8 @@ export default function KeyboardShortcuts({ playerContainerRef, onNextEpisode, i
     const container = playerContainerRef?.current;
     if (!container) return;
 
-    const iframe = container.querySelector('iframe');
-    const target = iframe || container;
+    const video = container.querySelector('video');
+    const target = video || container;
 
     if (!document.fullscreenElement) {
       target.requestFullscreen().then(() => {
@@ -80,13 +79,11 @@ export default function KeyboardShortcuts({ playerContainerRef, onNextEpisode, i
             showToast(next ? 'play' : 'pause', next ? 'Play' : 'Pause');
             return next;
           });
-          // Try sending postMessage to iframe
-          try {
-            const iframe = playerContainerRef?.current?.querySelector('iframe');
-            if (iframe?.contentWindow) {
-              iframe.contentWindow.postMessage({ event: 'toggle_play' }, '*');
-            }
-          } catch {}
+          const playVideo = playerContainerRef?.current?.querySelector('video');
+          if (playVideo) {
+            if (playVideo.paused) playVideo.play().catch(() => {});
+            else playVideo.pause();
+          }
           break;
 
         case 'f':
@@ -103,34 +100,22 @@ export default function KeyboardShortcuts({ playerContainerRef, onNextEpisode, i
             showToast(next ? 'muted' : 'unmuted', next ? 'Muted' : 'Unmuted');
             return next;
           });
-          try {
-            const iframe = playerContainerRef?.current?.querySelector('iframe');
-            if (iframe?.contentWindow) {
-              iframe.contentWindow.postMessage({ event: 'toggle_mute' }, '*');
-            }
-          } catch {}
+          const muteVideo = playerContainerRef?.current?.querySelector('video');
+          if (muteVideo) muteVideo.muted = !muteVideo.muted;
           break;
 
         case 'ArrowRight':
           e.preventDefault();
           showToast('forward', 'Skip Forward +10s');
-          try {
-            const iframe = playerContainerRef?.current?.querySelector('iframe');
-            if (iframe?.contentWindow) {
-              iframe.contentWindow.postMessage({ event: 'seek_forward', seconds: 10 }, '*');
-            }
-          } catch {}
+          const forwardVideo = playerContainerRef?.current?.querySelector('video');
+          if (forwardVideo) forwardVideo.currentTime = Math.min(forwardVideo.duration || Infinity, forwardVideo.currentTime + 10);
           break;
 
         case 'ArrowLeft':
           e.preventDefault();
           showToast('backward', 'Skip Backward -10s');
-          try {
-            const iframe = playerContainerRef?.current?.querySelector('iframe');
-            if (iframe?.contentWindow) {
-              iframe.contentWindow.postMessage({ event: 'seek_backward', seconds: 10 }, '*');
-            }
-          } catch {}
+          const backwardVideo = playerContainerRef?.current?.querySelector('video');
+          if (backwardVideo) backwardVideo.currentTime = Math.max(0, backwardVideo.currentTime - 10);
           break;
 
         case 'n':

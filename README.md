@@ -1,4 +1,27 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+This is a [Next.js](https://nextjs.org) streaming frontend. Playback uses the browser's native `<video>` element or `hls.js`; it does not embed third-party player pages.
+
+## Direct source API
+
+The app calls `/api/sources`, which proxies requests to the source server configured in the server environment. Configure the variables in `.env.example` and restart Next.js:
+
+```bash
+SOURCE_API_URL=https://your-source-server.example/api/sources
+SOURCE_API_TOKEN=optional-bearer-token
+SOURCE_MEDIA_ORIGINS=https://your-media-host.example
+```
+
+The configured source service receives `type` and `id`; TV requests also include `season` and `episode`. It may return either an array or an object containing `sources`/`streams`. Each source can be a URL string or an object such as:
+
+```json
+{
+  "sources": [
+    { "name": "1080p", "url": "https://media.example/movie.m3u8", "type": "hls", "quality": "1080p" },
+    { "name": "MP4 backup", "url": "https://media.example/movie.mp4", "type": "mp4" }
+  ]
+}
+```
+
+Only HTTP(S) URLs are accepted. Use a source service and media URLs that you own or are authorized to distribute.
 
 ## Getting Started
 

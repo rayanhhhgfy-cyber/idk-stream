@@ -13,7 +13,7 @@ export default function PartyPlayer({ roomId, onMediaChange }) {
   const [syncStatus, setSyncStatus] = useState('synced');
   const playerRef = useRef(null);
   const estimatedTimeRef = useRef(0);
-  const lastSyncRef = useRef(Date.now());
+  const lastSyncRef = useRef(0);
   const syncIntervalRef = useRef(null);
   const lastBufferingRef = useRef(false);
   const userId = getUserId();
@@ -23,6 +23,7 @@ export default function PartyPlayer({ roomId, onMediaChange }) {
   const whoIsBuffering = othersBuffering ? (playback?.updatedByName || 'Someone') : null;
 
   useEffect(() => {
+    lastSyncRef.current = Date.now();
     const unsubRoom = subscribeRoom(roomId, (room) => {
       setMedia(room.currentMedia);
       const banned = (room.bannedFromPausing || []).includes(userId);
@@ -37,14 +38,8 @@ export default function PartyPlayer({ roomId, onMediaChange }) {
         const drift = Math.abs(state.currentTime - estimatedTimeRef.current);
         if (drift > 10 && state.updatedBy !== userId) {
           setSyncStatus('syncing');
-          // Try to seek the iframe by sending postMessage
-          const iframe = playerRef.current?.querySelector('iframe[data-player="true"]');
-          if (iframe && iframe.contentWindow) {
-            iframe.contentWindow.postMessage({
-              event: 'seek',
-              currentTime: state.currentTime,
-            }, '*');
-          }
+          const video = playerRef.current?.querySelector('video[data-player="true"]');
+          if (video) video.currentTime = state.currentTime;
           // Reset sync status after a moment
           setTimeout(() => setSyncStatus('synced'), 3000);
         }
@@ -102,13 +97,10 @@ export default function PartyPlayer({ roomId, onMediaChange }) {
   }, [playback, roomId, userId, displayName, isBanned]);
 
   const handleForceSync = useCallback(() => {
-    // Force a seek on the iframe to match server time
-    const iframe = playerRef.current?.querySelector('iframe[data-player="true"]');
-    if (iframe && iframe.contentWindow && playback?.currentTime) {
-      iframe.contentWindow.postMessage({
-        event: 'seek',
-        currentTime: playback.currentTime,
-      }, '*');
+    // Force a seek on the direct video to match server time
+    const video = playerRef.current?.querySelector('video[data-player="true"]');
+    if (video && playback?.currentTime) {
+      video.currentTime = playback.currentTime;
       setSyncStatus('synced');
     }
   }, [playback]);

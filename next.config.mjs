@@ -130,8 +130,9 @@ const nextConfig = {
           {
             key: 'Content-Security-Policy',
             value: [
+              "default-src 'self'",
               "frame-ancestors 'self'",
-              "frame-src 'self' https://www.vidking.net https://vidking.net https://vidsrc.to https://vidsrc.me https://vidsrc.sh https://vidsrc.cc https://vidsrc.pro https://embed.su https://ezvidapi.com https://vidsrc.pm https://autoembed.co https://player.autoembed.co https://vaplayer.ru https://vidapi.ru https://*.vidking.net https://*.vidsrc.to https://*.vidsrc.me https://*.vidsrc.sh https://*.vidsrc.cc https://*.vidsrc.pro https://*.embed.su https://*.ezvidapi.com https://*.vidsrc.pm https://*.autoembed.co https://*.player.autoembed.co https://*.vaplayer.ru https://*.vidapi.ru",
+              `media-src 'self' ${process.env.SOURCE_MEDIA_ORIGINS || "'none'"}`,
             ].join('; '),
           },
 
