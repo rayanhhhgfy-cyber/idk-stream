@@ -23,6 +23,10 @@ The configured source service receives `type` and `id`; TV requests also include
 
 Only HTTP(S) URLs are accepted. Use a source service and media URLs that you own or are authorized to distribute.
 
+### Verified vidsrc.pm adapter
+
+The repository also supports the verified player API exposed by vidsrc.pm. Set `SOURCE_PROVIDER=vidsrc.pm`, provide the provider-issued `VIDSRCPM_PLAYER_KEY`, and optionally configure the comma-separated source keys. Movie requests use `/api/vidora/v1/movie/{id}?source={key}`; TV requests use `/api/vidora/v1/tv/{id}/{season}/{episode}?source={key}` with the `x-player-key` header. The adapter normalizes `sources[].url`, `tracks`, and `qualities` into the native player format.
+
 ## Getting Started
 
 First, run the development server:
