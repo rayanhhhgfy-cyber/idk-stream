@@ -892,28 +892,30 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
 
             {/* Actions */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <button
-                onClick={() => {
-                  window.open(buildUrl(currentServer), '_blank');
-                  setShowIosPipModal(false);
-                }}
+              <a
+                href={buildUrl(currentServer)}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-safe-link="true"
+                onClick={() => setShowIosPipModal(false)}
                 style={{
                   background: '#e50914',
                   color: 'white',
-                  border: 'none',
+                  textDecoration: 'none',
                   padding: '12px',
                   borderRadius: '10px',
                   fontWeight: 600,
                   cursor: 'pointer',
                   textAlign: 'center',
                   fontSize: '0.9rem',
+                  display: 'block',
                   transition: 'background 0.2s'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.background = '#ff1e27'}
                 onMouseLeave={(e) => e.currentTarget.style.background = '#e50914'}
               >
-                Open Direct Stream
-              </button>
+                Open Direct Stream in Safari
+              </a>
               <button
                 onClick={() => setShowIosPipModal(false)}
                 style={{
