@@ -147,6 +147,11 @@ export default function RedirectBlocker() {
     };
 
     const interceptedOpen = function open(...args) {
+      if (typeof window !== 'undefined' && window.__allowNextPopup) {
+        window.__allowNextPopup = false;
+        console.info('[RedirectBlocker] Authorized window.open allowed:', args[0]);
+        return originalWindowOpen.apply(window, args);
+      }
       console.warn('[RedirectBlocker] Stealthily intercepted window.open popup attempt:', args[0]);
       return createDummyWindow();
     };

@@ -898,11 +898,12 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
                 rel="noopener noreferrer"
                 data-safe-link="true"
                 onClick={(e) => {
+                  if (typeof window !== 'undefined') window.__allowNextPopup = true;
                   setShowIosPipModal(false);
                   if (getIsStandalonePwa()) {
                     e.preventDefault();
-                    // iOS PWA standalone windows require explicit window.open or location switch to break out into Safari
-                    window.open(buildUrl(currentServer), '_system');
+                    window.__allowNextPopup = true;
+                    window.open(buildUrl(currentServer), '_blank');
                   }
                 }}
                 style={{
