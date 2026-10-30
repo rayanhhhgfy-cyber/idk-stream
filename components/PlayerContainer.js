@@ -168,15 +168,40 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       }
 
       const enterFullscreen = iframe.requestFullscreen || iframe.webkitRequestFullscreen;
-      if (!enterFullscreen) return;
-
-      try {
-        await enterFullscreen.call(iframe);
-        pipWindowRef.current = iframe;
-        setPipActive(true);
-      } catch (err) {
-        console.warn('iOS fullscreen failed:', err);
+      if (enterFullscreen) {
+        try {
+          await enterFullscreen.call(iframe);
+          pipWindowRef.current = iframe;
+          setPipActive(true);
+          return;
+        } catch (err) {
+          console.warn('iOS fullscreen failed, falling back to popout window:', err);
+        }
       }
+
+      const width = Math.min(640, window.screen.width - 40);
+      const height = Math.min(360, window.screen.height - 120);
+      const left = Math.max(20, window.screen.width - width - 20);
+      const top = Math.max(40, window.screen.height - height - 80);
+      const popout = window.open(
+        buildUrl(currentServer),
+        'idkstream_pip',
+        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=no,toolbar=no,menubar=no,location=no,status=no`
+      );
+
+      if (popout) {
+        pipWindowRef.current = popout;
+        setPipActive(true);
+        const checkClosed = setInterval(() => {
+          if (popout.closed) {
+            clearInterval(checkClosed);
+            pipWindowRef.current = null;
+            setPipActive(false);
+          }
+        }, 1000);
+        return;
+      }
+
       return;
     }
 
@@ -472,6 +497,14 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       setIframeLoading(true);
       return;
     }
+
+    if (currentServer === 4) {
+      console.warn('AutoEmbed failed; falling back to VAPlayer.');
+      setCurrentServer(6);
+      setIframeLoading(true);
+      return;
+    }
+
     setEmbedBlocked(true);
     setIframeLoading(false);
     setLoadErrorMessage('Failed to load player. The provider may be down.');
