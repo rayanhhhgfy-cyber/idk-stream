@@ -51,9 +51,17 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const isTv = type === 'tv';
   const playerReady = isTv ? Boolean(season && episode) : Boolean(id);
 
-  // Detect if user is on iOS
+  // Detect if user is on iOS or in iOS PWA Standalone Mode
   const getIsIos = () => {
     return typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+  };
+
+  const getIsStandalonePwa = () => {
+    return (
+      typeof window !== 'undefined' &&
+      (window.navigator.standalone === true ||
+        window.matchMedia('(display-mode: standalone)').matches)
+    );
   };
 
   // Check PiP support on mount
@@ -862,20 +870,22 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
             {/* Content */}
             <div style={{ color: '#ccc', fontSize: '0.9rem', lineHeight: '1.5', marginBottom: '24px', textAlign: 'left' }}>
               <p style={{ marginBottom: '16px', color: '#aaa' }}>
-                Due to iOS Safari security policies, Picture-in-Picture for nested player frames requires opening the stream directly.
+                {getIsStandalonePwa()
+                  ? 'iOS Web App (PWA) requires launching the video stream in Mobile Safari to activate Picture-in-Picture.'
+                  : 'Due to iOS Safari security policies, Picture-in-Picture for nested player frames requires opening the stream directly.'}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <span style={{ fontWeight: 700, color: '#e50914' }}>1.</span>
-                  <span>Tap <strong>&quot;Open Direct Stream&quot;</strong> below to open the video in a dedicated tab.</span>
+                  <span>Tap <strong>&quot;Open Direct Stream&quot;</strong> below to open the video in Safari.</span>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <span style={{ fontWeight: 700, color: '#e50914' }}>2.</span>
-                  <span>Start playing the video in the new tab.</span>
+                  <span>Tap play in the native video player.</span>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <span style={{ fontWeight: 700, color: '#e50914' }}>3.</span>
-                  <span>Tap the native <strong>Picture-in-Picture button</strong> in Safari, or simply swipe up to go home.</span>
+                  <span>Tap the native <strong>Picture-in-Picture icon</strong> or swipe up to return home with background playback.</span>
                 </div>
               </div>
             </div>
