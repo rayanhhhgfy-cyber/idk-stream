@@ -211,20 +211,12 @@ export default function RedirectBlocker() {
     };
     HTMLFormElement.prototype.submit = makeNativeStealth(interceptedFormSubmit, 'submit');
 
-    // Prevent popunder or unmount redirect traps and disarm blur/visibilitychange popunders
+    // Keep normal browser lifecycle events active so the app can safely handle
+    // backgrounding and popout playback on iOS / standalone PWA installs.
     const handleBeforeUnload = (e) => {
-      // Clear out any custom leave messages injected by ad scripts
       if (e) e.returnValue = undefined;
     };
     window.addEventListener('beforeunload', handleBeforeUnload, true);
-
-    const handleDisarmPopunder = (e) => {
-      // Stop popunder scripts from executing on window blur or tab hide
-      if (e) e.stopImmediatePropagation();
-    };
-    window.addEventListener('blur', handleDisarmPopunder, true);
-    window.addEventListener('pagehide', handleDisarmPopunder, true);
-    document.addEventListener('visibilitychange', handleDisarmPopunder, true);
 
     // Stealthily intercept location.assign and location.replace to block external location redirects
     try {
@@ -288,16 +280,9 @@ export default function RedirectBlocker() {
     // │                                                                │
     // │  Some ad scripts inside cross-origin iframes try to navigate   │
     // │  window.top.location or window.parent.location.                │
-    // │  We intercept and disarm window.onbeforeunload traps and       │
-    // │  block external navigation requests to top/parent windows.     │
+    // │  We block those attempts without disabling the browser's normal│
+    // │  lifecycle handlers required for iOS PWA background playback.   │
     // └────────────────────────────────────────────────────────────────┘
-    try {
-      if (window.top === window) {
-        // Disarm frame navigation traps on top window
-        window.onbeforeunload = function () { return undefined; };
-      }
-    } catch (e) {}
-
 
     // ┌────────────────────────────────────────────────────────────────┐
     // │    PROTECTION #3: Block Clicks on External (Outside) Links    │
@@ -685,9 +670,6 @@ export default function RedirectBlocker() {
       document.removeEventListener('submit', handleSubmit, true);
       window.removeEventListener('message', handleMessage, true);
       window.removeEventListener('beforeunload', handleBeforeUnload, true);
-      window.removeEventListener('blur', handleDisarmPopunder, true);
-      window.removeEventListener('pagehide', handleDisarmPopunder, true);
-      document.removeEventListener('visibilitychange', handleDisarmPopunder, true);
 
       // Stop watching for DOM changes.
       observer.disconnect();

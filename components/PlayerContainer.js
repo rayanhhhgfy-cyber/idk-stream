@@ -45,6 +45,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const autoPlayTimerRef = useRef(null);
   const countdownRef = useRef(null);
   const pipWindowRef = useRef(null);
+  const backgroundPopupRef = useRef(null);
   const loadingTimeoutRef = useRef(null);
 
   const isTv = type === 'tv';
@@ -56,6 +57,20 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   };
+
+  const getIsStandalonePwa = () => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  };
+
+  const openSafePopup = useCallback((url, target = 'idkstream_pip') => {
+    if (!url) return null;
+    if (typeof window === 'undefined') return null;
+    window.__allowNextPopup = true;
+    const popup = window.open(url, target, 'noopener,noreferrer');
+    window.__allowNextPopup = false;
+    return popup;
+  }, []);
 
   // Check PiP support on mount
   useEffect(() => {
@@ -183,11 +198,15 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       const height = Math.min(360, window.screen.height - 120);
       const left = Math.max(20, window.screen.width - width - 20);
       const top = Math.max(40, window.screen.height - height - 80);
-      const popout = window.open(
+      const popout = openSafePopup(
         buildUrl(currentServer),
-        'idkstream_pip',
-        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=no,toolbar=no,menubar=no,location=no,status=no`
+        'idkstream_pip'
       );
+
+      if (popout && typeof popout.resizeTo === 'function') {
+        popout.resizeTo(width, height);
+        popout.moveTo(left, top);
+      }
 
       if (popout) {
         pipWindowRef.current = popout;
@@ -295,11 +314,15 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         const height = Math.min(360, window.screen.height - 100);
         const left = window.screen.width - width - 20;
         const top = window.screen.height - height - 100;
-        const popup = window.open(
+        const popup = openSafePopup(
           iframe.src,
-          'idkstream_pip',
-          `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=no,toolbar=no,menubar=no,location=no,status=no`
+          'idkstream_pip'
         );
+
+        if (popup && typeof popup.resizeTo === 'function') {
+          popup.resizeTo(width, height);
+          popup.moveTo(left, top);
+        }
         if (popup) {
           pipWindowRef.current = popup;
           setPipActive(true);
@@ -338,6 +361,38 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     };
   }, []);
 
+  // Keep playback alive in a standalone PWA when the app is sent to the background.
+  useEffect(() => {
+    if (!playerReady || !getIsStandalonePwa()) return;
+
+    const handleVisibility = () => {
+      const currentUrl = buildUrl(currentServer);
+      if (!currentUrl) return;
+
+      if (document.hidden) {
+        if (!backgroundPopupRef.current) {
+          const popup = openSafePopup(currentUrl, 'idkstream_background');
+          backgroundPopupRef.current = popup;
+        }
+        return;
+      }
+
+      if (backgroundPopupRef.current) {
+        try { backgroundPopupRef.current.close(); } catch {}
+        backgroundPopupRef.current = null;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      if (backgroundPopupRef.current) {
+        try { backgroundPopupRef.current.close(); } catch {}
+        backgroundPopupRef.current = null;
+      }
+    };
+  }, [playerReady, currentServer, openSafePopup, season, episode, type, id]);
+
   // Cleanup PiP on unmount or source change
   useEffect(() => {
     return () => {
@@ -345,6 +400,10 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         try { pipWindowRef.current.close(); } catch {}
         pipWindowRef.current = null;
         setPipActive(false);
+      }
+      if (backgroundPopupRef.current) {
+        try { backgroundPopupRef.current.close(); } catch {}
+        backgroundPopupRef.current = null;
       }
     };
   }, [currentServer, season, episode, type, id]);
@@ -683,7 +742,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
               <h3 style={{ color: 'white', margin: '0 0 8px' }}>Player Unavailable</h3>
               <p style={{ color: '#aaa', margin: '0 0 16px' }}>{loadErrorMessage || 'The embed provider blocked playback or the content failed to load.'}</p>
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <button onClick={() => window.open(buildUrl(currentServer), '_blank')} style={{ background: '#e50914', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Open Player in New Tab</button>
+                <button onClick={() => openSafePopup(buildUrl(currentServer), '_blank')} style={{ background: '#e50914', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Open Player in New Tab</button>
                 <button onClick={retryPlayer} style={{ background: 'rgba(255,255,255,0.06)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Retry</button>
                 <button onClick={() => { const maxSrv = Object.keys(serverConfigs).length; const next = currentServer >= maxSrv ? (isDev ? 1 : 2) : currentServer + 1; switchServer(next); }} style={{ background: 'rgba(255,255,255,0.04)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Try Server {currentServer >= Object.keys(serverConfigs).length ? (isDev ? 1 : 2) : currentServer + 1}</button>
               </div>
