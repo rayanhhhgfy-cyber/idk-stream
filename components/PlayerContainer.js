@@ -7,7 +7,7 @@ const serverConfigs = {
   1: { name: 'HLS Player', isHls: true, badge: 'Dev' },
   2: { name: 'Vidking', episodeOffset: 0, baseUrl: 'https://www.vidking.net', fallbackUrl: 'https://vidsrc.cc', badge: '4K Ultra' },
   3: { name: 'vidsrc.pm', episodeOffset: 0, baseUrl: 'https://vidsrc.pm', badge: 'HD Speed' },
-  4: { name: 'autoembed.me', episodeOffset: 0, baseUrl: 'https://autoembed.me', badge: 'Backup' },
+  4: { name: 'autoembed.me', episodeOffset: 0, baseUrl: 'https://player.autoembed.me', badge: 'Backup' },
   5: { name: 'vidsrc.me', episodeOffset: 0, baseUrl: 'https://vidsrc.me', badge: 'Multi-Lang' },
   6: { name: 'VAPlayer', episodeOffset: 0, baseUrl: 'https://vaplayer.ru', badge: 'VidAPI' },
 };
@@ -136,8 +136,8 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         : `${cfg.baseUrl}/embed/movie/${id}`;
     } else if (server === 4) {
       url = isTv
-        ? `${cfg.baseUrl}/tv/tmdb/${id}-${season}-${ep}`
-        : `${cfg.baseUrl}/movie/tmdb/${id}`;
+        ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
+        : `${cfg.baseUrl}/embed/movie/${id}`;
     } else if (server === 5) {
       url = isTv
         ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
