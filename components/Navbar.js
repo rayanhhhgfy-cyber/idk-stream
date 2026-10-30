@@ -33,7 +33,7 @@ import Link from 'next/link';
 //   Search: a magnifying glass icon for the search bar
 //   X: an X icon to close the mobile menu
 //   Home, Film, Monitor, Clock: icons for the navigation links
-import { Menu, Tv, Search, X, Home, Film, Monitor, Clock, Users, Heart } from 'lucide-react';
+import { Menu, Tv, Search, X, Home, Film, Monitor, Clock, Users } from 'lucide-react';
 
 // React hooks for managing state and side effects:
 //   useState: creates variables that update the screen when changed
@@ -140,7 +140,6 @@ export default function Navbar() {
     { name: 'TV Shows', href: '/tv', icon: Monitor },
     { name: 'Watch Party', href: '/watch-party', icon: Users },
     { name: 'History', href: '/#history', icon: Clock },
-    { name: 'Final Words', href: '/final-words', icon: Heart },
   ];
 
 
