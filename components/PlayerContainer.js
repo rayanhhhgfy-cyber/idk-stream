@@ -36,6 +36,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const [pipActive, setPipActive] = useState(false);
   const [pipSupported, setPipSupported] = useState(false);
   const [showIosPipModal, setShowIosPipModal] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [embedBlocked, setEmbedBlocked] = useState(false);
   const [loadErrorMessage, setLoadErrorMessage] = useState('');
   const [isBuffering, setIsBuffering] = useState(false);
@@ -871,27 +872,59 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
             <div style={{ color: '#ccc', fontSize: '0.9rem', lineHeight: '1.5', marginBottom: '24px', textAlign: 'left' }}>
               <p style={{ marginBottom: '16px', color: '#aaa' }}>
                 {getIsStandalonePwa()
-                  ? 'iOS Web App (PWA) requires launching the video stream in Mobile Safari to activate Picture-in-Picture.'
+                  ? 'iOS Web Apps (PWA "Add to Home Screen") restrict background video & Picture-in-Picture. To enable continuous PiP or Dynamic Island playback:'
                   : 'Due to iOS Safari security policies, Picture-in-Picture for nested player frames requires opening the stream directly.'}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <span style={{ fontWeight: 700, color: '#e50914' }}>1.</span>
-                  <span>Tap <strong>&quot;Open Direct Stream&quot;</strong> below to open the video in Safari.</span>
+                  <span>Tap <strong>&quot;Copy Stream URL&quot;</strong> below or open the stream in Mobile Safari.</span>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <span style={{ fontWeight: 700, color: '#e50914' }}>2.</span>
-                  <span>Tap play in the native video player.</span>
+                  <span>Paste in Safari and press play.</span>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <span style={{ fontWeight: 700, color: '#e50914' }}>3.</span>
-                  <span>Tap the native <strong>Picture-in-Picture icon</strong> or swipe up to return home with background playback.</span>
+                  <span>Tap the native <strong>Picture-in-Picture button</strong> or swipe up to go home — playback will keep playing in the background & Dynamic Island!</span>
                 </div>
               </div>
             </div>
 
             {/* Actions */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button
+                onClick={() => {
+                  const url = buildUrl(currentServer);
+                  if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(url);
+                  } else {
+                    const el = document.createElement('textarea');
+                    el.value = url;
+                    document.body.appendChild(el);
+                    el.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(el);
+                  }
+                  setCopiedLink(true);
+                  setTimeout(() => setCopiedLink(false), 2500);
+                }}
+                style={{
+                  background: copiedLink ? '#10b981' : 'rgba(255, 255, 255, 0.1)',
+                  color: 'white',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  padding: '12px',
+                  borderRadius: '10px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  fontSize: '0.9rem',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {copiedLink ? '✓ Copied Stream URL to Clipboard!' : 'Copy Stream URL'}
+              </button>
+
               <a
                 href={buildUrl(currentServer)}
                 target="_blank"
@@ -922,8 +955,9 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
                 onMouseEnter={(e) => e.currentTarget.style.background = '#ff1e27'}
                 onMouseLeave={(e) => e.currentTarget.style.background = '#e50914'}
               >
-                Launch Stream in Safari for PiP
+                Launch Stream in Safari
               </a>
+
               <button
                 onClick={() => setShowIosPipModal(false)}
                 style={{
