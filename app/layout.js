@@ -8,7 +8,7 @@ export const metadata = {
   description: 'Watch movies and TV shows for free in HD quality.',
   manifest: '/manifest.json',
   appleWebApp: {
-    capable: true,
+    capable: false,
     statusBarStyle: 'black-translucent',
     title: 'idkstream',
   },
@@ -30,8 +30,8 @@ export default function RootLayout({ children }) {
 
         {/* PWA Meta Tags */}
         <meta name="theme-color" content="#e50914" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-capable" content="no" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="idkstream" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <link rel="manifest" href="/manifest.json" />
