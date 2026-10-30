@@ -897,7 +897,14 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
                 target="_blank"
                 rel="noopener noreferrer"
                 data-safe-link="true"
-                onClick={() => setShowIosPipModal(false)}
+                onClick={(e) => {
+                  setShowIosPipModal(false);
+                  if (getIsStandalonePwa()) {
+                    e.preventDefault();
+                    // iOS PWA standalone windows require explicit window.open or location switch to break out into Safari
+                    window.open(buildUrl(currentServer), '_system');
+                  }
+                }}
                 style={{
                   background: '#e50914',
                   color: 'white',
@@ -914,7 +921,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
                 onMouseEnter={(e) => e.currentTarget.style.background = '#ff1e27'}
                 onMouseLeave={(e) => e.currentTarget.style.background = '#e50914'}
               >
-                Open Direct Stream in Safari
+                Launch Stream in Safari for PiP
               </a>
               <button
                 onClick={() => setShowIosPipModal(false)}
