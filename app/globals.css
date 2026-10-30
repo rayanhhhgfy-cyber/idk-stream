@@ -372,3 +372,23 @@ body {
    A reusable class to hide scrollbars on any element. */
 .hide-scrollbar::-webkit-scrollbar { display: none; }             /* Chrome/Safari */
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; } /* IE/Firefox */
+
+/* ── Navigation Bar Responsive Rules ── */
+.desktop-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.mobile-toggle-btn {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .desktop-nav-links {
+    display: none !important;
+  }
+  .mobile-toggle-btn {
+    display: flex !important;
+  }
+}

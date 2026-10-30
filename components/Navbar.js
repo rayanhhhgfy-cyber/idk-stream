@@ -158,34 +158,29 @@ export default function Navbar() {
           ══════════════════════════════════════════════════════════ */}
       <nav
         style={{
-          position: 'fixed',        // Sticks to the top of the screen.
-          top: 0,                    // At the very top.
-          left: 0,                   // Stretches from left...
-          right: 0,                  // ...to right (full width).
-          zIndex: 1000,              // On top of everything else.
-          height: '64px',            // Fixed height of 64 pixels.
-          display: 'flex',           // Flexbox layout (items in a row).
-          alignItems: 'center',      // Vertically center everything.
-          justifyContent: 'space-between', // Space between left and right sections.
-          padding: '0 4%',           // 4% padding on left and right sides.
-          transition: 'all 0.4s ease', // Smooth transition for background changes.
-          // Background: solid dark when scrolled or menu is open,
-          // semi-transparent gradient when at the top of the page.
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1000,
+          height: '64px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 4%',
+          transition: 'all 0.4s ease',
           background: scrolled || mobileMenuOpen
             ? 'rgba(10, 10, 10, 0.98)'
             : 'linear-gradient(to bottom, rgba(0,0,0,0.8), transparent)',
-          // Blur effect behind the navbar (frosted glass look).
           backdropFilter: scrolled || mobileMenuOpen ? 'blur(15px)' : 'none',
-          // Bottom border: visible when scrolled, invisible when at top.
           borderBottom: scrolled || mobileMenuOpen ? '1px solid rgba(255,255,255,0.08)' : '1px solid transparent',
         }}
       >
         {/* ── LEFT SECTION: Logo + Desktop Nav Links ── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
 
-          {/* LOGO — Clicking it takes you to the home page */}
+          {/* LOGO */}
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
-            {/* Red icon box with a TV icon inside */}
             <div style={{
               background: '#e50914',
               padding: '6px',
@@ -193,11 +188,10 @@ export default function Navbar() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 0 15px rgba(229, 9, 20, 0.4)' // Red glow effect
+              boxShadow: '0 0 15px rgba(229, 9, 20, 0.4)'
             }}>
               <Tv style={{ color: 'white', width: 22, height: 22 }} />
             </div>
-            {/* Logo text: "idk" in white + "stream" in red */}
             <span style={{
               color: 'white',
               fontSize: '1.4rem',
@@ -208,24 +202,20 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* DESKTOP NAV LINKS — Only visible on screens 768px+ wide */}
-          {/* The className "desktop-nav" is styled below to be hidden on mobile */}
-          <div style={{ display: 'none', gap: '20px' }} className="desktop-nav">
-            {/* Loop through each nav link and render it */}
+          {/* DESKTOP NAV LINKS */}
+          <div className="desktop-nav-links">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 href={link.href}
                 style={{
-                  color: 'rgba(255,255,255,0.7)', // Slightly transparent white
+                  color: 'rgba(255,255,255,0.7)',
                   textDecoration: 'none',
                   fontSize: '0.85rem',
                   fontWeight: 500,
                   transition: 'color 0.2s'
                 }}
-                // On mouse hover: make the text fully white
                 onMouseEnter={(e) => e.target.style.color = 'white'}
-                // On mouse leave: make the text semi-transparent again
                 onMouseLeave={(e) => e.target.style.color = 'rgba(255,255,255,0.7)'}
               >
                 {link.name}
@@ -234,11 +224,10 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* ── RIGHT SECTION: Search Bar + Hamburger Menu ── */}
+        {/* ── RIGHT SECTION: Search Bar + Mobile Toggle ── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
 
-          {/* SEARCH BAR — Expandable search input */}
-          {/* It's a form so pressing Enter submits the search */}
+          {/* SEARCH BAR */}
           <form
             onSubmit={handleSearch}
             style={{
@@ -247,9 +236,6 @@ export default function Navbar() {
               alignItems: 'center'
             }}
           >
-            {/* The search input field.
-                When collapsed (searchOpen=false): looks like a small circle.
-                When expanded (searchOpen=true): shows a full text input. */}
             <input
               type="text"
               placeholder="Search..."
@@ -259,19 +245,17 @@ export default function Navbar() {
                 background: 'rgba(255,255,255,0.1)',
                 border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: '20px',
-                // Dynamic padding and width based on open/closed state:
                 padding: searchOpen ? '8px 16px 8px 36px' : '8px',
                 width: searchOpen ? 'clamp(140px, 20vw, 240px)' : '36px',
                 color: 'white',
                 fontSize: '0.875rem',
                 outline: 'none',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', // Smooth expand/collapse
-                cursor: searchOpen ? 'text' : 'pointer' // Pointer when collapsed (acts like button)
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                cursor: searchOpen ? 'text' : 'pointer'
               }}
-              onClick={() => setSearchOpen(true)}  // Click to expand
-              onBlur={() => !searchQuery && setSearchOpen(false)} // Collapse if empty when clicking away
+              onClick={() => setSearchOpen(true)}
+              onBlur={() => !searchQuery && setSearchOpen(false)}
             />
-            {/* Magnifying glass icon inside the search bar */}
             <Search
               style={{
                 position: 'absolute',
@@ -279,15 +263,15 @@ export default function Navbar() {
                 width: 18,
                 height: 18,
                 color: 'rgba(255,255,255,0.7)',
-                pointerEvents: 'none' // Click passes through the icon to the input
+                pointerEvents: 'none'
               }}
             />
           </form>
 
-          {/* HAMBURGER MENU BUTTON — Toggles the mobile menu */}
-          {/* Shows ☰ when closed, X when open */}
+          {/* HAMBURGER MENU BUTTON */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="mobile-toggle-btn"
             style={{
               background: 'rgba(255,255,255,0.05)',
               border: 'none',
@@ -295,45 +279,32 @@ export default function Navbar() {
               cursor: 'pointer',
               padding: '8px',
               borderRadius: '8px',
-              display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               transition: 'background 0.2s'
             }}
           >
-            {/* Show X icon when menu is open, hamburger (☰) when closed */}
             {mobileMenuOpen ? <X style={{ width: 22, height: 22 }} /> : <Menu style={{ width: 22, height: 22 }} />}
           </button>
         </div>
       </nav>
 
-      {/* ══════════════════════════════════════════════════════════════
-          📱 MOBILE MENU DROPDOWN
-          This is the full-screen menu that slides down when you click
-          the hamburger button on mobile. It shows the same links as
-          the desktop nav, but in a vertical list format.
-
-          The "top" property animates:
-            - When closed: top = -100% (off screen, above the viewport)
-            - When open: top = 64px (right below the navbar)
-
-          Opacity and pointerEvents handle the fade effect and
-          prevent clicking invisible menu items when it's closed.
-          ══════════════════════════════════════════════════════════ */}
+      {/* 📱 MOBILE MENU DROPDOWN — Explicitly hidden when closed */}
       <div
         style={{
           position: 'fixed',
-          top: mobileMenuOpen ? '64px' : '-100%', // Slide in/out from top
+          top: mobileMenuOpen ? '64px' : '-100%',
           left: 0,
           right: 0,
-          background: 'rgba(10, 10, 10, 0.98)',   // Nearly opaque dark background
-          backdropFilter: 'blur(20px)',             // Frosted glass effect
-          zIndex: 900,                              // Below navbar (1000) but above content
+          background: 'rgba(10, 10, 10, 0.98)',
+          backdropFilter: 'blur(20px)',
+          zIndex: 900,
           padding: '24px',
           borderBottom: '1px solid rgba(255,255,255,0.08)',
-          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)', // Smooth slide animation
-          opacity: mobileMenuOpen ? 1 : 0,         // Fade in/out
-          pointerEvents: mobileMenuOpen ? 'all' : 'none' // Can't click when hidden
+          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+          opacity: mobileMenuOpen ? 1 : 0,
+          display: mobileMenuOpen ? 'block' : 'none',
+          pointerEvents: mobileMenuOpen ? 'all' : 'none'
         }}
       >
         {/* Vertical list of navigation links */}
