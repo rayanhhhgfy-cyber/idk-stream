@@ -176,11 +176,12 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       videoSupportsPresentation: !!(video && video.webkitSetPresentationMode),
     });
 
+    if (isIos && isStandalonePwa) {
+      console.warn('[PlayerContainer] Disabled custom PiP in installed iOS PWA because the embedded provider is a cross-origin iframe and the parent page cannot access the real media element.');
+      return;
+    }
+
     if (isIos) {
-      if (iframe && isStandalonePwa) {
-        console.warn('[PlayerContainer] Refusing fullscreen/PiP on a cross-origin iframe in standalone iOS PWA; the underlying media element is not reachable from the parent page.');
-        return;
-      }
 
       if (iframe && !isStandalonePwa) {
         if (pipActive && pipWindowRef.current === iframe) {
@@ -670,7 +671,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         )}
 
         {/* PiP Button — top right of player */}
-        {playerReady && (
+        {playerReady && !(getIsIos() && getIsStandalonePwa()) && (
           <button
             onClick={togglePiP}
             title={getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Enter Fullscreen') : (pipActive ? 'Exit Picture-in-Picture' : 'Picture-in-Picture')}
@@ -834,13 +835,15 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
               )}
             </div>
 
-            <button
-              onClick={togglePiP}
-              className={`action-btn ${pipActive ? 'pip-active' : ''}`}
-            >
-              <PictureInPicture2 style={{ width: 14, height: 14 }} />
-              <span>{getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Fullscreen') : (pipActive ? 'Exit PiP' : 'Pop Out')}</span>
-            </button>
+            {!((getIsIos() && getIsStandalonePwa())) && (
+              <button
+                onClick={togglePiP}
+                className={`action-btn ${pipActive ? 'pip-active' : ''}`}
+              >
+                <PictureInPicture2 style={{ width: 14, height: 14 }} />
+                <span>{getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Fullscreen') : (pipActive ? 'Exit PiP' : 'Pop Out')}</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
