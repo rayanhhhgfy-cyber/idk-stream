@@ -618,9 +618,8 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
             src={buildUrl(currentServer)}
             title="Video Player"
             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-            allow="autoplay; encrypted-media; accelerometer; gyroscope; clipboard-write"
-            allowFullScreen={false}
-            sandbox="allow-scripts allow-forms allow-modals"
+            allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope; clipboard-write"
+            allowFullScreen
             referrerPolicy="no-referrer-when-downgrade"
             loading="eager"
             data-player="true"
