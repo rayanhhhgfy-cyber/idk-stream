@@ -16,6 +16,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Heart, Github, Tv, Download } from 'lucide-react';
 
 
@@ -165,32 +166,66 @@ export default function Footer() {
           }}
         />
 
-        {/* ── Creator Credit ──
-            Shows who made the website.
-            The name uses a gradient text effect (white to red). */}
+        {/* ── Creator Credit & Final Words Link ── */}
         <div
           style={{
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
-            gap: '6px',
-            color: '#888',
-            fontSize: '0.875rem',
+            gap: '12px',
           }}
         >
-          <span>Made by</span>
-          <span
+          <Link
+            href="/final-words"
             style={{
-              fontWeight: 700,
-              // Gradient text effect:
-              // Creates a gradient background, then clips it to the text shape.
-              background: 'linear-gradient(135deg, #e50914, #ff6b6b)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 16px',
+              borderRadius: '20px',
+              background: 'rgba(229, 9, 20, 0.12)',
+              border: '1px solid rgba(229, 9, 20, 0.3)',
+              color: '#ff4d52',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              textDecoration: 'none',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(229, 9, 20, 0.25)';
+              e.currentTarget.style.transform = 'scale(1.03)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(229, 9, 20, 0.12)';
+              e.currentTarget.style.transform = 'scale(1)';
             }}
           >
-            Rayyan Aljamal
-          </span>
+            <Heart style={{ width: 16, height: 16, fill: '#ff4d52' }} />
+            <span>Final Words / كلماتي الأخيرة</span>
+          </Link>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              color: '#888',
+              fontSize: '0.875rem',
+            }}
+          >
+            <span>Made by</span>
+            <span
+              style={{
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #e50914, #ff6b6b)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              Rayyan Aljamal
+            </span>
+          </div>
         </div>
 
         {/* ── PWA Install Button ── */}
