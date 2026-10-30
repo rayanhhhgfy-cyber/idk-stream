@@ -7,7 +7,7 @@ const serverConfigs = {
   1: { name: 'HLS Player', isHls: true, badge: 'Dev' },
   2: { name: 'Vidking', episodeOffset: 0, baseUrl: 'https://www.vidking.net', fallbackUrl: 'https://vidsrc.cc', badge: '4K Ultra' },
   3: { name: 'vidsrc.pm', episodeOffset: 0, baseUrl: 'https://vidsrc.pm', badge: 'HD Speed' },
-  4: { name: 'autoembed.co', episodeOffset: 0, baseUrl: 'https://autoembed.co', badge: 'Backup' },
+  4: { name: 'autoembed.me', episodeOffset: 0, baseUrl: 'https://autoembed.me', badge: 'Backup' },
   5: { name: 'vidsrc.me', episodeOffset: 0, baseUrl: 'https://vidsrc.me', badge: 'Multi-Lang' },
   6: { name: 'VAPlayer', episodeOffset: 0, baseUrl: 'https://vaplayer.ru', badge: 'VidAPI' },
 };
@@ -35,8 +35,6 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const [countdown, setCountdown] = useState(15);
   const [pipActive, setPipActive] = useState(false);
   const [pipSupported, setPipSupported] = useState(false);
-  const [showIosPipModal, setShowIosPipModal] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
   const [embedBlocked, setEmbedBlocked] = useState(false);
   const [loadErrorMessage, setLoadErrorMessage] = useState('');
   const [isBuffering, setIsBuffering] = useState(false);
@@ -54,15 +52,9 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
 
   // Detect if user is on iOS or in iOS PWA Standalone Mode
   const getIsIos = () => {
-    return typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
-  };
-
-  const getIsStandalonePwa = () => {
-    return (
-      typeof window !== 'undefined' &&
-      (window.navigator.standalone === true ||
-        window.matchMedia('(display-mode: standalone)').matches)
-    );
+    if (typeof window === 'undefined') return false;
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   };
 
   // Check PiP support on mount
@@ -158,7 +150,33 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     const isIos = getIsIos();
 
     if (isIos) {
-      setShowIosPipModal(true);
+      const iframe = iframeRef.current;
+      if (!iframe) return;
+
+      if (pipActive && pipWindowRef.current === iframe) {
+        try {
+          const exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen;
+          if ((document.fullscreenElement || document.webkitFullscreenElement) && exitFullscreen) {
+            await exitFullscreen.call(document);
+          }
+        } catch (err) {
+          console.warn('iOS fullscreen exit failed:', err);
+        }
+        pipWindowRef.current = null;
+        setPipActive(false);
+        return;
+      }
+
+      const enterFullscreen = iframe.requestFullscreen || iframe.webkitRequestFullscreen;
+      if (!enterFullscreen) return;
+
+      try {
+        await enterFullscreen.call(iframe);
+        pipWindowRef.current = iframe;
+        setPipActive(true);
+      } catch (err) {
+        console.warn('iOS fullscreen failed:', err);
+      }
       return;
     }
 
@@ -278,6 +296,23 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     alert('Picture-in-Picture is not supported on your device. Try rotating your device or using a different browser.');
   }, [pipActive]);
 
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement;
+      if (pipWindowRef.current === iframeRef.current && !fullscreenElement) {
+        pipWindowRef.current = null;
+        setPipActive(false);
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
   // Cleanup PiP on unmount or source change
   useEffect(() => {
     return () => {
@@ -299,7 +334,6 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       setLoadErrorMessage('');
       setCountdown(15);
       setQuality('auto');
-      setShowIosPipModal(false);
     }, 0);
     clearTimeout(autoPlayTimerRef.current);
     clearInterval(countdownRef.current);
@@ -629,6 +663,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           <button
             onClick={togglePiP}
             title={getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Enter Fullscreen') : (pipActive ? 'Exit Picture-in-Picture' : 'Picture-in-Picture')}
+            aria-label={getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Enter Fullscreen') : (pipActive ? 'Exit Picture-in-Picture' : 'Picture-in-Picture')}
             style={{
               position: 'absolute',
               top: '12px',
@@ -793,194 +828,11 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
               className={`action-btn ${pipActive ? 'pip-active' : ''}`}
             >
               <PictureInPicture2 style={{ width: 14, height: 14 }} />
-              <span>{pipActive ? 'Exit PiP' : 'Pop Out'}</span>
+              <span>{getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Fullscreen') : (pipActive ? 'Exit PiP' : 'Pop Out')}</span>
             </button>
           </div>
         </div>
       </div>
-
-      {showIosPipModal && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.85)',
-          backdropFilter: 'blur(10px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: '20px',
-          animation: 'fadeInUp 0.3s ease-out'
-        }}>
-          <div style={{
-            background: '#141414',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '20px',
-            padding: '24px',
-            maxWidth: '440px',
-            width: '100%',
-            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
-            position: 'relative'
-          }}>
-            {/* Close Button */}
-            <button
-              onClick={() => setShowIosPipModal(false)}
-              style={{
-                position: 'absolute',
-                top: '16px',
-                right: '16px',
-                background: 'rgba(255, 255, 255, 0.06)',
-                border: 'none',
-                color: '#aaa',
-                cursor: 'pointer',
-                borderRadius: '50%',
-                width: '32px',
-                height: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'background 0.2s'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'}
-            >
-              <X style={{ width: 16, height: 16 }} />
-            </button>
-
-            {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
-              <div style={{
-                background: 'rgba(229, 9, 20, 0.15)',
-                border: '1px solid rgba(229, 9, 20, 0.3)',
-                borderRadius: '12px',
-                width: '40px',
-                height: '40px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#e50914'
-              }}>
-                <PictureInPicture2 style={{ width: 22, height: 22 }} />
-              </div>
-              <div style={{ textAlign: 'left' }}>
-                <h3 style={{ color: 'white', fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>Picture-in-Picture on iOS</h3>
-                <p style={{ color: '#888', fontSize: '0.8rem', margin: '2px 0 0' }}>Easy steps for iPhone & iPad</p>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div style={{ color: '#ccc', fontSize: '0.9rem', lineHeight: '1.5', marginBottom: '24px', textAlign: 'left' }}>
-              <p style={{ marginBottom: '16px', color: '#aaa' }}>
-                {getIsStandalonePwa()
-                  ? 'iOS Web Apps (PWA "Add to Home Screen") restrict background video & Picture-in-Picture. To enable continuous PiP or Dynamic Island playback:'
-                  : 'Due to iOS Safari security policies, Picture-in-Picture for nested player frames requires opening the stream directly.'}
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <span style={{ fontWeight: 700, color: '#e50914' }}>1.</span>
-                  <span>Tap <strong>&quot;Copy Stream URL&quot;</strong> below or open the stream in Mobile Safari.</span>
-                </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <span style={{ fontWeight: 700, color: '#e50914' }}>2.</span>
-                  <span>Paste in Safari and press play.</span>
-                </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <span style={{ fontWeight: 700, color: '#e50914' }}>3.</span>
-                  <span>Tap the native <strong>Picture-in-Picture button</strong> or swipe up to go home — playback will keep playing in the background & Dynamic Island!</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <button
-                onClick={() => {
-                  const url = buildUrl(currentServer);
-                  if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(url);
-                  } else {
-                    const el = document.createElement('textarea');
-                    el.value = url;
-                    document.body.appendChild(el);
-                    el.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(el);
-                  }
-                  setCopiedLink(true);
-                  setTimeout(() => setCopiedLink(false), 2500);
-                }}
-                style={{
-                  background: copiedLink ? '#10b981' : 'rgba(255, 255, 255, 0.1)',
-                  color: 'white',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  padding: '12px',
-                  borderRadius: '10px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  fontSize: '0.9rem',
-                  transition: 'all 0.2s'
-                }}
-              >
-                {copiedLink ? '✓ Copied Stream URL to Clipboard!' : 'Copy Stream URL'}
-              </button>
-
-              <a
-                href={buildUrl(currentServer)}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-safe-link="true"
-                onClick={(e) => {
-                  if (typeof window !== 'undefined') window.__allowNextPopup = true;
-                  setShowIosPipModal(false);
-                  if (getIsStandalonePwa()) {
-                    e.preventDefault();
-                    window.__allowNextPopup = true;
-                    window.open(buildUrl(currentServer), '_blank');
-                  }
-                }}
-                style={{
-                  background: '#e50914',
-                  color: 'white',
-                  textDecoration: 'none',
-                  padding: '12px',
-                  borderRadius: '10px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  fontSize: '0.9rem',
-                  display: 'block',
-                  transition: 'background 0.2s'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#ff1e27'}
-                onMouseLeave={(e) => e.currentTarget.style.background = '#e50914'}
-              >
-                Launch Stream in Safari
-              </a>
-
-              <button
-                onClick={() => setShowIosPipModal(false)}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  color: '#aaa',
-                  border: 'none',
-                  padding: '12px',
-                  borderRadius: '10px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  fontSize: '0.9rem',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.color = 'white'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'; e.currentTarget.style.color = '#aaa'; }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <style jsx>{`
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
