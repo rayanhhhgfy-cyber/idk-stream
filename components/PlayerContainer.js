@@ -153,34 +153,60 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   // ── Document Picture-in-Picture ──
   const togglePiP = useCallback(async () => {
     const isIos = getIsIos();
+    const isStandalonePwa = getIsStandalonePwa();
+    const pipEnabled = typeof document !== 'undefined' ? document.pictureInPictureEnabled : false;
+    const presentationSupported = typeof document !== 'undefined' && typeof document.webkitSupportsPresentationMode === 'function'
+      ? document.webkitSupportsPresentationMode('picture-in-picture')
+      : false;
+
+    const iframe = iframeRef.current;
+    const iframeSrc = iframe?.src || '';
+    const video = document.querySelector('video');
+    const videoPipDisabled = !!video?.disablePictureInPicture;
+    console.info('[PlayerContainer] PiP probe', {
+      isIos,
+      isStandalonePwa,
+      pipEnabled,
+      presentationSupported,
+      videoPipDisabled,
+      iframePresent: !!iframe,
+      iframeSrc,
+      iframeRequestFullscreen: !!(iframe && (iframe.requestFullscreen || iframe.webkitRequestFullscreen)),
+      videoRequestPictureInPicture: !!(video && video.requestPictureInPicture),
+      videoSupportsPresentation: !!(video && video.webkitSetPresentationMode),
+    });
 
     if (isIos) {
-      const iframe = iframeRef.current;
-      if (!iframe) return;
-
-      if (pipActive && pipWindowRef.current === iframe) {
-        try {
-          const exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen;
-          if ((document.fullscreenElement || document.webkitFullscreenElement) && exitFullscreen) {
-            await exitFullscreen.call(document);
-          }
-        } catch (err) {
-          console.warn('iOS fullscreen exit failed:', err);
-        }
-        pipWindowRef.current = null;
-        setPipActive(false);
+      if (iframe && isStandalonePwa) {
+        console.warn('[PlayerContainer] Refusing fullscreen/PiP on a cross-origin iframe in standalone iOS PWA; the underlying media element is not reachable from the parent page.');
         return;
       }
 
-      const enterFullscreen = iframe.requestFullscreen || iframe.webkitRequestFullscreen;
-      if (enterFullscreen) {
-        try {
-          await enterFullscreen.call(iframe);
-          pipWindowRef.current = iframe;
-          setPipActive(true);
+      if (iframe && !isStandalonePwa) {
+        if (pipActive && pipWindowRef.current === iframe) {
+          try {
+            const exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen;
+            if ((document.fullscreenElement || document.webkitFullscreenElement) && exitFullscreen) {
+              await exitFullscreen.call(document);
+            }
+          } catch (err) {
+            console.warn('iOS fullscreen exit failed:', err);
+          }
+          pipWindowRef.current = null;
+          setPipActive(false);
           return;
-        } catch (err) {
-          console.warn('iOS fullscreen failed, falling back to popout window:', err);
+        }
+
+        const enterFullscreen = iframe.requestFullscreen || iframe.webkitRequestFullscreen;
+        if (enterFullscreen) {
+          try {
+            await enterFullscreen.call(iframe);
+            pipWindowRef.current = iframe;
+            setPipActive(true);
+            return;
+          } catch (err) {
+            console.warn('iOS fullscreen failed:', err);
+          }
         }
       }
 
@@ -197,7 +223,6 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       return;
     }
 
-    const iframe = iframeRef.current;
     if (!iframe) return;
 
     // Method 1: Document Picture-in-Picture API (Chrome 116+, Edge 116+)
@@ -593,8 +618,9 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
             src={buildUrl(currentServer)}
             title="Video Player"
             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-            allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope; clipboard-write"
-            allowFullScreen
+            allow="autoplay; encrypted-media; accelerometer; gyroscope; clipboard-write"
+            allowFullScreen={false}
+            sandbox="allow-scripts allow-forms allow-modals"
             referrerPolicy="no-referrer-when-downgrade"
             loading="eager"
             data-player="true"
