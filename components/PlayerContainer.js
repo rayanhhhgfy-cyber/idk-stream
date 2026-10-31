@@ -50,7 +50,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const isTv = type === 'tv';
   const playerReady = isTv ? Boolean(season && episode) : Boolean(id);
 
-  // Detect if user is on iOS or in iOS PWA Standalone Mode
+  // Detect whether the current browser is running on iOS.
   const getIsIos = () => {
     if (typeof window === 'undefined') return false;
     return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
@@ -159,7 +159,6 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     const videoPipDisabled = !!video?.disablePictureInPicture;
     console.info('[PlayerContainer] PiP probe', {
       isIos,
-      isStandalonePwa,
       pipEnabled,
       presentationSupported,
       videoPipDisabled,
