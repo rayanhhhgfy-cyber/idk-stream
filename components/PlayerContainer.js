@@ -39,6 +39,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const [loadErrorMessage, setLoadErrorMessage] = useState('');
   const [isBuffering, setIsBuffering] = useState(false);
   const [showSlowTip, setShowSlowTip] = useState(false);
+  const [showPipHelp, setShowPipHelp] = useState(false);
 
   const iframeRef = useRef(null);
   const videoRef = useRef(null);
@@ -177,7 +178,9 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     });
 
     if (isIos && isStandalonePwa) {
-      console.warn('[PlayerContainer] Disabled custom PiP in installed iOS PWA because the embedded provider is a cross-origin iframe and the parent page cannot access the real media element.');
+      // iOS standalone (home-screen) web apps do not support Picture-in-Picture.
+      // Guide the user to Safari, where PiP works, instead of silently failing.
+      setShowPipHelp(true);
       return;
     }
 
@@ -671,11 +674,11 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         )}
 
         {/* PiP Button — top right of player */}
-        {playerReady && !(getIsIos() && getIsStandalonePwa()) && (
+        {playerReady && (
           <button
             onClick={togglePiP}
-            title={getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Enter Fullscreen') : (pipActive ? 'Exit Picture-in-Picture' : 'Picture-in-Picture')}
-            aria-label={getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Enter Fullscreen') : (pipActive ? 'Exit Picture-in-Picture' : 'Picture-in-Picture')}
+            title={getIsIos() && getIsStandalonePwa() ? 'Picture-in-Picture (opens in Safari)' : getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Enter Fullscreen') : (pipActive ? 'Exit Picture-in-Picture' : 'Picture-in-Picture')}
+            aria-label={getIsIos() && getIsStandalonePwa() ? 'Picture-in-Picture, opens in Safari' : getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Enter Fullscreen') : (pipActive ? 'Exit Picture-in-Picture' : 'Picture-in-Picture')}
             style={{
               position: 'absolute',
               top: '12px',
@@ -730,6 +733,39 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           }}>
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#e50914', boxShadow: '0 0 6px rgba(229,9,20,0.8)' }} />
             <span style={{ color: '#ff6b6b', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase' }}>PiP Active</span>
+          </div>
+        )}
+
+        {/* PiP help modal — iOS standalone PWA cannot do PiP; hand off to Safari */}
+        {showPipHelp && (
+          <div
+            onClick={() => setShowPipHelp(false)}
+            style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.88)', zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', animation: 'fadeInUp 0.25s ease-out' }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: '420px', width: '100%', background: '#141418', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '14px', padding: '24px', textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.8)' }}
+            >
+              <h3 style={{ color: 'white', margin: '0 0 8px', fontSize: '1.05rem' }}>Picture-in-Picture needs Safari</h3>
+              <p style={{ color: '#aaa', fontSize: '0.85rem', lineHeight: 1.6, margin: '0 0 16px' }}>
+                iOS does not support Picture-in-Picture inside the installed home-screen app.
+                Open this page in Safari, start the video, then use the PiP button in the player.
+              </p>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => { setShowPipHelp(false); window.open(window.location.href, '_blank'); }}
+                  style={{ background: '#e50914', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}
+                >
+                  Open in Safari
+                </button>
+                <button
+                  onClick={() => setShowPipHelp(false)}
+                  style={{ background: 'rgba(255,255,255,0.06)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem' }}
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -835,13 +871,13 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
               )}
             </div>
 
-            {!((getIsIos() && getIsStandalonePwa())) && (
+            {(true) && (
               <button
                 onClick={togglePiP}
                 className={`action-btn ${pipActive ? 'pip-active' : ''}`}
               >
                 <PictureInPicture2 style={{ width: 14, height: 14 }} />
-                <span>{getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Fullscreen') : (pipActive ? 'Exit PiP' : 'Pop Out')}</span>
+                <span>{getIsIos() && getIsStandalonePwa() ? 'PiP in Safari' : getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Fullscreen') : (pipActive ? 'Exit PiP' : 'Pop Out')}</span>
               </button>
             )}
           </div>
