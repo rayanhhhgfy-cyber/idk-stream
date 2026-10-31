@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Server, SkipForward, X, PictureInPicture2, PictureInPicture, Monitor } from 'lucide-react';
 import Hls from 'hls.js';
+import DirectSourcePlayer from './DirectSourcePlayer';
 
 const serverConfigs = {
   1: { name: 'HLS Player', isHls: true, badge: 'Dev' },
@@ -35,6 +36,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const [countdown, setCountdown] = useState(15);
   const [pipActive, setPipActive] = useState(false);
   const [isIosStandalonePwa, setIsIosStandalonePwa] = useState(false);
+  const [useEmbeddedPwaFallback, setUseEmbeddedPwaFallback] = useState(false);
   const [pipSupported, setPipSupported] = useState(false);
   const [embedBlocked, setEmbedBlocked] = useState(false);
   const [loadErrorMessage, setLoadErrorMessage] = useState('');
@@ -356,6 +358,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   // Reset player when parameters change
   useEffect(() => {
     setTimeout(() => {
+      setUseEmbeddedPwaFallback(false);
       setIframeLoading(true);
       setShowCountdown(false);
       setEmbedBlocked(false);
@@ -510,12 +513,13 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   useEffect(() => {
     clearTimeout(autoPlayTimerRef.current);
     clearInterval(countdownRef.current);
+    if (isIosStandalonePwa && !useEmbeddedPwaFallback) return undefined;
     setTimeout(() => {
       setShowCountdown(false);
       setCountdown(15);
     }, 0);
 
-    if (autoPlayNext && isTv && onNextEpisode) {
+    if (autoPlayNext && isTv && onNextEpisode){
       const runtimeMs = episodeRuntime ? (episodeRuntime - 2) * 60 * 1000 : 25 * 60 * 1000;
       let waitTime = Math.max(runtimeMs, 60000);
       if (process.env.NODE_ENV === 'development') waitTime = 10000;
@@ -579,24 +583,26 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       clearInterval(countdownRef.current);
       window.removeEventListener('message', handleMessage);
     };
-  }, [autoPlayNext, isTv, season, episode, onNextEpisode, episodeRuntime, onSyncTime, isBuffering]);
+  }, [autoPlayNext, isTv, season, episode, onNextEpisode, episodeRuntime, onSyncTime, isBuffering, isIosStandalonePwa, useEmbeddedPwaFallback]);
 
   // Countdown ticker
   useEffect(() => {
+    if (isIosStandalonePwa && !useEmbeddedPwaFallback) return undefined;
     if (!showCountdown) { clearInterval(countdownRef.current); return; }
+    let remaining = 15;
     countdownRef.current = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(countdownRef.current);
-          setShowCountdown(false);
-          if (onNextEpisode) onNextEpisode();
-          return 15;
-        }
-        return prev - 1;
-      });
+      remaining -= 1;
+      if (remaining <= 0) {
+        clearInterval(countdownRef.current);
+        setCountdown(15);
+        setShowCountdown(false);
+        if (onNextEpisode) onNextEpisode();
+        return;
+      }
+      setCountdown(remaining);
     }, 1000);
     return () => clearInterval(countdownRef.current);
-  }, [showCountdown, onNextEpisode]);
+  }, [showCountdown, onNextEpisode, isIosStandalonePwa, useEmbeddedPwaFallback]);
 
   const dismissCountdown = () => { setShowCountdown(false); setCountdown(15); clearTimeout(autoPlayTimerRef.current); clearInterval(countdownRef.current); };
   const skipToNext = () => { clearInterval(countdownRef.current); setShowCountdown(false); setCountdown(15); if (onNextEpisode) onNextEpisode(); };
@@ -612,6 +618,24 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   };
 
   const isIosMiniPlayerActive = isIosStandalonePwa && pipActive;
+
+  if (isIosStandalonePwa && !useEmbeddedPwaFallback) {
+    return (
+      <DirectSourcePlayer
+        key={`${type}:${id}:${season}:${episode}`}
+        type={type}
+        id={id}
+        season={season}
+        episode={episode}
+        autoPlayNext={autoPlayNext}
+        onNextEpisode={onNextEpisode}
+        nextEpisodeTitle={nextEpisodeTitle}
+        episodeRuntime={episodeRuntime}
+        onSyncTime={onSyncTime}
+        onUseEmbedded={() => setUseEmbeddedPwaFallback(true)}
+      />
+    );
+  }
 
   return (
     <div style={{ width: '100%' }}>
