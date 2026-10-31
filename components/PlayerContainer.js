@@ -39,6 +39,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const [loadErrorMessage, setLoadErrorMessage] = useState('');
   const [isBuffering, setIsBuffering] = useState(false);
   const [showSlowTip, setShowSlowTip] = useState(false);
+  const [miniPip, setMiniPip] = useState(false);
 
   const iframeRef = useRef(null);
   const videoRef = useRef(null);
@@ -189,10 +190,12 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
             console.warn('iOS fullscreen exit failed:', err);
           }
           pipWindowRef.current = null;
+          setMiniPip(false);
           setPipActive(false);
           return;
         }
 
+        // iPad: the element Fullscreen API exists, put the provider player fullscreen
         const enterFullscreen = iframe.requestFullscreen || iframe.webkitRequestFullscreen;
         if (enterFullscreen) {
           try {
@@ -204,6 +207,14 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
             console.warn('iOS fullscreen failed:', err);
           }
         }
+
+        // iPhone: no element Fullscreen API on iPhone — float the player inside
+        // the app instead. The iframe node is only repositioned (never remounted),
+        // so playback continues seamlessly in the floating corner window.
+        pipWindowRef.current = iframe;
+        setMiniPip(true);
+        setPipActive(true);
+        return;
       }
 
       return;
@@ -594,7 +605,20 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     <div style={{ width: '100%' }}>
       <div
         data-player="true"
-        style={{
+        style={miniPip ? {
+          position: 'fixed',
+          width: '45vw',
+          maxWidth: '300px',
+          paddingTop: '25.3125vw',
+          right: '10px',
+          bottom: '10px',
+          zIndex: 9999,
+          background: 'linear-gradient(180deg, #0d0d0f 0%, #050507 100%)',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          border: '1px solid rgba(255, 255, 255, 0.25)',
+          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.9), 0 0 20px rgba(229, 9, 20, 0.25)',
+        } : {
           position: 'relative',
           width: '100%',
           paddingTop: '56.25%',
@@ -669,8 +693,8 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         {playerReady && (
           <button
             onClick={togglePiP}
-            title={getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Enter Fullscreen') : (pipActive ? 'Exit Picture-in-Picture' : 'Picture-in-Picture')}
-            aria-label={getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Enter Fullscreen') : (pipActive ? 'Exit Picture-in-Picture' : 'Picture-in-Picture')}
+            title={getIsIos() ? (pipActive ? 'Exit PiP' : 'Picture-in-Picture') : (pipActive ? 'Exit Picture-in-Picture' : 'Picture-in-Picture')}
+            aria-label={getIsIos() ? (pipActive ? 'Exit PiP' : 'Picture-in-Picture') : (pipActive ? 'Exit Picture-in-Picture' : 'Picture-in-Picture')}
             style={{
               position: 'absolute',
               top: '12px',
@@ -836,7 +860,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
                 className={`action-btn ${pipActive ? 'pip-active' : ''}`}
               >
                 <PictureInPicture2 style={{ width: 14, height: 14 }} />
-                <span>{getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Fullscreen') : (pipActive ? 'Exit PiP' : 'Pop Out')}</span>
+                <span>{getIsIos() ? (pipActive ? 'Exit PiP' : 'PiP') : (pipActive ? 'Exit PiP' : 'Pop Out')}</span>
               </button>
             )}
           </div>
