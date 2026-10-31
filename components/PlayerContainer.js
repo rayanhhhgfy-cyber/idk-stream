@@ -34,6 +34,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const [showCountdown, setShowCountdown] = useState(false);
   const [countdown, setCountdown] = useState(15);
   const [pipActive, setPipActive] = useState(false);
+  const [isIosStandalonePwa, setIsIosStandalonePwa] = useState(false);
   const [pipSupported, setPipSupported] = useState(false);
   const [embedBlocked, setEmbedBlocked] = useState(false);
   const [loadErrorMessage, setLoadErrorMessage] = useState('');
@@ -56,6 +57,29 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   };
+
+  const getIsStandalonePwa = () => {
+    if (typeof window === 'undefined') return false;
+    const displayMode = typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches;
+    return Boolean(displayMode || window.navigator.standalone === true);
+  };
+
+  useEffect(() => {
+    let timeout;
+    const syncDisplayMode = () => {
+      window.clearTimeout(timeout);
+      timeout = window.setTimeout(() => {
+        setIsIosStandalonePwa(getIsIos() && getIsStandalonePwa());
+      }, 0);
+    };
+
+    syncDisplayMode();
+    window.addEventListener('pageshow', syncDisplayMode);
+    return () => {
+      window.clearTimeout(timeout);
+      window.removeEventListener('pageshow', syncDisplayMode);
+    };
+  }, []);
 
   // Check PiP support on mount
   useEffect(() => {
@@ -145,9 +169,14 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     return url;
   };
 
-  // ── Document Picture-in-Picture ──
+  // iOS standalone uses an in-page player because the embed is cross-origin.
   const togglePiP = useCallback(async () => {
     const isIos = getIsIos();
+
+    if (isIos && getIsStandalonePwa()) {
+      setPipActive((active) => !active);
+      return;
+    }
 
     if (isIos) {
       const iframe = iframeRef.current;
@@ -571,7 +600,6 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
 
   const dismissCountdown = () => { setShowCountdown(false); setCountdown(15); clearTimeout(autoPlayTimerRef.current); clearInterval(countdownRef.current); };
   const skipToNext = () => { clearInterval(countdownRef.current); setShowCountdown(false); setCountdown(15); if (onNextEpisode) onNextEpisode(); };
-
   const switchServer = (server) => {
     setIframeLoading(true);
     setEmbedBlocked(false);
@@ -583,16 +611,28 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     setIframeLoading(true);
   };
 
+  const isIosMiniPlayerActive = isIosStandalonePwa && pipActive;
+
   return (
     <div style={{ width: '100%' }}>
+      {isIosMiniPlayerActive && (
+        <div aria-hidden="true" style={{ width: '100%', aspectRatio: '16 / 9' }} />
+      )}
       <div
         data-player="true"
+        role={isIosMiniPlayerActive ? 'region' : undefined}
+        aria-label={isIosMiniPlayerActive ? 'In-app mini player' : undefined}
         style={{
-          position: 'relative',
-          width: '100%',
-          paddingTop: '56.25%',
+          position: isIosMiniPlayerActive ? 'fixed' : 'relative',
+          right: isIosMiniPlayerActive ? '12px' : undefined,
+          bottom: isIosMiniPlayerActive ? 'calc(env(safe-area-inset-bottom, 0px) + 12px)' : undefined,
+          zIndex: isIosMiniPlayerActive ? 1200 : undefined,
+          width: isIosMiniPlayerActive ? 'min(82vw, 320px)' : '100%',
+          maxWidth: isIosMiniPlayerActive ? 'calc(100vw - 24px)' : undefined,
+          paddingTop: isIosMiniPlayerActive ? 0 : '56.25%',
+          aspectRatio: isIosMiniPlayerActive ? '16 / 9' : undefined,
           background: 'linear-gradient(180deg, #0d0d0f 0%, #050507 100%)',
-          borderRadius: '20px',
+          borderRadius: isIosMiniPlayerActive ? '16px' : '20px',
           overflow: 'hidden',
           border: '1px solid rgba(255, 255, 255, 0.1)',
           boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 30px rgba(229, 9, 20, 0.08)',
@@ -662,15 +702,15 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         {playerReady && (
           <button
             onClick={togglePiP}
-            title={getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Enter Fullscreen') : (pipActive ? 'Exit Picture-in-Picture' : 'Picture-in-Picture')}
-            aria-label={getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Enter Fullscreen') : (pipActive ? 'Exit Picture-in-Picture' : 'Picture-in-Picture')}
+            title={isIosStandalonePwa ? (pipActive ? 'Exit mini player' : 'Open in-app mini player') : (getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Enter Fullscreen') : (pipActive ? 'Exit Picture-in-Picture' : 'Picture-in-Picture'))}
+            aria-label={isIosStandalonePwa ? (pipActive ? 'Exit mini player' : 'Open in-app mini player') : (getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Enter Fullscreen') : (pipActive ? 'Exit Picture-in-Picture' : 'Picture-in-Picture'))}
             style={{
               position: 'absolute',
               top: '12px',
               right: '12px',
               zIndex: 25,
-              width: '40px',
-              height: '40px',
+              width: '44px',
+              height: '44px',
               borderRadius: '10px',
               border: pipActive ? '1px solid rgba(229,9,20,0.6)' : '1px solid rgba(255,255,255,0.15)',
               background: pipActive ? 'rgba(229,9,20,0.25)' : 'rgba(0,0,0,0.6)',
@@ -717,12 +757,12 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
             animation: 'pipPulse 2s ease-in-out infinite',
           }}>
             <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#e50914', boxShadow: '0 0 6px rgba(229,9,20,0.8)' }} />
-            <span style={{ color: '#ff6b6b', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase' }}>PiP Active</span>
+            <span style={{ color: '#ff6b6b', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase' }}>{isIosStandalonePwa ? 'Mini player' : 'PiP Active'}</span>
           </div>
         )}
 
         {/* Auto-play countdown overlay */}
-        {showCountdown && (
+        {showCountdown && !isIosMiniPlayerActive && (
           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 100%)', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', zIndex: 20, animation: 'fadeInUp 0.4s ease-out' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1 }}>
               <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(229,9,20,0.15)', border: '3px solid #e50914', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>{countdown}</div>
@@ -828,7 +868,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
               className={`action-btn ${pipActive ? 'pip-active' : ''}`}
             >
               <PictureInPicture2 style={{ width: 14, height: 14 }} />
-              <span>{getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Fullscreen') : (pipActive ? 'Exit PiP' : 'Pop Out')}</span>
+              <span>{isIosStandalonePwa ? (pipActive ? 'Exit mini player' : 'Mini player') : (getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Fullscreen') : (pipActive ? 'Exit PiP' : 'Pop Out'))}</span>
             </button>
           </div>
         </div>
