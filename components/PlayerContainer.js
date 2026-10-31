@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Server, SkipForward, X, PictureInPicture2, PictureInPicture, Monitor } from 'lucide-react';
+import { Server, SkipForward, X, PictureInPicture2, PictureInPicture, Monitor, ExternalLink } from 'lucide-react';
 import Hls from 'hls.js';
 
 const serverConfigs = {
@@ -39,6 +39,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const [loadErrorMessage, setLoadErrorMessage] = useState('');
   const [isBuffering, setIsBuffering] = useState(false);
   const [showSlowTip, setShowSlowTip] = useState(false);
+  const [showPipHelp, setShowPipHelp] = useState(false);
 
   const iframeRef = useRef(null);
   const videoRef = useRef(null);
@@ -50,11 +51,16 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const isTv = type === 'tv';
   const playerReady = isTv ? Boolean(season && episode) : Boolean(id);
 
-  // Detect whether the current browser is running on iOS.
+  // Detect if user is on iOS or in iOS PWA Standalone Mode
   const getIsIos = () => {
     if (typeof window === 'undefined') return false;
     return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  };
+
+  const getIsStandalonePwa = () => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   };
 
   // Check PiP support on mount
@@ -145,9 +151,17 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     return url;
   };
 
+  // iOS standalone PWA: hand off the stream itself to Safari, where PiP works
+  const handleOpenInSafari = () => {
+    const streamUrl = buildUrl(currentServer);
+    window.open(streamUrl, '_blank');
+    setShowPipHelp(false);
+  };
+
   // ── Document Picture-in-Picture ──
   const togglePiP = useCallback(async () => {
     const isIos = getIsIos();
+    const isStandalonePwa = getIsStandalonePwa();
     const pipEnabled = typeof document !== 'undefined' ? document.pictureInPictureEnabled : false;
     const presentationSupported = typeof document !== 'undefined' && typeof document.webkitSupportsPresentationMode === 'function'
       ? document.webkitSupportsPresentationMode('picture-in-picture')
@@ -159,6 +173,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     const videoPipDisabled = !!video?.disablePictureInPicture;
     console.info('[PlayerContainer] PiP probe', {
       isIos,
+      isStandalonePwa,
       pipEnabled,
       presentationSupported,
       videoPipDisabled,
@@ -169,60 +184,43 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       videoSupportsPresentation: !!(video && video.webkitSetPresentationMode),
     });
 
+    if (isIos && isStandalonePwa) {
+      // iOS standalone (home-screen) web apps do not support Picture-in-Picture.
+      // Guide the user to Safari, where PiP works, instead of silently failing.
+      setShowPipHelp(true);
+      return;
+    }
+
     if (isIos) {
-      // Safari exposes PiP through the playing <video> element. Cross-origin
-      // embeds cannot be inspected by the parent page, so use the iframe's
-      // native fullscreen media path instead of opening another window or
-      // showing a Safari handoff prompt. This works in both Safari and an
-      // installed PWA and keeps playback in the current app.
-      if (pipActive && (pipWindowRef.current === iframe || pipWindowRef.current === video)) {
-        try {
-          if (pipWindowRef.current === video) {
-            if (document.exitPictureInPicture) {
-              await document.exitPictureInPicture();
-            } else if (video?.webkitSetPresentationMode) {
-              video.webkitSetPresentationMode('inline');
-            }
-          } else {
+
+      if (iframe && !isStandalonePwa) {
+        if (pipActive && pipWindowRef.current === iframe) {
+          try {
             const exitFullscreen = document.exitFullscreen || document.webkitExitFullscreen;
             if ((document.fullscreenElement || document.webkitFullscreenElement) && exitFullscreen) {
               await exitFullscreen.call(document);
             }
+          } catch (err) {
+            console.warn('iOS fullscreen exit failed:', err);
           }
-        } catch (err) {
-          console.warn('iOS PiP/fullscreen exit failed:', err);
-        }
-        pipWindowRef.current = null;
-        setPipActive(false);
-        return;
-      }
-
-      const embeddedVideo = video && (video.requestPictureInPicture || video.webkitSetPresentationMode);
-      if (embeddedVideo) {
-        try {
-          if (video.requestPictureInPicture) {
-            await video.requestPictureInPicture();
-          } else {
-            video.webkitSetPresentationMode('picture-in-picture');
-          }
-          pipWindowRef.current = video;
-          setPipActive(true);
+          pipWindowRef.current = null;
+          setPipActive(false);
           return;
-        } catch (err) {
-          console.warn('iOS native PiP request failed:', err);
+        }
+
+        const enterFullscreen = iframe.requestFullscreen || iframe.webkitRequestFullscreen;
+        if (enterFullscreen) {
+          try {
+            await enterFullscreen.call(iframe);
+            pipWindowRef.current = iframe;
+            setPipActive(true);
+            return;
+          } catch (err) {
+            console.warn('iOS fullscreen failed:', err);
+          }
         }
       }
 
-      const enterFullscreen = iframe?.requestFullscreen || iframe?.webkitRequestFullscreen;
-      if (enterFullscreen) {
-        try {
-          await enterFullscreen.call(iframe);
-          pipWindowRef.current = iframe;
-          setPipActive(true);
-        } catch (err) {
-          console.warn('iOS fullscreen failed:', err);
-        }
-      }
       return;
     }
 
@@ -308,7 +306,8 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       }
     } catch {}
 
-    // Do not open a popup or interrupt playback when the provider does not expose PiP.
+    // Final fallback: show message if nothing worked
+    alert('Picture-in-Picture is not supported on your device. Try rotating your device or using a different browser.');
   }, [pipActive]);
 
   useEffect(() => {
@@ -685,8 +684,8 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         {playerReady && (
           <button
             onClick={togglePiP}
-            title={getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Enter Fullscreen') : (pipActive ? 'Exit Picture-in-Picture' : 'Picture-in-Picture')}
-            aria-label={getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Enter Fullscreen') : (pipActive ? 'Exit Picture-in-Picture' : 'Picture-in-Picture')}
+            title={getIsIos() && getIsStandalonePwa() ? 'Picture-in-Picture (opens in Safari)' : getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Enter Fullscreen') : (pipActive ? 'Exit Picture-in-Picture' : 'Picture-in-Picture')}
+            aria-label={getIsIos() && getIsStandalonePwa() ? 'Picture-in-Picture, opens in Safari' : getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Enter Fullscreen') : (pipActive ? 'Exit Picture-in-Picture' : 'Picture-in-Picture')}
             style={{
               position: 'absolute',
               top: '12px',
@@ -852,13 +851,163 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
                 className={`action-btn ${pipActive ? 'pip-active' : ''}`}
               >
                 <PictureInPicture2 style={{ width: 14, height: 14 }} />
-                <span>{getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Fullscreen') : (pipActive ? 'Exit PiP' : 'Pop Out')}</span>
+                <span>{getIsIos() && getIsStandalonePwa() ? 'PiP in Safari' : getIsIos() ? (pipActive ? 'Exit Fullscreen' : 'Fullscreen') : (pipActive ? 'Exit PiP' : 'Pop Out')}</span>
               </button>
             )}
           </div>
         </div>
       </div>
 
+      {/* iOS Standalone PWA PiP Instructions Modal — opens the stream directly in Safari */}
+      {showPipHelp && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          animation: 'fadeIn 0.25s ease-out',
+        }}>
+          <div style={{
+            background: '#141414',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            borderRadius: '20px',
+            padding: '28px',
+            maxWidth: '420px',
+            width: '90%',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8)',
+            position: 'relative',
+            color: 'white',
+            textAlign: 'center',
+          }}>
+            {/* Red glow decorative accent */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '100px',
+              height: '3px',
+              background: 'linear-gradient(90deg, transparent, #e50914, transparent)',
+            }} />
+
+            {/* Close button */}
+            <button
+              onClick={() => setShowPipHelp(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: 'rgba(255, 255, 255, 0.06)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#aaa',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'; e.currentTarget.style.color = 'white'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'; e.currentTarget.style.color = '#aaa'; }}
+            >
+              <X style={{ width: 16, height: 16 }} />
+            </button>
+
+            {/* Icon & Title */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(229, 9, 20, 0.15), rgba(229, 9, 20, 0.03))',
+              border: '1px solid rgba(229, 9, 20, 0.3)',
+              borderRadius: '16px',
+              width: '56px',
+              height: '56px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px',
+              color: '#ff4444',
+            }}>
+              <PictureInPicture2 style={{ width: 28, height: 28 }} />
+            </div>
+
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '10px', letterSpacing: '-0.3px' }}>
+              Picture-in-Picture on iOS
+            </h3>
+
+            <p style={{ color: '#aaa', fontSize: '0.85rem', lineHeight: '1.5', marginBottom: '20px' }}>
+              Apple restricts Picture-in-Picture inside installed Home Screen apps (PWA mode). To use Picture-in-Picture, play the video directly in Safari instead.
+            </p>
+
+            {/* Instructions box */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.03)',
+              border: '1px solid rgba(255, 255, 255, 0.05)',
+              borderRadius: '12px',
+              padding: '16px',
+              textAlign: 'left',
+              marginBottom: '24px',
+            }}>
+              <ol style={{ margin: 0, paddingLeft: '18px', color: '#ccc', fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <li>Tap <strong>"Open in Safari"</strong> below to open the active player stream in Safari.</li>
+                <li>Start playing the video in Safari.</li>
+                <li>Swipe up to go home or tap the native browser PiP button to keep watching while multitasking.</li>
+              </ol>
+            </div>
+
+            {/* Action buttons */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button
+                onClick={handleOpenInSafari}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  background: 'linear-gradient(135deg, #e50914, #b20710)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '12px 24px',
+                  borderRadius: '12px',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 15px rgba(229,9,20,0.3)',
+                  transition: 'transform 0.2s',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              >
+                Open in Safari
+                <ExternalLink style={{ width: 16, height: 16 }} />
+              </button>
+
+              <button
+                onClick={() => setShowPipHelp(false)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  color: '#bbb',
+                  border: 'none',
+                  padding: '12px 24px',
+                  borderRadius: '12px',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.color = 'white'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'; e.currentTarget.style.color = '#bbb'; }}
+              >
+                Go Back
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
