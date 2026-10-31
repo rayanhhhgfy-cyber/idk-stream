@@ -169,3 +169,23 @@ const nextConfig = {
 // so you can turn it in at school.
 // ──────────────────────────────────────────────────────────────────────────────
 export default nextConfig;
+
+// Always serve the service worker and manifest fresh so installed PWAs
+// pick up new deployments immediately instead of caching stale copies.
+const securityHeaders = [
+  {
+    key: 'Cache-Control',
+    value: 'public, max-age=0, must-revalidate',
+  },
+];
+
+export const headers = async () => [
+  {
+    source: '/sw.js',
+    headers: [{ key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate' }],
+  },
+  {
+    source: '/manifest.json',
+    headers: [{ key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' }],
+  },
+];
