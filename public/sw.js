@@ -11,7 +11,7 @@
 // ║    - Pages: Network-first with offline fallback                   ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
-const CACHE_NAME = 'idkstream-v1';
+const CACHE_NAME = 'idkstream-v2';
 
 // Assets to pre-cache on install
 const PRE_CACHE = [
@@ -68,15 +68,16 @@ self.addEventListener('fetch', (event) => {
 
   // For static assets: cache-first
   if (url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|ico|woff2?)$/)) {
+    // Network-first: installed PWAs must receive fresh app code (the old
+    // cache-first strategy kept stale bundles on devices and blocked fixes)
     event.respondWith(
-      caches.match(request).then((cached) => {
-        if (cached) return cached;
-        return fetch(request).then((response) => {
+      fetch(request)
+        .then((response) => {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           return response;
-        });
-      })
+        })
+        .catch(() => caches.match(request))
     );
     return;
   }
