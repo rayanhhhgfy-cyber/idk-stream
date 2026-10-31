@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Server, SkipForward, X, PictureInPicture2, PictureInPicture, Monitor } from 'lucide-react';
+import { Server, SkipForward, X, PictureInPicture2, PictureInPicture, Monitor, ExternalLink } from 'lucide-react';
 import Hls from 'hls.js';
 
 const serverConfigs = {
@@ -149,6 +149,13 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     if (autoPlayNext) params.push('autoplay=1', 'autoPlay=true');
     if (params.length) url += (url.includes('?') ? '&' : '?') + params.join('&');
     return url;
+  };
+
+  // iOS standalone PWA: hand off the stream itself to Safari, where PiP works
+  const handleOpenInSafari = () => {
+    const streamUrl = buildUrl(currentServer);
+    window.open(streamUrl, '_blank');
+    setShowPipHelp(false);
   };
 
   // ── Document Picture-in-Picture ──
@@ -736,39 +743,6 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           </div>
         )}
 
-        {/* PiP help modal — iOS standalone PWA cannot do PiP; hand off to Safari */}
-        {showPipHelp && (
-          <div
-            onClick={() => setShowPipHelp(false)}
-            style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.88)', zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', animation: 'fadeInUp 0.25s ease-out' }}
-          >
-            <div
-              onClick={(e) => e.stopPropagation()}
-              style={{ maxWidth: '420px', width: '100%', background: '#141418', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '14px', padding: '24px', textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.8)' }}
-            >
-              <h3 style={{ color: 'white', margin: '0 0 8px', fontSize: '1.05rem' }}>Picture-in-Picture needs Safari</h3>
-              <p style={{ color: '#aaa', fontSize: '0.85rem', lineHeight: 1.6, margin: '0 0 16px' }}>
-                iOS does not support Picture-in-Picture inside the installed home-screen app.
-                Open this page in Safari, start the video, then use the PiP button in the player.
-              </p>
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <button
-                  onClick={() => { setShowPipHelp(false); window.open(window.location.href, '_blank'); }}
-                  style={{ background: '#e50914', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}
-                >
-                  Open in Safari
-                </button>
-                <button
-                  onClick={() => setShowPipHelp(false)}
-                  style={{ background: 'rgba(255,255,255,0.06)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem' }}
-                >
-                  Dismiss
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Auto-play countdown overlay */}
         {showCountdown && (
           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 100%)', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', zIndex: 20, animation: 'fadeInUp 0.4s ease-out' }}>
@@ -884,8 +858,160 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         </div>
       </div>
 
+      {/* iOS Standalone PWA PiP Instructions Modal — opens the stream directly in Safari */}
+      {showPipHelp && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          animation: 'fadeIn 0.25s ease-out',
+        }}>
+          <div style={{
+            background: '#141414',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            borderRadius: '20px',
+            padding: '28px',
+            maxWidth: '420px',
+            width: '90%',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8)',
+            position: 'relative',
+            color: 'white',
+            textAlign: 'center',
+          }}>
+            {/* Red glow decorative accent */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '100px',
+              height: '3px',
+              background: 'linear-gradient(90deg, transparent, #e50914, transparent)',
+            }} />
+
+            {/* Close button */}
+            <button
+              onClick={() => setShowPipHelp(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: 'rgba(255, 255, 255, 0.06)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#aaa',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'; e.currentTarget.style.color = 'white'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'; e.currentTarget.style.color = '#aaa'; }}
+            >
+              <X style={{ width: 16, height: 16 }} />
+            </button>
+
+            {/* Icon & Title */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(229, 9, 20, 0.15), rgba(229, 9, 20, 0.03))',
+              border: '1px solid rgba(229, 9, 20, 0.3)',
+              borderRadius: '16px',
+              width: '56px',
+              height: '56px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px',
+              color: '#ff4444',
+            }}>
+              <PictureInPicture2 style={{ width: 28, height: 28 }} />
+            </div>
+
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '10px', letterSpacing: '-0.3px' }}>
+              Picture-in-Picture on iOS
+            </h3>
+
+            <p style={{ color: '#aaa', fontSize: '0.85rem', lineHeight: '1.5', marginBottom: '20px' }}>
+              Apple restricts Picture-in-Picture inside installed Home Screen apps (PWA mode). To use Picture-in-Picture, play the video directly in Safari instead.
+            </p>
+
+            {/* Instructions box */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.03)',
+              border: '1px solid rgba(255, 255, 255, 0.05)',
+              borderRadius: '12px',
+              padding: '16px',
+              textAlign: 'left',
+              marginBottom: '24px',
+            }}>
+              <ol style={{ margin: 0, paddingLeft: '18px', color: '#ccc', fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <li>Tap <strong>"Open in Safari"</strong> below to open the active player stream in Safari.</li>
+                <li>Start playing the video in Safari.</li>
+                <li>Swipe up to go home or tap the native browser PiP button to keep watching while multitasking.</li>
+              </ol>
+            </div>
+
+            {/* Action buttons */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button
+                onClick={handleOpenInSafari}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  background: 'linear-gradient(135deg, #e50914, #b20710)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '12px 24px',
+                  borderRadius: '12px',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 15px rgba(229,9,20,0.3)',
+                  transition: 'transform 0.2s',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              >
+                Open in Safari
+                <ExternalLink style={{ width: 16, height: 16 }} />
+              </button>
+
+              <button
+                onClick={() => setShowPipHelp(false)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  color: '#bbb',
+                  border: 'none',
+                  padding: '12px 24px',
+                  borderRadius: '12px',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.color = 'white'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'; e.currentTarget.style.color = '#bbb'; }}
+              >
+                Go Back
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes pipPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
         @keyframes playerSpin { to { transform: rotate(360deg); } }
         @keyframes spin { to { transform: rotate(360deg); } }
