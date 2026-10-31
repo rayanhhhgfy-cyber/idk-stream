@@ -3,7 +3,7 @@
   "short_name": "idkstream",
   "description": "Watch movies and TV shows for free in HD quality.",
   "start_url": "/",
-  "display": "browser",
+  "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#e50914",
   "orientation": "any",
