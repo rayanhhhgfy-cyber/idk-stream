@@ -104,7 +104,6 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   }, [iframeLoading, playerReady, embedBlocked]);
 
   const [server2Failed, setServer2Failed] = useState(false);
-
   const buildUrl = (server) => {
     const cfg = serverConfigs[server];
     if (!cfg || cfg.isHls) return '';
@@ -145,6 +144,16 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     return url;
   };
 
+  const buildPlayerSrc = () => {
+    if (getIsIos()) {
+      const path = isTv
+        ? `/embed/tv/${id}/${season}/${episode}`
+        : `/embed/movie/${id}`;
+      return `/api/vidsrc-embed?path=${encodeURIComponent(path)}`;
+    }
+    return buildUrl(currentServer);
+  };
+
   // ── Document Picture-in-Picture ──
   const togglePiP = useCallback(async () => {
     const isIos = getIsIos();
@@ -155,7 +164,12 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
 
     const iframe = iframeRef.current;
     const iframeSrc = iframe?.src || '';
-    const video = document.querySelector('video');
+    let embeddedVideo = null;
+    try {
+      embeddedVideo = iframe?.contentDocument?.querySelector('video') || null;
+    } catch {}
+    const video = document.querySelector('video') || embeddedVideo;
+    const videoDocument = video?.ownerDocument || document;
     const videoPipDisabled = !!video?.disablePictureInPicture;
     console.info('[PlayerContainer] PiP probe', {
       isIos,
@@ -170,16 +184,14 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     });
 
     if (isIos) {
-      // Safari exposes PiP through the playing <video> element. Cross-origin
-      // embeds cannot be inspected by the parent page, so use the iframe's
-      // native fullscreen media path instead of opening another window or
-      // showing a Safari handoff prompt. This works in both Safari and an
-      // installed PWA and keeps playback in the current app.
+      // Safari exposes PiP through the playing <video> element. On iOS the
+      // Vidsrc fallback is proxied through this app so the embedded video can
+      // be accessed from the user-initiated button without opening a window.
       if (pipActive && (pipWindowRef.current === iframe || pipWindowRef.current === video)) {
         try {
           if (pipWindowRef.current === video) {
-            if (document.exitPictureInPicture) {
-              await document.exitPictureInPicture();
+            if (videoDocument.exitPictureInPicture) {
+              await videoDocument.exitPictureInPicture();
             } else if (video?.webkitSetPresentationMode) {
               video.webkitSetPresentationMode('inline');
             }
@@ -197,8 +209,8 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         return;
       }
 
-      const embeddedVideo = video && (video.requestPictureInPicture || video.webkitSetPresentationMode);
-      if (embeddedVideo) {
+      const canRequestVideoPip = video && (video.requestPictureInPicture || video.webkitSetPresentationMode);
+      if (canRequestVideoPip) {
         try {
           if (video.requestPictureInPicture) {
             await video.requestPictureInPicture();
@@ -207,6 +219,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           }
           pipWindowRef.current = video;
           setPipActive(true);
+          video.addEventListener('leavepictureinpicture', () => setPipActive(false), { once: true });
           return;
         } catch (err) {
           console.warn('iOS native PiP request failed:', err);
@@ -371,7 +384,8 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     }
   }, [currentServer, quality]);
 
-  // HLS.js Player lifecycle effect (used ONLY in development fallback mode)
+  // Native HLS on Safari and HLS.js elsewhere. The native iOS path is what
+  // makes Safari's real Picture-in-Picture API available to this app.
   useEffect(() => {
     let isMounted = true;
     if (!playerReady || currentServer !== 1 || !isDev) return;
@@ -399,8 +413,9 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     video.addEventListener('waiting', handleWaiting);
     video.addEventListener('loadstart', handleLoadStart);
 
-    // Fallback HLS stream link (ultra-reliable Sintel/Mux test stream - used ONLY in development/manual testing)
+    // Keep the development stream for the existing local-only HLS server.
     const fallbackM3u8 = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
+    const streamUrl = fallbackM3u8;
 
     let hls = null;
 
@@ -460,7 +475,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       }
     };
 
-    initHls(fallbackM3u8);
+    initHls(streamUrl);
 
     return () => {
       isMounted = false;
@@ -627,7 +642,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           <iframe
             key={`${currentServer}-${id}-${season}-${episode}-${quality}`}
             ref={iframeRef}
-            src={buildUrl(currentServer)}
+            src={buildPlayerSrc()}
             title="Video Player"
             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
             allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope; clipboard-write"
