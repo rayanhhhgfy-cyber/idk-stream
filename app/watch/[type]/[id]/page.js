@@ -331,7 +331,7 @@ export default function Watch({ params }) {
 
         {/* Video Player */}
         <div ref={playerRef} style={{ marginBottom: '48px', boxShadow: '0 30px 60px rgba(0,0,0,0.8)' }}>
-          <PlayerContainer type={type} id={id} season={currentSeason} episode={currentEpisode} autoPlayNext={autoPlayNext} onNextEpisode={handleNextEpisode} nextEpisodeTitle={nextEpisodeTitle} episodeRuntime={displayRuntime} onSyncTime={() => {}} title={details?.title || details?.name || ''} />
+          <PlayerContainer type={type} id={id} season={currentSeason} episode={currentEpisode} autoPlayNext={autoPlayNext} onNextEpisode={handleNextEpisode} nextEpisodeTitle={nextEpisodeTitle} episodeRuntime={displayRuntime} onSyncTime={() => {}} />
         </div>
 
         {/* Episode Selector */}
