@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Server, SkipForward, X, PictureInPicture2, PictureInPicture, Monitor } from 'lucide-react';
+import { Server, SkipForward, X, PictureInPicture2, PictureInPicture, Monitor, ExternalLink } from 'lucide-react';
 import Hls from 'hls.js';
 
 const serverConfigs = {
@@ -12,7 +12,7 @@ const serverConfigs = {
   6: { name: 'VAPlayer', episodeOffset: 0, baseUrl: 'https://vaplayer.ru', badge: 'VidAPI' },
 };
 
-export default function PlayerContainer({ type, id, season, episode, autoPlayNext, onNextEpisode, nextEpisodeTitle, episodeRuntime, onSyncTime }) {
+export default function PlayerContainer({ type, id, season, episode, autoPlayNext, onNextEpisode, nextEpisodeTitle, episodeRuntime, onSyncTime, title = '' }) {
   const [isDev, setIsDev] = useState(false);
 
   useEffect(() => {
@@ -373,6 +373,24 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     const video = videoRef.current;
     if (!video) return;
 
+    // Let iOS treat this element as playback audio (lock screen / background).
+    // Only a real <video>/<audio> element keeps playing when the app leaves
+    // the foreground — raw Web Audio is muted instantly on iOS.
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = 'playback';
+    } catch {}
+    try {
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: title || 'idkstream',
+          artist: 'idkstream',
+          album: '',
+        });
+        navigator.mediaSession.setActionHandler('play', () => video.play().catch(() => {}));
+        navigator.mediaSession.setActionHandler('pause', () => video.pause());
+      }
+    } catch {}
+
     // Direct video element events for better loading & buffering state updates
     const handlePlaying = () => {
       if (!isMounted) return;
@@ -465,8 +483,14 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       video.removeEventListener('playing', handlePlaying);
       video.removeEventListener('waiting', handleWaiting);
       video.removeEventListener('loadstart', handleLoadStart);
+      try {
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.setActionHandler('play', null);
+          navigator.mediaSession.setActionHandler('pause', null);
+        }
+      } catch {}
     };
-  }, [currentServer, season, episode, type, id, playerReady, isDev]);
+  }, [currentServer, season, episode, type, id, playerReady, isDev, title]);
 
   const handleIframeLoad = () => {
     setEmbedBlocked(false);
@@ -652,6 +676,8 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           <video
             ref={videoRef}
             controls
+            playsInline
+            preload="metadata"
             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none', background: '#000' }}
             data-player="true"
             autoPlay
@@ -861,6 +887,21 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
               >
                 <PictureInPicture2 style={{ width: 14, height: 14 }} />
                 <span>{getIsIos() ? (pipActive ? 'Exit PiP' : 'PiP') : (pipActive ? 'Exit PiP' : 'Pop Out')}</span>
+              </button>
+            )}
+
+            {/* iOS standalone PWA only: system PiP and background audio are
+                not exposed to Home Screen web apps, so offer a one-tap path
+                to this same page in Safari, where both work. _blank from a
+                standalone PWA opens Safari. */}
+            {getIsIos() && getIsStandalonePwa() && (
+              <button
+                onClick={() => window.open(window.location.href, '_blank')}
+                className="action-btn"
+                title="Open this page in Safari for real Picture-in-Picture and background audio"
+              >
+                <ExternalLink style={{ width: 14, height: 14 }} />
+                <span>Open in Safari</span>
               </button>
             )}
           </div>
