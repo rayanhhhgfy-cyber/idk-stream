@@ -241,6 +241,7 @@ export default function Watch({ params }) {
   const displayTitle = details.title || details.name;
   const displayOverview = details.overview;
   const displayReleaseDate = details.release_date || details.first_air_date;
+  const displayYear = (displayReleaseDate || '').slice(0, 4);
   const displayRating = details.vote_average;
   const displayBackdrop = details.backdrop_path;
   const displayRuntime = details.runtime || (details.episode_run_time && details.episode_run_time[0]);
@@ -331,7 +332,7 @@ export default function Watch({ params }) {
 
         {/* Video Player */}
         <div ref={playerRef} style={{ marginBottom: '48px', boxShadow: '0 30px 60px rgba(0,0,0,0.8)' }}>
-          <PlayerContainer type={type} id={id} season={currentSeason} episode={currentEpisode} autoPlayNext={autoPlayNext} onNextEpisode={handleNextEpisode} nextEpisodeTitle={nextEpisodeTitle} episodeRuntime={displayRuntime} onSyncTime={() => {}} />
+          <PlayerContainer type={type} id={id} season={currentSeason} episode={currentEpisode} autoPlayNext={autoPlayNext} onNextEpisode={handleNextEpisode} nextEpisodeTitle={nextEpisodeTitle} episodeRuntime={displayRuntime} onSyncTime={() => {}} title={displayTitle} year={displayYear} />
         </div>
 
         {/* Episode Selector */}

@@ -10,9 +10,15 @@ const serverConfigs = {
   4: { name: 'autoembed.me', episodeOffset: 0, baseUrl: 'https://player.autoembed.me', badge: 'Backup' },
   5: { name: 'vidsrc.me', episodeOffset: 0, baseUrl: 'https://vidsrc.me', badge: 'Multi-Lang' },
   6: { name: 'VAPlayer', episodeOffset: 0, baseUrl: 'https://vaplayer.ru', badge: 'VidAPI' },
+  // Lumi providers (lumi-movies.vercel.app): four more embed mirrors + Internet Archive direct player
+  7: { name: 'VidSrc.buzz', episodeOffset: 0, baseUrl: 'https://vidsrc.buzz', badge: 'Fast' },
+  8: { name: 'VidSrc.wtf', episodeOffset: 0, baseUrl: 'https://vidsrc.wtf', badge: 'Backup' },
+  9: { name: 'VidFast', episodeOffset: 0, baseUrl: 'https://vidfast.vc', badge: 'Subs' },
+  10: { name: 'CineSrc', episodeOffset: 0, baseUrl: 'https://cinesrc.st', badge: 'Auto-Next' },
+  11: { name: 'Archive', isArchive: true, badge: 'Free' },
 };
 
-export default function PlayerContainer({ type, id, season, episode, autoPlayNext, onNextEpisode, nextEpisodeTitle, episodeRuntime, onSyncTime }) {
+export default function PlayerContainer({ type, id, season, episode, autoPlayNext, onNextEpisode, nextEpisodeTitle, episodeRuntime, onSyncTime, title, year }) {
   const [isDev, setIsDev] = useState(false);
 
   useEffect(() => {
@@ -111,9 +117,16 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
 
   const [server2Failed, setServer2Failed] = useState(false);
 
+  // Internet Archive direct player (Lumi's Archive provider): native <video>
+  // fed by /api/archive, which searches archive.org's public movie catalog.
+  const [archiveUrl, setArchiveUrl] = useState('');
+  const [archiveType, setArchiveType] = useState('video/mp4');
+  const [archiveTitle, setArchiveTitle] = useState('');
+  const archiveAlternativesRef = useRef([]);
+
   const buildUrl = (server) => {
     const cfg = serverConfigs[server];
-    if (!cfg || cfg.isHls) return '';
+    if (!cfg || cfg.isHls || cfg.isArchive) return '';
     const ep = isTv ? Number(episode) + cfg.episodeOffset : null;
     let url = '';
     if (server === 2) {
@@ -137,6 +150,26 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       url = isTv
         ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
         : `${cfg.baseUrl}/embed/movie/${id}`;
+    } else if (server === 7) {
+      // VidSrc.buzz (Lumi): /embed/movie/{id}?autoplay=true, /embed/tv/{id}/{s}/{e}?autoplay=true
+      url = isTv
+        ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
+        : `${cfg.baseUrl}/embed/movie/${id}`;
+    } else if (server === 8) {
+      // VidSrc.wtf (Lumi): /1/movie/{id}, /1/tv/{id}/{s}/{e}
+      url = isTv
+        ? `${cfg.baseUrl}/1/tv/${id}/${season}/${ep}`
+        : `${cfg.baseUrl}/1/movie/${id}`;
+    } else if (server === 9) {
+      // VidFast (Lumi): /movie/{id}, /tv/{id}/{s}/{e}
+      url = isTv
+        ? `${cfg.baseUrl}/tv/${id}/${season}/${ep}`
+        : `${cfg.baseUrl}/movie/${id}`;
+    } else if (server === 10) {
+      // CineSrc (Lumi): /embed/movie/{id}, /embed/tv/{id}?s={s}&e={e}
+      url = isTv
+        ? `${cfg.baseUrl}/embed/tv/${id}`
+        : `${cfg.baseUrl}/embed/movie/${id}`;
     }
     const params = [];
     if (server === 2) {
@@ -145,11 +178,134 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         params.push('nextEpisode=true', 'episodeSelector=true');
       }
     }
+    if (server === 7) {
+      params.push('autoplay=true');
+    }
+    if (server === 9) {
+      params.push('autoPlay=true', 'autoNext=false', 'sub=en');
+    }
+    if (server === 10) {
+      if (isTv) {
+        params.push(`s=${season}`, `e=${ep}`);
+      }
+      params.push('autoplay=true', 'autonext=false', 'continueprompt=false', 'color=%23fb7185');
+    }
     if (quality !== 'auto') params.push(`quality=${quality}`);
     if (autoPlayNext) params.push('autoplay=1', 'autoPlay=true');
     if (params.length) url += (url.includes('?') ? '&' : '?') + params.join('&');
     return url;
   };
+
+  // Archive: resolve a free copy from /api/archive when the server is picked
+  useEffect(() => {
+    if (currentServer !== 11) return;
+    if (!title) {
+      setEmbedBlocked(true);
+      setLoadErrorMessage('Archive needs a title to search.');
+      setIframeLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setIframeLoading(true);
+    setEmbedBlocked(false);
+    setLoadErrorMessage('');
+    const params = new URLSearchParams({ title, type: type || 'movie' });
+    if (year) params.set('year', String(year));
+    fetch(`/api/archive?${params.toString()}`)
+      .then(async (r) => {
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(data?.error || 'Archive search failed');
+        if (cancelled) return;
+        archiveAlternativesRef.current = data.alternatives || [];
+        setArchiveTitle(data.title || title);
+        setArchiveType(data.contentType || 'video/mp4');
+        setArchiveUrl(data.streamUrl || '');
+        if (!data.streamUrl) {
+          setEmbedBlocked(true);
+          setLoadErrorMessage('No free copy found on Internet Archive for this title.');
+          setIframeLoading(false);
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setEmbedBlocked(true);
+        setIframeLoading(false);
+        setLoadErrorMessage('Archive search failed. Try another server.');
+      });
+    return () => { cancelled = true; };
+  }, [currentServer, title, year, type]);
+
+  // Archive direct playback: native <video>, hls.js only for .m3u8 streams
+  useEffect(() => {
+    let isMounted = true;
+    if (!playerReady || currentServer !== 11 || !archiveUrl) return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handlePlaying = () => {
+      if (!isMounted) return;
+      setIframeLoading(false);
+      setIsBuffering(false);
+    };
+    const handleWaiting = () => {
+      if (!isMounted) return;
+      setIsBuffering(true);
+    };
+    const handleError = () => {
+      if (!isMounted) return;
+      // Fall through to the next alternative file, like Lumi's direct player
+      const next = archiveAlternativesRef.current.shift();
+      if (next?.streamUrl) {
+        setArchiveType(next.contentType || 'video/mp4');
+        setArchiveUrl(next.streamUrl);
+        return;
+      }
+      setIframeLoading(false);
+      setEmbedBlocked(true);
+      setLoadErrorMessage('Archive stream failed. Try another server.');
+    };
+
+    video.addEventListener('playing', handlePlaying);
+    video.addEventListener('waiting', handleWaiting);
+    video.addEventListener('error', handleError);
+
+    let hls = null;
+    const isHlsUrl = /\.m3u8($|\?)/i.test(archiveUrl);
+    if (isHlsUrl && !video.canPlayType('application/vnd.apple.mpegurl') && Hls.isSupported()) {
+      hls = new Hls({ enableWorker: true, lowLatencyMode: true, backBufferLength: 30 });
+      hls.loadSource(archiveUrl);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        if (!isMounted) return;
+        setIframeLoading(false);
+        setEmbedBlocked(false);
+        video.play().catch(() => {});
+      });
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        if (!isMounted) return;
+        if (data.fatal) {
+          if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            hls.recoverMediaError();
+            return;
+          }
+          handleError();
+          hls.destroy();
+        }
+      });
+    } else {
+      video.src = archiveUrl;
+      video.load();
+      video.play().catch(() => {});
+    }
+
+    return () => {
+      isMounted = false;
+      if (hls) hls.destroy();
+      video.removeEventListener('playing', handlePlaying);
+      video.removeEventListener('waiting', handleWaiting);
+      video.removeEventListener('error', handleError);
+    };
+  }, [currentServer, archiveUrl, playerReady]);
 
   // ── Document Picture-in-Picture ──
   const togglePiP = useCallback(async () => {
@@ -176,6 +332,30 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       videoRequestPictureInPicture: !!(video && video.requestPictureInPicture),
       videoSupportsPresentation: !!(video && video.webkitSetPresentationMode),
     });
+
+    // Native <video> servers (Archive direct player): PiP straight from the video element
+    const directVideo = videoRef.current;
+    if (directVideo && !iframe) {
+      if (isIos) {
+        if (typeof directVideo.webkitSetPresentationMode === 'function') {
+          try {
+            directVideo.webkitSetPresentationMode('picture-in-picture');
+            setPipActive(true);
+          } catch {}
+        }
+        return;
+      }
+      try {
+        if (document.pictureInPictureElement === directVideo) {
+          await document.exitPictureInPicture();
+          setPipActive(false);
+        } else if (directVideo.requestPictureInPicture) {
+          await directVideo.requestPictureInPicture();
+          setPipActive(true);
+        }
+      } catch {}
+      return;
+    }
 
     if (isIos) {
 
@@ -631,7 +811,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         }}
       >
 
-        {playerReady && !serverConfigs[currentServer].isHls && (
+        {playerReady && !serverConfigs[currentServer].isHls && !serverConfigs[currentServer].isArchive && (
           <iframe
             key={`${currentServer}-${id}-${season}-${episode}-${quality}`}
             ref={iframeRef}
@@ -655,6 +835,18 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none', background: '#000' }}
             data-player="true"
             autoPlay
+          />
+        )}
+
+        {playerReady && serverConfigs[currentServer].isArchive && archiveUrl && !embedBlocked && (
+          <video
+            ref={videoRef}
+            controls
+            playsInline
+            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none', background: '#000' }}
+            data-player="true"
+            autoPlay
+            title={archiveTitle || title}
           />
         )}
 
