@@ -88,7 +88,7 @@ export default function RoomChat({ roomId }) {
               ) : (
                 <div style={{
                   maxWidth: '85%',
-                  background: isMine ? 'rgba(229,9,20,0.15)' : 'rgba(255,255,255,0.06)',
+                  background: isMine ? 'rgba(34,211,238,0.15)' : 'rgba(255,255,255,0.06)',
                   borderRadius: '12px',
                   borderBottomRightRadius: isMine ? '4px' : '12px',
                   borderBottomLeftRadius: isMine ? '12px' : '4px',
@@ -136,7 +136,7 @@ export default function RoomChat({ roomId }) {
           }}
         />
         <button type="submit" disabled={!input.trim() || sending} style={{
-          background: input.trim() ? 'linear-gradient(135deg, #e50914, #b20710)' : 'rgba(255,255,255,0.06)',
+          background: input.trim() ? 'linear-gradient(135deg, #22d3ee, #0e7490)' : 'rgba(255,255,255,0.06)',
           border: 'none', borderRadius: '10px', width: '40px', height: '40px',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: input.trim() ? 'pointer' : 'default', opacity: input.trim() ? 1 : 0.4,

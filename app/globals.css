@@ -23,7 +23,7 @@
    SECTION 1: CUSTOM PROPERTIES (CSS Variables)
    ═══════════════════════════════════════════════════════════════════════
    CSS variables are like "shortcuts" for colors and values.
-   Instead of typing "#e50914" every time we want our red color,
+   Instead of typing "#22d3ee" every time we want our cyan accent,
    we can just type "var(--accent)" — it's shorter AND if we ever
    want to change the red color, we only change it in ONE place!
 
@@ -36,14 +36,36 @@
      --text-primary = "White"
 */
 :root {
-  --accent: #e50914;             /* Our brand red color (Netflix-style red) */
-  --accent-hover: #b20710;       /* A darker red for hover states */
-  --bg-primary: #0a0a0a;         /* The main background color (nearly black) */
-  --bg-secondary: #141414;       /* A slightly lighter dark background */
-  --bg-card: #1a1a1a;            /* Background for card elements */
-  --text-primary: #ffffff;       /* Main text color (white) */
-  --text-secondary: #a1a1a1;     /* Secondary text color (gray) */
-  --glass: rgba(10, 10, 10, 0.7); /* Semi-transparent dark for glass effects */
+  --accent: #22d3ee;             /* Lumi cyan accent (was Netflix red) */
+  --accent-hover: #0e7490;       /* A darker cyan for hover states */
+  --bg-primary: #000000;         /* The main background color (black, like Lumi) */
+  --bg-secondary: #080d18;       /* Lumi theme navy */
+  --bg-card: rgb(9 15 28);       /* Lumi glass panel base */
+  --text-primary: #f5f7fa;       /* Main text color (Lumi foreground) */
+  --text-secondary: #8C97A8;     /* Secondary text color (Lumi muted) */
+  --glass: rgb(12 19 34 / 0.52); /* Lumi glass control background */
+  /* Lumi glass system (from lumi-movies.vercel.app) */
+  --ui-glass-control-bg: rgb(12 19 34 / 0.52);
+  --ui-glass-control-bg-hover: rgb(24 34 54 / 0.82);
+  --ui-glass-control-bg-active: rgb(42 29 47 / 0.86);
+  --ui-glass-panel-bg: rgb(9 15 28 / 0.84);
+  --ui-glass-panel-strong-bg: rgb(9 15 28 / 0.92);
+  --ui-glass-overlay-bg: rgb(3 6 14 / 0.82);
+  --ui-glass-border: rgb(139 155 180 / 0.34);
+  --ui-glass-border-strong: rgb(165 178 199 / 0.52);
+  --ui-glass-border-hover: rgb(34 211 238 / 0.76);
+  --ui-glass-divider: rgb(139 155 180 / 0.28);
+  --ui-blur-glass: 24px;
+  --ui-blur-glass-strong: 32px;
+  --ui-radius-control: 999px;
+  --ui-radius-panel: 18px;
+  --ui-radius-dialog: 20px;
+  --ui-radius-card: 12px;
+  --ui-radius-row: 12px;
+  --ui-radius-input: 10px;
+  --ui-shadow-control: 0 8px 18px rgb(3 4 14 / 0.34);
+  --ui-shadow-panel: 0 12px 30px rgb(3 4 14 / 0.58);
+  --ui-shadow-dialog: 0 30px 80px rgb(3 4 14 / 0.62);
 }
 
 
@@ -197,12 +219,12 @@ body {
   100% { background-position: 200% 0; }  /* Light sweeps to far right */
 }
 
-/* pulse-glow: A pulsing red glow that gets brighter and dimmer.
+/* pulse-glow: A pulsing cyan glow that gets brighter and dimmer.
    Used for: the "Trending Now" badge's glowing dot.
    Visual: the glow alternates between subtle and strong. */
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(229, 9, 20, 0.2); } /* Subtle glow */
-  50% { box-shadow: 0 0 40px rgba(229, 9, 20, 0.4); }      /* Stronger glow */
+  0%, 100% { box-shadow: 0 0 20px rgba(34, 211, 238, 0.2); } /* Subtle glow */
+  50% { box-shadow: 0 0 40px rgba(34, 211, 238, 0.4); }      /* Stronger glow */
 }
 
 /* spin: A continuous spinning/rotating animation.
@@ -342,7 +364,7 @@ body {
 }
 .movie-card:hover {
   transform: scale(1.08) translateY(-8px);  /* Scale up 8% and lift 8px */
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(229, 9, 20, 0.15);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(34, 211, 238, 0.15);
   z-index: 10;  /* Appear above neighboring cards */
 }
 
@@ -351,10 +373,10 @@ body {
    a blur effect behind it. Looks like looking through a frosted window.
    Very trendy in modern UI design! */
 .glass {
-  background: rgba(20, 20, 20, 0.6);       /* Semi-transparent dark */
-  backdrop-filter: blur(20px);              /* Blur what's behind it */
-  -webkit-backdrop-filter: blur(20px);      /* Same thing for Safari */
-  border: 1px solid rgba(255, 255, 255, 0.05); /* Subtle white border */
+  background: var(--ui-glass-panel-bg);       /* Lumi glass panel */
+  backdrop-filter: blur(var(--ui-blur-glass));              /* Blur what's behind it */
+  -webkit-backdrop-filter: blur(var(--ui-blur-glass));      /* Same thing for Safari */
+  border: 1px solid var(--ui-glass-border); /* Lumi glass border */
 }
 
 /* ── Gradient Text Effect ──
@@ -362,7 +384,7 @@ body {
    single solid color. Works by creating a gradient background,
    then clipping it to only show through the text characters. */
 .gradient-text {
-  background: linear-gradient(135deg, #ffffff 0%, #e50914 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #22d3ee 100%);
   -webkit-background-clip: text;            /* Clip gradient to text (Chrome/Safari) */
   -webkit-text-fill-color: transparent;     /* Make text fill transparent */
   background-clip: text;                    /* Standard property */
@@ -391,4 +413,69 @@ body {
   .mobile-toggle-btn {
     display: flex !important;
   }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SECTION 7: LUMI GLASS SYSTEM
+   ═══════════════════════════════════════════════════════════════════════
+   Glass components copied from Lumi's design language
+   (lumi-movies.vercel.app): dark navy panels, pill controls,
+   cyan accent on hover, heavy blur. Use these classes for any
+   panel, control, pill or dialog that should look like Lumi.
+*/
+.ui-glass-control {
+  border: 1px solid var(--ui-glass-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-glass-control-bg);
+  box-shadow: var(--ui-shadow-control);
+  color: rgb(228 228 231);
+  backdrop-filter: blur(var(--ui-blur-glass));
+  -webkit-backdrop-filter: blur(var(--ui-blur-glass));
+  transition: background-color .16s ease, border-color .16s ease;
+}
+.ui-glass-control:hover {
+  border-color: var(--ui-glass-border-hover);
+  background: var(--ui-glass-control-bg-hover);
+}
+.ui-glass-control-active {
+  border-color: var(--ui-glass-border-strong);
+  background: var(--ui-glass-control-bg-active);
+  color: white;
+}
+.ui-glass-pill {
+  border: 1px solid var(--ui-glass-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-glass-control-bg);
+  box-shadow: var(--ui-shadow-control);
+  color: rgb(228 228 231);
+  backdrop-filter: blur(var(--ui-blur-glass));
+  -webkit-backdrop-filter: blur(var(--ui-blur-glass));
+  transition: background-color .16s ease, border-color .16s ease;
+}
+.ui-glass-panel {
+  border: 1px solid var(--ui-glass-border-strong);
+  border-radius: var(--ui-radius-panel);
+  background: var(--ui-glass-panel-bg);
+  box-shadow: var(--ui-shadow-panel);
+  backdrop-filter: blur(var(--ui-blur-glass));
+  -webkit-backdrop-filter: blur(var(--ui-blur-glass));
+}
+.ui-glass-dialog {
+  border: 1px solid var(--ui-glass-border-strong);
+  border-radius: var(--ui-radius-dialog);
+  background: var(--ui-glass-panel-strong-bg);
+  box-shadow: var(--ui-shadow-dialog);
+  backdrop-filter: blur(var(--ui-blur-glass));
+  -webkit-backdrop-filter: blur(var(--ui-blur-glass));
+}
+.ui-glass-row {
+  border-radius: var(--ui-radius-row);
+  transition: background-color .16s ease, color .16s ease;
+}
+.ui-glass-row:hover {
+  background: rgb(34 211 238 / 0.1);
+}
+.ui-glass-divider {
+  background: var(--ui-glass-divider);
 }

@@ -108,7 +108,7 @@ export default function RoomPage({ params }) {
     return (
       <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', paddingTop: '64px' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ width: '40px', height: '40px', border: '3px solid rgba(229,9,20,0.2)', borderTopColor: '#e50914', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+          <div style={{ width: '40px', height: '40px', border: '3px solid rgba(34,211,238,0.2)', borderTopColor: '#22d3ee', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
           <p style={{ color: '#666' }}>Loading room...</p>
         </div>
         <style jsx>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -119,9 +119,9 @@ export default function RoomPage({ params }) {
   if (error && !room) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', background: '#0a0a0a', paddingTop: '64px' }}>
-        <h1 style={{ color: '#e50914', fontSize: '1.5rem', fontWeight: 700, marginBottom: '12px' }}>Room not found</h1>
+        <h1 style={{ color: '#22d3ee', fontSize: '1.5rem', fontWeight: 700, marginBottom: '12px' }}>Room not found</h1>
         <p style={{ color: '#666', marginBottom: '24px' }}>{error}</p>
-        <Link href="/watch-party" style={{ padding: '12px 24px', background: '#e50914', color: 'white', borderRadius: '12px', textDecoration: 'none', fontWeight: 600 }}>Browse Rooms</Link>
+        <Link href="/watch-party" style={{ padding: '12px 24px', background: '#22d3ee', color: '#080d18', borderRadius: '12px', textDecoration: 'none', fontWeight: 600 }}>Browse Rooms</Link>
       </div>
     );
   }
@@ -131,8 +131,8 @@ export default function RoomPage({ params }) {
       <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', paddingTop: '64px' }}>
         <div style={{ maxWidth: '400px', width: '100%', padding: '32px', borderRadius: '20px', background: '#141414', border: '1px solid rgba(255,255,255,0.08)' }}>
           <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-            <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'linear-gradient(135deg, rgba(229,9,20,0.2), rgba(229,9,20,0.05))', border: '1px solid rgba(229,9,20,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-              <Users style={{ width: 28, height: 28, color: '#e50914' }} />
+            <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'linear-gradient(135deg, rgba(34,211,238,0.2), rgba(34,211,238,0.05))', border: '1px solid rgba(34,211,238,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <Users style={{ width: 28, height: 28, color: '#22d3ee' }} />
             </div>
             <h1 style={{ color: 'white', fontSize: '1.3rem', fontWeight: 800 }}>{room?.name || 'Room'}</h1>
             {room?.currentMedia && <p style={{ color: '#888', fontSize: '0.85rem', marginTop: '4px' }}>Now Playing: {room.currentMedia.title}</p>}
@@ -150,7 +150,7 @@ export default function RoomPage({ params }) {
           {error && <div style={{ background: 'rgba(229,9,20,0.1)', border: '1px solid rgba(229,9,20,0.3)', borderRadius: '8px', padding: '8px 12px', marginBottom: '16px', color: '#ff6b6b', fontSize: '0.8rem', fontWeight: 600 }}>{error}</div>}
           <div style={{ display: 'flex', gap: '12px' }}>
             <Link href="/watch-party" style={{ flex: 1, textAlign: 'center', padding: '12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', color: '#888', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600 }}>Back</Link>
-            <button onClick={handleJoin} disabled={joining} style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #e50914, #b20710)', border: 'none', borderRadius: '12px', color: 'white', fontSize: '0.9rem', fontWeight: 700, cursor: joining ? 'default' : 'pointer', opacity: joining ? 0.6 : 1 }}>{joining ? 'Joining...' : 'Join Room'}</button>
+            <button onClick={handleJoin} disabled={joining} style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg, #22d3ee, #0e7490)', border: 'none', borderRadius: '12px', color: '#080d18', fontSize: '0.9rem', fontWeight: 700, cursor: joining ? 'default' : 'pointer', opacity: joining ? 0.6 : 1 }}>{joining ? 'Joining...' : 'Join Room'}</button>
           </div>
         </div>
       </div>
@@ -161,19 +161,19 @@ export default function RoomPage({ params }) {
     <div style={{ background: '#0a0a0a', height: '100vh', display: 'flex', flexDirection: 'column', paddingTop: '64px', overflow: 'hidden' }}>
       <div style={{ background: 'rgba(20,20,20,0.95)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, gap: '12px', flexWrap: 'wrap', minHeight: '44px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Link href="/watch-party" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#e50914', fontSize: '0.8rem', textDecoration: 'none', fontWeight: 600 }}><ArrowLeft style={{ width: 16, height: 16 }} /> Rooms</Link>
+          <Link href="/watch-party" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#22d3ee', fontSize: '0.8rem', textDecoration: 'none', fontWeight: 600 }}><ArrowLeft style={{ width: 16, height: 16 }} /> Rooms</Link>
           <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.08)' }} />
           <span style={{ color: 'white', fontWeight: 700, fontSize: '0.95rem' }}>{room?.name || 'Room'}</span>
           {room?.currentMedia && <span style={{ color: '#666', fontSize: '0.8rem' }}>— {room.currentMedia.title}</span>}
           {room?.createdBy === userId && (
-            <button onClick={() => setShowMediaPicker(true)} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(229,9,20,0.1)', border: '1px solid rgba(229,9,20,0.2)', color: '#e50914', padding: '4px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
+            <button onClick={() => setShowMediaPicker(true)} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(34,211,238,0.1)', border: '1px solid rgba(34,211,238,0.2)', color: '#22d3ee', padding: '4px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>
               <Edit3 style={{ width: 12, height: 12 }} /> Change
             </button>
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#888', fontSize: '0.8rem' }}>
-            <Crown style={{ width: 14, height: 14, color: '#e50914' }} />
+            <Crown style={{ width: 14, height: 14, color: '#22d3ee' }} />
             <span>{participants.filter(p => p.isCreator).map(p => p.name).join(', ') || 'Creator'}</span>
           </div>
           <button onClick={handleLeave} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', color: '#ff6b6b', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}><LogOut style={{ width: 14, height: 14 }} /> Leave</button>

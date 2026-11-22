@@ -170,10 +170,10 @@ export default function Navbar() {
           padding: '0 4%',
           transition: 'all 0.4s ease',
           background: scrolled || mobileMenuOpen
-            ? 'rgba(10, 10, 10, 0.98)'
+            ? 'rgb(9 15 28 / 0.92)'
             : 'linear-gradient(to bottom, rgba(0,0,0,0.8), transparent)',
-          backdropFilter: scrolled || mobileMenuOpen ? 'blur(15px)' : 'none',
-          borderBottom: scrolled || mobileMenuOpen ? '1px solid rgba(255,255,255,0.08)' : '1px solid transparent',
+          backdropFilter: scrolled || mobileMenuOpen ? 'blur(24px)' : 'none',
+          borderBottom: scrolled || mobileMenuOpen ? '1px solid rgb(139 155 180 / 0.34)' : '1px solid transparent',
         }}
       >
         {/* ── LEFT SECTION: Logo + Desktop Nav Links ── */}
@@ -182,15 +182,15 @@ export default function Navbar() {
           {/* LOGO */}
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
             <div style={{
-              background: '#e50914',
+              background: '#22d3ee',
               padding: '6px',
               borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 0 15px rgba(229, 9, 20, 0.4)'
+              boxShadow: '0 0 15px rgba(34, 211, 238, 0.4)'
             }}>
-              <Tv style={{ color: 'white', width: 22, height: 22 }} />
+              <Tv style={{ color: '#080d18', width: 22, height: 22 }} />
             </div>
             <span style={{
               color: 'white',
@@ -198,7 +198,7 @@ export default function Navbar() {
               fontWeight: 800,
               letterSpacing: '-1px'
             }}>
-              idk<span style={{ color: '#e50914' }}>stream</span>
+              idk<span style={{ color: '#22d3ee' }}>stream</span>
             </span>
           </Link>
 
@@ -242,9 +242,9 @@ export default function Navbar() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
-                background: 'rgba(255,255,255,0.1)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '20px',
+                background: 'rgb(12 19 34 / 0.52)',
+                border: '1px solid rgb(139 155 180 / 0.34)',
+                borderRadius: '999px',
                 padding: searchOpen ? '8px 16px 8px 36px' : '8px',
                 width: searchOpen ? 'clamp(140px, 20vw, 240px)' : '36px',
                 color: 'white',
@@ -296,11 +296,11 @@ export default function Navbar() {
           top: mobileMenuOpen ? '64px' : '-100%',
           left: 0,
           right: 0,
-          background: 'rgba(10, 10, 10, 0.98)',
-          backdropFilter: 'blur(20px)',
+          background: 'rgb(9 15 28 / 0.92)',
+          backdropFilter: 'blur(24px)',
           zIndex: 900,
           padding: '24px',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          borderBottom: '1px solid rgb(139 155 180 / 0.34)',
           transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
           opacity: mobileMenuOpen ? 1 : 0,
           display: mobileMenuOpen ? 'block' : 'none',
@@ -333,8 +333,8 @@ export default function Navbar() {
                   transition: 'background 0.2s'
                 }}
               >
-                {/* Red icon + link name */}
-                <Icon style={{ width: 20, height: 20, color: '#e50914' }} />
+                {/* Cyan icon + link name */}
+                <Icon style={{ width: 20, height: 20, color: '#22d3ee' }} />
                 {link.name}
               </Link>
             );

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Server, SkipForward, X, PictureInPicture2, PictureInPicture, Monitor } from 'lucide-react';
+import { Server, SkipForward, X, PictureInPicture2, PictureInPicture, Monitor, ChevronDown } from 'lucide-react';
 import Hls from 'hls.js';
 
 const serverConfigs = {
@@ -37,6 +37,8 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const [quality, setQuality] = useState('auto');
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const qualityMenuRef = useRef(null);
+  const [showServerDropdown, setShowServerDropdown] = useState(false);
+  const serverDropdownRef = useRef(null);
   const qualityOptions = ['auto', '1080p', '720p', '480p', '360p'];
   const [iframeLoading, setIframeLoading] = useState(true);
   const [showCountdown, setShowCountdown] = useState(false);
@@ -80,11 +82,14 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     }
   }, []);
 
-  // Close quality menu on outside click
+  // Close quality menu / server dropdown on outside click
   useEffect(() => {
     const handleClick = (e) => {
       if (qualityMenuRef.current && !qualityMenuRef.current.contains(e.target)) {
         setShowQualityMenu(false);
+      }
+      if (serverDropdownRef.current && !serverDropdownRef.current.contains(e.target)) {
+        setShowServerDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClick);
@@ -175,7 +180,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     }
     const params = [];
     if (server === 2) {
-      params.push('color=e50914');
+      params.push('color=22d3ee');
       if (isTv) {
         params.push('nextEpisode=true', 'episodeSelector=true');
       }
@@ -799,7 +804,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           borderRadius: '12px',
           overflow: 'hidden',
           border: '1px solid rgba(255, 255, 255, 0.25)',
-          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.9), 0 0 20px rgba(229, 9, 20, 0.25)',
+          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.9), 0 0 20px rgba(34, 211, 238, 0.25)',
         } : {
           position: 'relative',
           width: '100%',
@@ -808,7 +813,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           borderRadius: '20px',
           overflow: 'hidden',
           border: '1px solid rgba(255, 255, 255, 0.1)',
-          boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 30px rgba(229, 9, 20, 0.08)',
+          boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 30px rgba(34, 211, 238, 0.08)',
           backdropFilter: 'blur(10px)',
         }}
       >
@@ -855,7 +860,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         {iframeLoading && playerReady && !embedBlocked && (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111', zIndex: 5, pointerEvents: 'none' }}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ width: '36px', height: '36px', border: '3px solid rgba(229,9,20,0.2)', borderTopColor: '#e50914', borderRadius: '50%', animation: 'playerSpin 0.8s linear infinite', margin: '0 auto 10px' }} />
+              <div style={{ width: '36px', height: '36px', border: '3px solid rgba(34,211,238,0.2)', borderTopColor: '#22d3ee', borderRadius: '50%', animation: 'playerSpin 0.8s linear infinite', margin: '0 auto 10px' }} />
               <p style={{ color: '#555', fontSize: '0.8rem' }}>Loading player...</p>
             </div>
           </div>
@@ -875,7 +880,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
               <h3 style={{ color: 'white', margin: '0 0 8px' }}>Player Unavailable</h3>
               <p style={{ color: '#aaa', margin: '0 0 16px' }}>{loadErrorMessage || 'The embed provider blocked playback or the content failed to load.'}</p>
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <button onClick={() => window.open(buildUrl(currentServer), '_blank')} style={{ background: '#e50914', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Open Player in New Tab</button>
+                <button onClick={() => window.open(buildUrl(currentServer), '_blank')} style={{ background: '#22d3ee', color: '#080d18', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Open Player in New Tab</button>
                 <button onClick={retryPlayer} style={{ background: 'rgba(255,255,255,0.06)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Retry</button>
                 <button onClick={() => { const maxSrv = Object.keys(serverConfigs).length; const next = currentServer >= maxSrv ? (isDev ? 1 : 2) : currentServer + 1; switchServer(next); }} style={{ background: 'rgba(255,255,255,0.04)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Try Server {currentServer >= Object.keys(serverConfigs).length ? (isDev ? 1 : 2) : currentServer + 1}</button>
               </div>
@@ -897,10 +902,10 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
               width: '40px',
               height: '40px',
               borderRadius: '10px',
-              border: pipActive ? '1px solid rgba(229,9,20,0.6)' : '1px solid rgba(255,255,255,0.15)',
-              background: pipActive ? 'rgba(229,9,20,0.25)' : 'rgba(0,0,0,0.6)',
+              border: pipActive ? '1px solid rgba(34,211,238,0.6)' : '1px solid rgba(255,255,255,0.15)',
+              background: pipActive ? 'rgba(34,211,238,0.25)' : 'rgba(0,0,0,0.6)',
               backdropFilter: 'blur(8px)',
-              color: pipActive ? '#ff6b6b' : 'rgba(255,255,255,0.85)',
+              color: pipActive ? '#67e8f9' : 'rgba(255,255,255,0.85)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -909,11 +914,11 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
               padding: 0,
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = pipActive ? 'rgba(229,9,20,0.4)' : 'rgba(255,255,255,0.15)';
+              e.currentTarget.style.background = pipActive ? 'rgba(34,211,238,0.4)' : 'rgba(255,255,255,0.15)';
               e.currentTarget.style.transform = 'scale(1.08)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = pipActive ? 'rgba(229,9,20,0.25)' : 'rgba(0,0,0,0.6)';
+              e.currentTarget.style.background = pipActive ? 'rgba(34,211,238,0.25)' : 'rgba(0,0,0,0.6)';
               e.currentTarget.style.transform = 'scale(1)';
             }}
           >
@@ -934,15 +939,15 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            background: 'rgba(229,9,20,0.2)',
-            border: '1px solid rgba(229,9,20,0.4)',
+            background: 'rgba(34,211,238,0.2)',
+            border: '1px solid rgba(34,211,238,0.4)',
             backdropFilter: 'blur(8px)',
             borderRadius: '8px',
             padding: '5px 12px',
             animation: 'pipPulse 2s ease-in-out infinite',
           }}>
-            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#e50914', boxShadow: '0 0 6px rgba(229,9,20,0.8)' }} />
-            <span style={{ color: '#ff6b6b', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase' }}>PiP Active</span>
+            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22d3ee', boxShadow: '0 0 6px rgba(34,211,238,0.8)' }} />
+            <span style={{ color: '#67e8f9', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase' }}>PiP Active</span>
           </div>
         )}
 
@@ -950,14 +955,14 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         {showCountdown && (
           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 100%)', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', zIndex: 20, animation: 'fadeInUp 0.4s ease-out' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1 }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(229,9,20,0.15)', border: '3px solid #e50914', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>{countdown}</div>
+              <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(34,211,238,0.15)', border: '3px solid #22d3ee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>{countdown}</div>
               <div>
                 <p style={{ color: '#aaa', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '2px' }}>Up Next</p>
                 <p style={{ color: 'white', fontSize: '0.95rem', fontWeight: 600 }}>{nextEpisodeTitle || 'Next Episode'}</p>
               </div>
             </div>
             <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-              <button onClick={skipToNext} style={{ background: '#e50914', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button onClick={skipToNext} style={{ background: '#22d3ee', color: '#080d18', border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <SkipForward style={{ width: 14, height: 14 }} /> Play Now
               </button>
               <button onClick={dismissCountdown} style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', padding: '10px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -986,41 +991,60 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         <div className="server-selector-header">
           <div className="server-title-group">
             <div className="server-icon-pulse">
-              <Server style={{ width: 15, height: 15, color: '#e50914' }} />
+              <Server style={{ width: 15, height: 15, color: '#22d3ee' }} />
             </div>
             <span className="server-title">
               <span className="status-dot" /> Streaming Mirrors
             </span>
           </div>
           <span className="server-active-label">
-            Active: <strong style={{ color: '#ff4444' }}>{serverConfigs[currentServer]?.name}</strong>
+            Active: <strong style={{ color: '#22d3ee' }}>{serverConfigs[currentServer]?.name}</strong>
           </span>
         </div>
 
         <div className="server-btn-grid">
-          <div className="server-btn-scroll-container">
-            {Object.keys(serverConfigs)
-              .map(Number)
-              .filter(srvNum => isDev || srvNum !== 1)
-              .map(srvNum => {
-                const cfg = serverConfigs[srvNum];
-                const active = currentServer === srvNum;
-                return (
-                  <button
-                    key={srvNum}
-                    onClick={() => switchServer(srvNum)}
-                    className={`server-btn ${active ? 'active' : ''}`}
-                  >
-                    <Server className="srv-icon" style={{ width: 14, height: 14, color: active ? '#ff4444' : '#888' }} />
-                    <span className="srv-name">{cfg.name}</span>
-                    {cfg.badge && (
-                      <span className="srv-badge">
-                        {cfg.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+          <div className="server-dropdown" ref={serverDropdownRef}>
+            <button
+              onClick={() => setShowServerDropdown(!showServerDropdown)}
+              className="server-dropdown-btn"
+              aria-haspopup="listbox"
+              aria-expanded={showServerDropdown}
+            >
+              <Server style={{ width: 14, height: 14, color: '#22d3ee' }} />
+              <span className="srv-name">{serverConfigs[currentServer]?.name}</span>
+              {serverConfigs[currentServer]?.badge && (
+                <span className="srv-badge">{serverConfigs[currentServer].badge}</span>
+              )}
+              <ChevronDown style={{ width: 14, height: 14, color: '#888', transform: showServerDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }} />
+            </button>
+            {showServerDropdown && (
+              <div className="server-dropdown-menu" role="listbox">
+                {Object.keys(serverConfigs)
+                  .map(Number)
+                  .filter(srvNum => isDev || srvNum !== 1)
+                  .map(srvNum => {
+                    const cfg = serverConfigs[srvNum];
+                    const active = currentServer === srvNum;
+                    return (
+                      <button
+                        key={srvNum}
+                        role="option"
+                        aria-selected={active}
+                        onClick={() => { switchServer(srvNum); setShowServerDropdown(false); }}
+                        className={`server-dropdown-opt ${active ? 'selected' : ''}`}
+                      >
+                        <Server style={{ width: 14, height: 14, color: active ? '#22d3ee' : '#888' }} />
+                        <span className="srv-name">{cfg.name}</span>
+                        {cfg.badge && (
+                          <span className="srv-badge">
+                            {cfg.badge}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+              </div>
+            )}
           </div>
 
           <div className="utility-actions-group">
@@ -1100,12 +1124,12 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           width: 28px;
           height: 28px;
           border-radius: 8px;
-          background: rgba(229, 9, 20, 0.15);
-          border: 1px solid rgba(229, 9, 20, 0.3);
+          background: rgba(34, 211, 238, 0.15);
+          border: 1px solid rgba(34, 211, 238, 0.3);
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 0 12px rgba(229, 9, 20, 0.25);
+          box-shadow: 0 0 12px rgba(34, 211, 238, 0.25);
         }
 
         .server-title {
@@ -1152,50 +1176,86 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           flex-wrap: wrap;
         }
 
-        .server-btn-scroll-container {
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
-          align-items: center;
-          flex: 1;
-        }
-
-        .utility-actions-group {
-          display: flex;
-          gap: 8px;
-          align-items: center;
-        }
-
-        .server-btn {
+        .server-dropdown {
           position: relative;
+          flex: 1;
+          min-width: 200px;
+        }
+
+        .server-dropdown-btn {
           display: flex;
           align-items: center;
           gap: 8px;
+          width: 100%;
           padding: 10px 16px;
+          border-radius: 999px;
+          border: 1px solid rgb(139 155 180 / 0.34);
+          background: rgb(12 19 34 / 0.52);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+          box-shadow: 0 8px 18px rgb(3 4 14 / 0.34);
+          color: #ffffff;
+          font-weight: 600;
+          font-size: 0.85rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          white-space: nowrap;
+        }
+
+        .server-dropdown-btn:hover {
+          border-color: rgb(34 211 238 / 0.76);
+          background: rgb(24 34 54 / 0.82);
+        }
+
+        .server-dropdown-btn .srv-name {
+          flex: 1;
+          text-align: left;
+        }
+
+        .server-dropdown-menu {
+          position: absolute;
+          bottom: calc(100% + 8px);
+          left: 0;
+          min-width: 260px;
+          max-height: 320px;
+          overflow-y: auto;
+          background: rgb(9 15 28 / 0.92);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+          border: 1px solid rgb(165 178 199 / 0.52);
+          border-radius: 18px;
+          padding: 6px;
+          z-index: 50;
+          box-shadow: 0 12px 30px rgb(3 4 14 / 0.58);
+        }
+
+        .server-dropdown-opt {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          width: 100%;
+          text-align: left;
+          padding: 10px 14px;
+          border: none;
           border-radius: 12px;
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          background: rgba(255, 255, 255, 0.04);
+          background: transparent;
           color: #a0a0a0;
           font-weight: 600;
           font-size: 0.85rem;
           cursor: pointer;
-          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: all 0.15s ease;
           white-space: nowrap;
         }
 
-        .server-btn:hover:not(.active) {
-          border-color: rgba(255, 255, 255, 0.25);
-          background: rgba(255, 255, 255, 0.08);
+        .server-dropdown-opt:hover {
+          background: rgb(34 211 238 / 0.1);
           color: #ffffff;
-          transform: translateY(-2px);
         }
 
-        .server-btn.active {
-          border-color: rgba(229, 9, 20, 0.8);
-          background: linear-gradient(135deg, rgba(229, 9, 20, 0.35) 0%, rgba(180, 0, 10, 0.18) 100%);
+        .server-dropdown-opt.selected {
+          background: rgb(34 211 238 / 0.15);
           color: #ffffff;
           font-weight: 700;
-          box-shadow: 0 0 20px rgba(229, 9, 20, 0.35);
         }
 
         .srv-badge {
@@ -1208,7 +1268,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           letter-spacing: 0.5px;
         }
 
-        .server-btn.active .srv-badge {
+        .server-dropdown-opt.selected .srv-badge {
           background: rgba(255, 255, 255, 0.2);
           color: #fff;
         }
@@ -1237,9 +1297,9 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         }
 
         .action-btn.pip-active {
-          border-color: rgba(229, 9, 20, 0.6);
-          background: linear-gradient(135deg, rgba(229, 9, 20, 0.3), rgba(229, 9, 20, 0.1));
-          color: #ff4444;
+          border-color: rgba(34, 211, 238, 0.6);
+          background: linear-gradient(135deg, rgba(34, 211, 238, 0.3), rgba(34, 211, 238, 0.1));
+          color: #22d3ee;
         }
 
         .quality-dropdown-menu {
@@ -1278,8 +1338,8 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         }
 
         .quality-opt-btn.selected {
-          background: rgba(229, 9, 20, 0.25);
-          color: #ff4444;
+          background: rgba(34, 211, 238, 0.25);
+          color: #22d3ee;
           font-weight: 700;
         }
 
@@ -1289,18 +1349,16 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
             border-radius: 14px;
           }
 
-          .server-btn-scroll-container {
-            overflow-x: auto;
-            flex-wrap: nowrap;
-            padding-bottom: 4px;
-            scroll-snap-type: x mandatory;
-            -webkit-overflow-scrolling: touch;
+          .server-dropdown {
             width: 100%;
           }
 
-          .server-btn {
-            scroll-snap-align: start;
-            flex-shrink: 0;
+          .server-dropdown-menu {
+            min-width: 100%;
+            max-height: 280px;
+          }
+
+          .server-dropdown-btn {
             padding: 8px 14px;
             font-size: 0.8rem;
           }

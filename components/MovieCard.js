@@ -86,7 +86,7 @@ export default function MovieCard({ movie, type = 'movie', compact = false }) {
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = 'scale(1.06) translateY(-6px)';
-          e.currentTarget.style.boxShadow = '0 16px 40px rgba(0,0,0,0.5), 0 0 20px rgba(229,9,20,0.1)';
+          e.currentTarget.style.boxShadow = '0 16px 40px rgba(0,0,0,0.5), 0 0 20px rgba(34,211,238,0.1)';
           const overlay = e.currentTarget.querySelector('.play-overlay');
           if (overlay) overlay.style.opacity = '1';
         }}
@@ -152,11 +152,11 @@ export default function MovieCard({ movie, type = 'movie', compact = false }) {
                 width: compact ? '38px' : '48px',
                 height: compact ? '38px' : '48px',
                 borderRadius: '50%',
-                background: 'rgba(229, 9, 20, 0.9)',
+                background: 'rgba(34, 211, 238, 0.9)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 4px 20px rgba(229, 9, 20, 0.4)',
+                boxShadow: '0 4px 20px rgba(34, 211, 238, 0.4)',
               }}
             >
               <Play style={{ width: compact ? 16 : 22, height: compact ? 16 : 22, color: 'white', marginLeft: '2px' }} />
@@ -204,10 +204,10 @@ export default function MovieCard({ movie, type = 'movie', compact = false }) {
               <div style={{
                 height: '100%',
                 width: `${Math.min(progress.percentage, 100)}%`,
-                background: 'linear-gradient(90deg, #e50914, #ff3d3d)',
+                background: 'linear-gradient(90deg, #22d3ee, #67e8f9)',
                 borderRadius: '0 2px 2px 0',
                 transition: 'width 0.3s ease',
-                boxShadow: '0 0 8px rgba(229,9,20,0.5)',
+                boxShadow: '0 0 8px rgba(34,211,238,0.5)',
               }} />
             </div>
           )}

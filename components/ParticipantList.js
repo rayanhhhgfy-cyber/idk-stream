@@ -37,7 +37,7 @@ export default function ParticipantList({ roomId }) {
   return (
     <div style={{ padding: '12px 16px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-        <Crown style={{ width: 16, height: 16, color: '#e50914' }} />
+        <Crown style={{ width: 16, height: 16, color: '#22d3ee' }} />
         <span style={{ color: 'white', fontSize: '0.85rem', fontWeight: 600 }}>
           Participants ({participants.length})
         </span>
@@ -51,14 +51,14 @@ export default function ParticipantList({ roomId }) {
             <div key={p.id} style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '8px 10px', borderRadius: '10px',
-              background: isMe ? 'rgba(229,9,20,0.08)' : 'transparent',
-              border: isMe ? '1px solid rgba(229,9,20,0.2)' : '1px solid transparent',
+              background: isMe ? 'rgba(34,211,238,0.08)' : 'transparent',
+              border: isMe ? '1px solid rgba(34,211,238,0.2)' : '1px solid transparent',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                 <div style={{
                   width: '32px', height: '32px', borderRadius: '50%',
                   background: isCreatorBadge
-                    ? 'linear-gradient(135deg, #e50914, #b20710)'
+                    ? 'linear-gradient(135deg, #22d3ee, #0e7490)'
                     : 'rgba(255,255,255,0.1)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0,
@@ -76,7 +76,7 @@ export default function ParticipantList({ roomId }) {
                     {p.name} {isMe && '(you)'}
                   </span>
                   {isCreatorBadge && (
-                    <span style={{ color: '#e50914', fontSize: '0.65rem', fontWeight: 600 }}>
+                    <span style={{ color: '#22d3ee', fontSize: '0.65rem', fontWeight: 600 }}>
                       Room Creator
                     </span>
                   )}

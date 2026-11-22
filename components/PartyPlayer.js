@@ -188,9 +188,9 @@ export default function PartyPlayer({ roomId, onMediaChange }) {
         >
           <div style={{
             width: '72px', height: '72px', borderRadius: '50%',
-            background: 'linear-gradient(135deg, #e50914, #b20710)',
+            background: 'linear-gradient(135deg, #22d3ee, #0e7490)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 8px 32px rgba(229,9,20,0.4)',
+            boxShadow: '0 8px 32px rgba(34,211,238,0.4)',
             marginBottom: '16px',
           }}>
             <Play style={{ width: 28, height: 28, color: 'white', marginLeft: '3px', fill: 'white' }} />

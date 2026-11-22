@@ -36,8 +36,8 @@ export default function WatchPartyBrowse() {
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'linear-gradient(135deg, rgba(229,9,20,0.2), rgba(229,9,20,0.05))', border: '1px solid rgba(229,9,20,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Users style={{ width: 26, height: 26, color: '#e50914' }} />
+            <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'linear-gradient(135deg, rgba(34,211,238,0.2), rgba(34,211,238,0.05))', border: '1px solid rgba(34,211,238,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Users style={{ width: 26, height: 26, color: '#22d3ee' }} />
             </div>
             <div>
               <h1 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.5rem)', fontWeight: 900, color: 'white', letterSpacing: '-1px' }}>Watch Together</h1>
@@ -46,10 +46,10 @@ export default function WatchPartyBrowse() {
           </div>
           <Link href="/watch-party/create" style={{
             display: 'flex', alignItems: 'center', gap: '8px',
-            background: 'linear-gradient(135deg, #e50914, #b20710)',
+            background: 'linear-gradient(135deg, #22d3ee, #0e7490)',
             color: 'white', padding: '12px 24px', borderRadius: '12px',
             textDecoration: 'none', fontWeight: 700, fontSize: '0.95rem',
-            boxShadow: '0 4px 20px rgba(229,9,20,0.3)',
+            boxShadow: '0 4px 20px rgba(34,211,238,0.3)',
           }}>
             <Plus style={{ width: 18, height: 18 }} />
             Create Room
@@ -59,7 +59,7 @@ export default function WatchPartyBrowse() {
         {loading && (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ width: '36px', height: '36px', border: '3px solid rgba(229,9,20,0.2)', borderTopColor: '#e50914', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+              <div style={{ width: '36px', height: '36px', border: '3px solid rgba(34,211,238,0.2)', borderTopColor: '#22d3ee', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
               <p style={{ color: '#555', fontSize: '0.85rem' }}>Loading rooms...</p>
             </div>
             <style jsx>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -77,10 +77,10 @@ export default function WatchPartyBrowse() {
             </p>
             <Link href="/watch-party/create" style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px',
-              background: 'linear-gradient(135deg, #e50914, #b20710)',
+              background: 'linear-gradient(135deg, #22d3ee, #0e7490)',
               color: 'white', padding: '12px 28px', borderRadius: '12px',
               textDecoration: 'none', fontWeight: 700,
-              boxShadow: '0 4px 20px rgba(229,9,20,0.3)',
+              boxShadow: '0 4px 20px rgba(34,211,238,0.3)',
             }}>
               <Plus style={{ width: 18, height: 18 }} />
               Create first room

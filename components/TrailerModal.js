@@ -83,8 +83,8 @@ export default function TrailerModal({ youtubeKey, title, onClose }) {
             zIndex: 10,
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(229,9,20,0.6)';
-            e.currentTarget.style.borderColor = '#e50914';
+            e.currentTarget.style.background = 'rgba(34,211,238,0.6)';
+            e.currentTarget.style.borderColor = '#22d3ee';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
@@ -117,7 +117,7 @@ export default function TrailerModal({ youtubeKey, title, onClose }) {
           overflow: 'hidden',
           background: '#111',
           border: '1px solid rgba(255,255,255,0.1)',
-          boxShadow: '0 30px 80px rgba(0,0,0,0.8), 0 0 40px rgba(229,9,20,0.1)',
+          boxShadow: '0 30px 80px rgba(0,0,0,0.8), 0 0 40px rgba(34,211,238,0.1)',
         }}>
           <iframe
             src={`https://www.youtube.com/embed/${youtubeKey}?autoplay=1&rel=0&modestbranding=1`}

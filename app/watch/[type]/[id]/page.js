@@ -219,7 +219,7 @@ export default function Watch({ params }) {
     return (
       <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ width: '40px', height: '40px', border: '3px solid rgba(229,9,20,0.2)', borderTopColor: '#e50914', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+          <div style={{ width: '40px', height: '40px', border: '3px solid rgba(34,211,238,0.2)', borderTopColor: '#22d3ee', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
           <p style={{ color: '#666', fontSize: '0.875rem' }}>Preparing your stream...</p>
         </div>
         <style jsx>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -230,9 +230,9 @@ export default function Watch({ params }) {
   if (error || !details) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '80vh', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a' }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#e50914', marginBottom: '12px' }}>Oops!</h1>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#22d3ee', marginBottom: '12px' }}>Oops!</h1>
         <p style={{ color: '#666', marginBottom: '24px' }}>{error || 'Details not found'}</p>
-        <Link href="/" style={{ padding: '12px 24px', background: '#e50914', color: 'white', borderRadius: '12px', textDecoration: 'none' }}>Go Home</Link>
+        <Link href="/" style={{ padding: '12px 24px', background: '#22d3ee', color: '#080d18', borderRadius: '12px', textDecoration: 'none' }}>Go Home</Link>
       </div>
     );
   }
@@ -273,7 +273,7 @@ export default function Watch({ params }) {
         {/* Navigation & Title */}
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', gap: '20px', marginBottom: '32px' }}>
           <div style={{ flex: 1, minWidth: '300px' }}>
-            <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#e50914', fontSize: '0.875rem', textDecoration: 'none', fontWeight: 600, marginBottom: '12px' }}>
+            <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#22d3ee', fontSize: '0.875rem', textDecoration: 'none', fontWeight: 600, marginBottom: '12px' }}>
               <ArrowLeft style={{ width: 16, height: 16 }} /> Back
             </Link>
             <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: 900, color: 'white', letterSpacing: '-1px', marginBottom: '8px' }}>{displayTitle}</h1>
@@ -296,7 +296,7 @@ export default function Watch({ params }) {
                   color: 'white', padding: '6px 16px', borderRadius: '8px',
                   fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.25s',
                 }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(229,9,20,0.2)'; e.currentTarget.style.borderColor = 'rgba(229,9,20,0.5)'; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(34,211,238,0.2)'; e.currentTarget.style.borderColor = 'rgba(34,211,238,0.5)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
                 >
                   <Film style={{ width: 14, height: 14 }} /> Watch Trailer
@@ -318,12 +318,12 @@ export default function Watch({ params }) {
               <span style={{ color: '#aaa', fontSize: '0.8rem', fontWeight: 600, whiteSpace: 'nowrap' }}>E{currentEpisode} of {episodes.length}</span>
               <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)' }} />
               {nextEpisodeTitle && (
-                <button onClick={handleNextEpisode} style={{ background: '#e50914', color: 'white', border: 'none', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s' }}>
+                <button onClick={handleNextEpisode} style={{ background: '#22d3ee', color: '#080d18', border: 'none', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.2s' }}>
                   Next <PlayCircle style={{ width: 14, height: 14 }} />
                 </button>
               )}
               <label style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#aaa', fontSize: '0.8rem', cursor: 'pointer' }}>
-                <input type="checkbox" checked={autoPlayNext} onChange={(e) => setAutoPlayNext(e.target.checked)} style={{ accentColor: '#e50914', cursor: 'pointer', width: '14px', height: '14px' }} />
+                <input type="checkbox" checked={autoPlayNext} onChange={(e) => setAutoPlayNext(e.target.checked)} style={{ accentColor: '#22d3ee', cursor: 'pointer', width: '14px', height: '14px' }} />
                 Auto
               </label>
             </div>
@@ -362,7 +362,7 @@ export default function Watch({ params }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '48px' }}>
           <div>
             <h3 style={{ color: 'white', fontSize: '1.2rem', fontWeight: 700, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Layers style={{ width: 20, height: 20, color: '#e50914' }} />
+              <Layers style={{ width: 20, height: 20, color: '#22d3ee' }} />
               Storyline
             </h3>
             <p style={{ color: '#aaa', lineHeight: 1.8, fontSize: '1rem' }}>{displayOverview || "No overview available."}</p>

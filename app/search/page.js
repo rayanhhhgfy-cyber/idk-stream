@@ -173,8 +173,8 @@ function SearchContent() {
           }}
           // Focus effect: red border + subtle red glow
           onFocus={(e) => {
-            e.target.style.borderColor = 'rgba(229,9,20,0.5)';
-            e.target.style.boxShadow = '0 0 20px rgba(229,9,20,0.1)';
+            e.target.style.borderColor = 'rgba(34,211,238,0.5)';
+            e.target.style.boxShadow = '0 0 20px rgba(34,211,238,0.1)';
           }}
           // Blur effect: back to default border
           onBlur={(e) => {
@@ -212,8 +212,8 @@ function SearchContent() {
         <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
           <div style={{
             width: '36px', height: '36px',
-            border: '3px solid rgba(229,9,20,0.2)',
-            borderTopColor: '#e50914',
+            border: '3px solid rgba(34,211,238,0.2)',
+            borderTopColor: '#22d3ee',
             borderRadius: '50%',
             animation: 'spin 0.8s linear infinite',
           }} />
@@ -228,7 +228,7 @@ function SearchContent() {
         <div>
           {/* Results count text */}
           <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '24px' }}>
-            Found <span style={{ color: 'white', fontWeight: 600 }}>{results.length}</span> results for "<span style={{ color: '#e50914' }}>{query}</span>"
+            Found <span style={{ color: 'white', fontWeight: 600 }}>{results.length}</span> results for "<span style={{ color: '#22d3ee' }}>{query}</span>"
           </p>
 
           {/* Grid of movie/show cards */}
@@ -252,8 +252,8 @@ function SearchContent() {
           Shows a friendly icon and message when the search box is empty. */}
       {!loading && !query && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', textAlign: 'center' }}>
-          <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(229,9,20,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
-            <Film style={{ width: 36, height: 36, color: '#e50914' }} />
+          <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(34,211,238,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
+            <Film style={{ width: 36, height: 36, color: '#22d3ee' }} />
           </div>
           <h2 style={{ color: 'white', fontSize: '1.3rem', fontWeight: 700, marginBottom: '8px' }}>Discover something new</h2>
           <p style={{ color: '#555', fontSize: '0.95rem', maxWidth: '400px' }}>Search for your favorite movies and TV shows across our entire catalog.</p>
@@ -289,7 +289,7 @@ export default function SearchPage() {
     <div style={{ background: '#0a0a0a', minHeight: '100vh', paddingTop: '100px', paddingBottom: '80px' }}>
       <Suspense fallback={
         <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '100px' }}>
-          <div style={{ width: '36px', height: '36px', border: '3px solid rgba(229,9,20,0.2)', borderTopColor: '#e50914', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          <div style={{ width: '36px', height: '36px', border: '3px solid rgba(34,211,238,0.2)', borderTopColor: '#22d3ee', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
         </div>
       }>
         <SearchContent />
