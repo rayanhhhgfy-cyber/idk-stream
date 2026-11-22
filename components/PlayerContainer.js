@@ -200,7 +200,9 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       params.push('autoplay=true', 'autonext=false', 'continueprompt=false', 'color=%23fb7185');
     }
     if (quality !== 'auto') params.push(`quality=${quality}`);
-    if (autoPlayNext) params.push('autoplay=1', 'autoPlay=true');
+    // Lumi servers (7-10) send exactly Lumi's query string — no extra params.
+    // The extra autoplay params broke the providers' URL matching.
+    if (autoPlayNext && server < 7) params.push('autoplay=1', 'autoPlay=true');
     if (params.length) url += (url.includes('?') ? '&' : '?') + params.join('&');
     return url;
   };
