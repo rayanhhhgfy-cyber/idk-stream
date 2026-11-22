@@ -52,6 +52,15 @@ export default function Hero({ featured }) {
   // Index 0 = first item, 1 = second, etc.
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  // ── STATE: Is this a phone/small screen? (for a shorter hero) ──
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
   // ── PREPARE THE ITEMS ──
   // Take the first 5 items from the featured array.
   // If "featured" isn't an array (edge case), wrap it in one.
@@ -96,7 +105,8 @@ export default function Hero({ featured }) {
   // ════════════════════════════════════════════════════════════════════
   return (
     // ── Main container: takes up 85% of the viewport height ──
-    <div style={{ position: 'relative', height: '85vh', minHeight: '550px', overflow: 'hidden' }}>
+    // On phones it's shorter (70vh) so the movie rows aren't pushed far down.
+    <div style={{ position: 'relative', height: isMobile ? '70vh' : '85vh', minHeight: isMobile ? '480px' : '550px', overflow: 'hidden' }}>
 
       {/* ══════════════════════════════════════════════════════════════
           🖼️ BACKGROUND IMAGES
@@ -168,7 +178,8 @@ export default function Hero({ featured }) {
         style={{
           position: 'absolute',
           bottom: '15%',
-          left: '48px',
+          left: isMobile ? '16px' : '48px',
+          right: isMobile ? '16px' : 'auto',
           maxWidth: '600px',
           zIndex: 10,
         }}

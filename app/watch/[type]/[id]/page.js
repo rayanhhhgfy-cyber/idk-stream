@@ -359,7 +359,7 @@ export default function Watch({ params }) {
         )}
 
         {/* Details Section */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '48px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(350px, 100%), 1fr))', gap: '48px' }}>
           <div>
             <h3 style={{ color: 'white', fontSize: '1.2rem', fontWeight: 700, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Layers style={{ width: 20, height: 20, color: '#22d3ee' }} />

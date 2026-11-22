@@ -11,12 +11,14 @@ const serverConfigs = {
   5: { name: 'vidsrc.me', episodeOffset: 0, baseUrl: 'https://vidsrc.me', badge: 'Multi-Lang' },
   6: { name: 'VAPlayer', episodeOffset: 0, baseUrl: 'https://vaplayer.ru', badge: 'VidAPI' },
   // Lumi providers (lumi-movies.vercel.app): four more embed mirrors + Internet Archive direct player
-  // noReferrer: these providers block embeds that send this site's domain as
-  // the referrer ("This content is blocked") — Lumi sidesteps it the same way.
-  7: { name: 'VidSrc.buzz', episodeOffset: 0, baseUrl: 'https://vidsrc.buzz', badge: 'Fast', noReferrer: true },
-  8: { name: 'VidSrc.wtf', episodeOffset: 0, baseUrl: 'https://vidsrc.wtf', badge: 'Backup', noReferrer: true },
-  9: { name: 'VidFast', episodeOffset: 0, baseUrl: 'https://vidfast.vc', badge: 'Subs', noReferrer: true },
-  10: { name: 'CineSrc', episodeOffset: 0, baseUrl: 'https://cinesrc.st', badge: 'Auto-Next', noReferrer: true },
+  // referrerPolicy "origin" (exactly like Lumi): these providers block embeds
+  // that send NO referrer, and block embeds that send this site's full page URL.
+  // Sending just the origin (https://idk-stream.vercel.app/) is what Lumi does
+  // and what the providers accept. CineSrc also gets Lumi's sandbox.
+  7: { name: 'VidSrc.buzz', episodeOffset: 0, baseUrl: 'https://vidsrc.buzz', badge: 'Fast', originReferrer: true },
+  8: { name: 'VidSrc.wtf', episodeOffset: 0, baseUrl: 'https://vidsrc.wtf', badge: 'Backup', originReferrer: true },
+  9: { name: 'VidFast', episodeOffset: 0, baseUrl: 'https://vidfast.vc', badge: 'Subs', originReferrer: true },
+  10: { name: 'CineSrc', episodeOffset: 0, baseUrl: 'https://cinesrc.st', badge: 'Auto-Next', originReferrer: true, sandbox: 'allow-scripts allow-same-origin allow-presentation' },
   11: { name: 'Archive', isArchive: true, badge: 'Free' },
 };
 
@@ -825,9 +827,10 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
             src={buildUrl(currentServer)}
             title="Video Player"
             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-            allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope; clipboard-write"
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
             allowFullScreen
-            referrerPolicy={serverConfigs[currentServer]?.noReferrer ? "no-referrer" : "no-referrer-when-downgrade"}
+            sandbox={serverConfigs[currentServer]?.sandbox}
+            referrerPolicy={serverConfigs[currentServer]?.originReferrer ? "origin" : "no-referrer-when-downgrade"}
             loading="eager"
             data-player="true"
             onLoad={handleIframeLoad}
