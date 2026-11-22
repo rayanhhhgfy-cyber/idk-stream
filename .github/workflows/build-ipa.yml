@@ -27,6 +27,13 @@ jobs:
       # is needed here.
       - run: npx cap add ios
 
+      # Generate the iOS app icon set + launch screen from icon.png/splash.png.
+      - run: |
+          mkdir -p resources
+          cp icon.png resources/icon.png
+          cp splash.png resources/splash.png
+          npx @capacitor/assets generate --ios
+
       # Background audio: let the video keep playing when the app is in the
       # background or the phone locks.
       - name: Enable background audio
