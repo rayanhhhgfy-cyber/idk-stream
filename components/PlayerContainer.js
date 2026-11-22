@@ -11,10 +11,12 @@ const serverConfigs = {
   5: { name: 'vidsrc.me', episodeOffset: 0, baseUrl: 'https://vidsrc.me', badge: 'Multi-Lang' },
   6: { name: 'VAPlayer', episodeOffset: 0, baseUrl: 'https://vaplayer.ru', badge: 'VidAPI' },
   // Lumi providers (lumi-movies.vercel.app): four more embed mirrors + Internet Archive direct player
-  7: { name: 'VidSrc.buzz', episodeOffset: 0, baseUrl: 'https://vidsrc.buzz', badge: 'Fast' },
-  8: { name: 'VidSrc.wtf', episodeOffset: 0, baseUrl: 'https://vidsrc.wtf', badge: 'Backup' },
-  9: { name: 'VidFast', episodeOffset: 0, baseUrl: 'https://vidfast.vc', badge: 'Subs' },
-  10: { name: 'CineSrc', episodeOffset: 0, baseUrl: 'https://cinesrc.st', badge: 'Auto-Next' },
+  // noReferrer: these providers block embeds that send this site's domain as
+  // the referrer ("This content is blocked") — Lumi sidesteps it the same way.
+  7: { name: 'VidSrc.buzz', episodeOffset: 0, baseUrl: 'https://vidsrc.buzz', badge: 'Fast', noReferrer: true },
+  8: { name: 'VidSrc.wtf', episodeOffset: 0, baseUrl: 'https://vidsrc.wtf', badge: 'Backup', noReferrer: true },
+  9: { name: 'VidFast', episodeOffset: 0, baseUrl: 'https://vidfast.vc', badge: 'Subs', noReferrer: true },
+  10: { name: 'CineSrc', episodeOffset: 0, baseUrl: 'https://cinesrc.st', badge: 'Auto-Next', noReferrer: true },
   11: { name: 'Archive', isArchive: true, badge: 'Free' },
 };
 
@@ -820,7 +822,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
             allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope; clipboard-write"
             allowFullScreen
-            referrerPolicy="no-referrer-when-downgrade"
+            referrerPolicy={serverConfigs[currentServer]?.noReferrer ? "no-referrer" : "no-referrer-when-downgrade"}
             loading="eager"
             data-player="true"
             onLoad={handleIframeLoad}
