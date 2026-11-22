@@ -1,6 +1,5 @@
 name: Build iOS IPA
 
-
 # Manual only: Rayyan taps "Run workflow" in the GitHub app whenever he
 # wants a fresh .ipa. The build runs on GitHub's free macOS runner, no Mac
 # and no paid Apple Developer account needed. The .ipa is UNSIGNED, so it is
@@ -9,29 +8,24 @@ name: Build iOS IPA
 on:
   workflow_dispatch:
 
-
 jobs:
   build:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
-
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-
 
       # npm install (not ci): the branch does not carry a synced lock file,
       # the runner resolves the Capacitor deps from package.json.
       - run: npm install
 
-
       # Generates the native iOS project (Xcode project, icons, splash) from
       # capacitor.config.ts. The shell loads the live site, so no web build
       # is needed here.
       - run: npx cap add ios
-
 
       # Generate the iOS app icon set + launch screen from icon.png/splash.png.
       - run: |
@@ -39,7 +33,6 @@ jobs:
           cp icon.png resources/icon.png
           cp splash.png resources/splash.png
           npx @capacitor/assets generate --ios
-
 
       # Background audio: let the video keep playing when the app is in the
       # background or the phone locks.
@@ -55,10 +48,8 @@ jobs:
               plistlib.dump(d, f)
           PY
 
-
       # Copies web assets and installs the iOS pods.
       - run: npx cap sync ios
-
 
       - name: Build unsigned IPA
         run: |
@@ -71,3 +62,10 @@ jobs:
             CODE_SIGNING_ALLOWED=NO archive
           mkdir -p Payload
           cp -r build/App.xcarchive/Products/Applications/App.app Payload/
+          ditto -c -k --sequesterRsrc --keepParent Payload idk-stream.ipa
+          mv idk-stream.ipa ../../
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: idk-stream-ipa
+          path: idk-stream.ipa
