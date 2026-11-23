@@ -15,10 +15,14 @@ const serverConfigs = {
   // SmashyStream (12) and Nontongo (13) were added 2026-11-23 and removed
   // the same day: both played when opened directly but are blocked when
   // embedded on this site ("This content is blocked" — domain allowlist).
+  // Bingr (14) is NOT an embed: a server-side resolver + HLS proxy (ported
+  // from Lumi 2026-11-23) that plays in the site's own native <video> player,
+  // so no provider ever sees this domain as an embedding origin.
   4: { name: 'autoembed.me', episodeOffset: 0, baseUrl: 'https://player.autoembed.me', badge: 'Backup' },
   5: { name: 'vidsrc.me', episodeOffset: 0, baseUrl: 'https://vidsrc.me', badge: 'Multi-Lang' },
   6: { name: 'VAPlayer', episodeOffset: 0, baseUrl: 'https://vaplayer.ru', badge: 'VidAPI' },
   11: { name: 'Archive', isArchive: true, badge: 'Free' },
+  14: { name: 'Bingr', isBingr: true, badge: 'Direct' },
 };
 
 export default function PlayerContainer({ type, id, season, episode, autoPlayNext, onNextEpisode, nextEpisodeTitle, episodeRuntime, onSyncTime, title, year }) {
@@ -130,9 +134,22 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const [archiveTitle, setArchiveTitle] = useState('');
   const archiveAlternativesRef = useRef([]);
 
+  // Bingr direct player (ported from Lumi): /api/player/bingr resolves a
+  // stream server-side and /api/player/media proxies the HLS playlist.
+  const [bingrUrl, setBingrUrl] = useState('');
+  const [bingrType, setBingrType] = useState('application/vnd.apple.mpegurl');
+  const [bingrTitle, setBingrTitle] = useState('');
+
+  // Direct (non-iframe) servers — Archive and Bingr — share one native
+  // <video> player fed by their resolver endpoints.
+  const isDirectServer = currentServer === 11 || currentServer === 14;
+  const directUrl = currentServer === 11 ? archiveUrl : currentServer === 14 ? bingrUrl : '';
+  const directType = currentServer === 11 ? archiveType : currentServer === 14 ? bingrType : 'video/mp4';
+  const directTitle = currentServer === 11 ? archiveTitle : currentServer === 14 ? bingrTitle : title;
+
   const buildUrl = (server) => {
     const cfg = serverConfigs[server];
-    if (!cfg || cfg.isHls || cfg.isArchive) return '';
+    if (!cfg || cfg.isHls || cfg.isArchive || cfg.isBingr) return '';
     const ep = isTv ? Number(episode) + cfg.episodeOffset : null;
     // The three working embed providers share one URL shape:
     // /embed/movie/{id} and /embed/tv/{id}/{season}/{episode}.
@@ -191,10 +208,47 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     return () => { cancelled = true; };
   }, [currentServer, title, year, type]);
 
-  // Archive direct playback: native <video>, hls.js only for .m3u8 streams
+  // Bingr: resolve a direct HLS stream from /api/player/bingr when picked
+  useEffect(() => {
+    if (currentServer !== 14) return;
+    let cancelled = false;
+    setIframeLoading(true);
+    setEmbedBlocked(false);
+    setLoadErrorMessage('');
+    const params = new URLSearchParams({ tmdbId: String(id), type: type || 'movie' });
+    if (isTv) {
+      params.set('season', String(season));
+      params.set('episode', String(episode));
+    }
+    fetch(`/api/player/bingr?${params.toString()}`)
+      .then(async (r) => {
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(data?.error || 'Bingr resolve failed');
+        if (cancelled) return;
+        setBingrTitle(data.title || title);
+        setBingrType('application/vnd.apple.mpegurl');
+        setBingrUrl(data.streamUrl || '');
+        if (!data.streamUrl) {
+          setEmbedBlocked(true);
+          setLoadErrorMessage('Bingr could not find a stream for this title.');
+          setIframeLoading(false);
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setEmbedBlocked(true);
+        setIframeLoading(false);
+        setLoadErrorMessage('Bingr is unavailable. Try another server.');
+      });
+    return () => { cancelled = true; };
+  }, [currentServer, id, type, season, episode, isTv, title]);
+
+  // Direct playback (Archive + Bingr): native <video>, hls.js for HLS streams.
+  // Bingr's proxied stream URL has no .m3u8 extension, but it is always an
+  // HLS playlist served by /api/player/media, so it always counts as HLS.
   useEffect(() => {
     let isMounted = true;
-    if (!playerReady || currentServer !== 11 || !archiveUrl) return;
+    if (!playerReady || !isDirectServer || !directUrl) return;
     const video = videoRef.current;
     if (!video) return;
 
@@ -209,16 +263,18 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     };
     const handleError = () => {
       if (!isMounted) return;
-      // Fall through to the next alternative file, like Lumi's direct player
-      const next = archiveAlternativesRef.current.shift();
-      if (next?.streamUrl) {
-        setArchiveType(next.contentType || 'video/mp4');
-        setArchiveUrl(next.streamUrl);
-        return;
+      // Archive: fall through to the next alternative file, like Lumi's direct player
+      if (currentServer === 11) {
+        const next = archiveAlternativesRef.current.shift();
+        if (next?.streamUrl) {
+          setArchiveType(next.contentType || 'video/mp4');
+          setArchiveUrl(next.streamUrl);
+          return;
+        }
       }
       setIframeLoading(false);
       setEmbedBlocked(true);
-      setLoadErrorMessage('Archive stream failed. Try another server.');
+      setLoadErrorMessage(currentServer === 14 ? 'Bingr stream failed. Try another server.' : 'Archive stream failed. Try another server.');
     };
 
     video.addEventListener('playing', handlePlaying);
@@ -226,10 +282,10 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     video.addEventListener('error', handleError);
 
     let hls = null;
-    const isHlsUrl = /\.m3u8($|\?)/i.test(archiveUrl);
+    const isHlsUrl = currentServer === 14 || /\.m3u8($|\?)/i.test(directUrl);
     if (isHlsUrl && !video.canPlayType('application/vnd.apple.mpegurl') && Hls.isSupported()) {
       hls = new Hls({ enableWorker: true, lowLatencyMode: true, backBufferLength: 30 });
-      hls.loadSource(archiveUrl);
+      hls.loadSource(directUrl);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         if (!isMounted) return;
@@ -249,7 +305,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         }
       });
     } else {
-      video.src = archiveUrl;
+      video.src = directUrl;
       video.load();
       video.play().catch(() => {});
     }
@@ -261,7 +317,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       video.removeEventListener('waiting', handleWaiting);
       video.removeEventListener('error', handleError);
     };
-  }, [currentServer, archiveUrl, playerReady]);
+  }, [currentServer, directUrl, playerReady, isDirectServer]);
 
   // ── Document Picture-in-Picture ──
   const togglePiP = useCallback(async () => {
@@ -768,7 +824,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         }}
       >
 
-        {playerReady && !serverConfigs[currentServer].isHls && !serverConfigs[currentServer].isArchive && (
+        {playerReady && !serverConfigs[currentServer].isHls && !serverConfigs[currentServer].isArchive && !serverConfigs[currentServer].isBingr && (
           <iframe
             key={`${currentServer}-${id}-${season}-${episode}-${quality}`}
             ref={iframeRef}
@@ -796,7 +852,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           />
         )}
 
-        {playerReady && serverConfigs[currentServer].isArchive && archiveUrl && !embedBlocked && (
+        {playerReady && isDirectServer && directUrl && !embedBlocked && (
           <video
             ref={videoRef}
             controls
@@ -804,7 +860,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none', background: '#000' }}
             data-player="true"
             autoPlay
-            title={archiveTitle || title}
+            title={directTitle || title}
           />
         )}
 
