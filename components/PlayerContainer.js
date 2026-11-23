@@ -4,30 +4,15 @@ import { Server, SkipForward, X, PictureInPicture2, PictureInPicture, Monitor, C
 import Hls from 'hls.js';
 
 const serverConfigs = {
-  1: { name: 'HLS Player', isHls: true, badge: 'Dev' },
-  2: { name: 'Vidking', episodeOffset: 0, baseUrl: 'https://www.vidking.net', fallbackUrl: 'https://vidsrc.cc', badge: '4K Ultra' },
-  3: { name: 'vidsrc.pm', episodeOffset: 0, baseUrl: 'https://vidsrc.pm', badge: 'HD Speed' },
+  // Only the servers that actually play are listed.
+  // Everything else was tested and removed (2026-11-23): the vidsrc family
+  // and 16 other providers all block this site's domain, Vidking is dead,
+  // and the HLS player is dev-only (localhost). Do not re-add a provider
+  // without a live browser test proving it plays from this domain.
   4: { name: 'autoembed.me', episodeOffset: 0, baseUrl: 'https://player.autoembed.me', badge: 'Backup' },
   5: { name: 'vidsrc.me', episodeOffset: 0, baseUrl: 'https://vidsrc.me', badge: 'Multi-Lang' },
   6: { name: 'VAPlayer', episodeOffset: 0, baseUrl: 'https://vaplayer.ru', badge: 'VidAPI' },
-  // Lumi providers (lumi-movies.vercel.app): four more embed mirrors + Internet Archive direct player
-  // referrerPolicy "origin" (exactly like Lumi): these providers block embeds
-  // that send NO referrer, and block embeds that send this site's full page URL.
-  // Sending just the origin (https://idk-stream.vercel.app/) is what Lumi does
-  // and what the providers accept. CineSrc also gets Lumi's sandbox.
-  7: { name: 'VidSrc.buzz', episodeOffset: 0, baseUrl: 'https://vidsrc.buzz', badge: 'Fast', originReferrer: true },
-  8: { name: 'VidSrc.wtf', episodeOffset: 0, baseUrl: 'https://vidsrc.wtf', badge: 'Backup', originReferrer: true },
-  9: { name: 'VidFast', episodeOffset: 0, baseUrl: 'https://vidfast.vc', badge: 'Subs', originReferrer: true },
-  10: { name: 'CineSrc', episodeOffset: 0, baseUrl: 'https://cinesrc.st', badge: 'Auto-Next', originReferrer: true, sandbox: 'allow-scripts allow-same-origin allow-presentation' },
   11: { name: 'Archive', isArchive: true, badge: 'Free' },
-  // Second batch (tested 2026-11-23): template-based URLs.
-  // movie/tv are path templates; {id} = TMDB id, {s} = season, {e} = episode.
-  12: { name: 'AutoEmbed.co', episodeOffset: 0, baseUrl: 'https://autoembed.co', badge: 'Backup', originReferrer: true, movie: '/movie/tmdb/{id}', tv: '/tv/tmdb/{id}-{s}-{e}' },
-  13: { name: 'Vidora', episodeOffset: 0, baseUrl: 'https://vidora.su', badge: 'Fast', originReferrer: true, movie: '/movie/{id}', tv: '/tv/{id}/{s}/{e}' },
-  14: { name: 'VixSrc', episodeOffset: 0, baseUrl: 'https://vixsrc.to', badge: 'Fast', originReferrer: true, movie: '/movie/{id}', tv: '/tv/{id}/{s}/{e}' },
-  15: { name: 'RiveStream', episodeOffset: 0, baseUrl: 'https://rivestream.org', badge: 'Multi', originReferrer: true, movie: '/embed?type=movie&id={id}', tv: '/embed?type=tv&id={id}&season={s}&episode={e}' },
-  16: { name: 'Vidify', episodeOffset: 0, baseUrl: 'https://vidify.top', badge: 'Fast', originReferrer: true, movie: '/embed/movie/{id}', tv: '/embed/tv/{id}/{s}/{e}' },
-  17: { name: 'VidSrc.icu', episodeOffset: 0, baseUrl: 'https://vidsrc.icu', badge: 'Backup', originReferrer: true, movie: '/embed/movie/{id}', tv: '/embed/tv/{id}/{s}/{e}' },
 };
 
 export default function PlayerContainer({ type, id, season, episode, autoPlayNext, onNextEpisode, nextEpisodeTitle, episodeRuntime, onSyncTime, title, year }) {
@@ -132,8 +117,6 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     };
   }, [iframeLoading, playerReady, embedBlocked]);
 
-  const [server2Failed, setServer2Failed] = useState(false);
-
   // Internet Archive direct player (Lumi's Archive provider): native <video>
   // fed by /api/archive, which searches archive.org's public movie catalog.
   const [archiveUrl, setArchiveUrl] = useState('');
@@ -145,85 +128,15 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     const cfg = serverConfigs[server];
     if (!cfg || cfg.isHls || cfg.isArchive) return '';
     const ep = isTv ? Number(episode) + cfg.episodeOffset : null;
-    let url = '';
-    if (server === 2) {
-      const activeBase = server2Failed && cfg.fallbackUrl ? cfg.fallbackUrl : cfg.baseUrl;
-      url = isTv
-        ? `${activeBase}/embed/tv/${id}/${season}/${ep}`
-        : `${activeBase}/embed/movie/${id}`;
-    } else if (server === 3) {
-      url = isTv
-        ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
-        : `${cfg.baseUrl}/embed/movie/${id}`;
-    } else if (server === 4) {
-      url = isTv
-        ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
-        : `${cfg.baseUrl}/embed/movie/${id}`;
-    } else if (server === 5) {
-      url = isTv
-        ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
-        : `${cfg.baseUrl}/embed/movie/${id}`;
-    } else if (server === 6) {
-      url = isTv
-        ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
-        : `${cfg.baseUrl}/embed/movie/${id}`;
-    } else if (server === 7) {
-      // VidSrc.buzz (Lumi): /embed/movie/{id}?autoplay=true, /embed/tv/{id}/{s}/{e}?autoplay=true
-      url = isTv
-        ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
-        : `${cfg.baseUrl}/embed/movie/${id}`;
-    } else if (server === 8) {
-      // VidSrc.wtf (Lumi): /1/movie/{id}, /1/tv/{id}/{s}/{e}
-      url = isTv
-        ? `${cfg.baseUrl}/1/tv/${id}/${season}/${ep}`
-        : `${cfg.baseUrl}/1/movie/${id}`;
-    } else if (server === 9) {
-      // VidFast (Lumi): /movie/{id}, /tv/{id}/{s}/{e}
-      url = isTv
-        ? `${cfg.baseUrl}/tv/${id}/${season}/${ep}`
-        : `${cfg.baseUrl}/movie/${id}`;
-    } else if (server === 10) {
-      // CineSrc (Lumi): /embed/movie/{id}, /embed/tv/{id}?s={s}&e={e}
-      url = isTv
-        ? `${cfg.baseUrl}/embed/tv/${id}`
-        : `${cfg.baseUrl}/embed/movie/${id}`;
-    }
-    // Template-based providers (12+): build the URL from the config.
-    // {id} = TMDB id, {s} = season, {e} = episode (offset applied).
-    if (!url && cfg.movie) {
-      const tpl = isTv ? (cfg.tv || cfg.movie) : cfg.movie;
-      url = cfg.baseUrl + tpl.replace('{id}', id).replace('{s}', season).replace('{e}', ep);
-    }
+    // The three working embed providers share one URL shape:
+    // /embed/movie/{id} and /embed/tv/{id}/{season}/{episode}.
+    let url = isTv
+      ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
+      : `${cfg.baseUrl}/embed/movie/${id}`;
     const params = [];
-    if (server === 2) {
-      params.push('color=22d3ee');
-      if (isTv) {
-        params.push('nextEpisode=true', 'episodeSelector=true');
-      }
-    }
-    if (server === 7) {
-      params.push('autoplay=true');
-    }
-    if (server === 9) {
-      params.push('autoPlay=true', 'autoNext=false', 'sub=en');
-    }
-    if (server === 10) {
-      if (isTv) {
-        params.push(`s=${season}`, `e=${ep}`);
-      }
-      params.push('autoplay=true', 'autonext=false', 'continueprompt=false', 'color=%23fb7185');
-    }
     if (quality !== 'auto') params.push(`quality=${quality}`);
-    // Lumi servers (7-10) send exactly Lumi's query string — no extra params.
-    // The extra autoplay params broke the providers' URL matching.
-    if (autoPlayNext && server < 7) params.push('autoplay=1', 'autoPlay=true');
+    if (autoPlayNext) params.push('autoplay=1', 'autoPlay=true');
     if (params.length) url += (url.includes('?') ? '&' : '?') + params.join('&');
-    // Proxied servers: serve the embed through this site's own
-    // /api/embed-proxy so the provider sees a direct server-side visit
-    // (no Referer) instead of an embed from this domain, which it blocks.
-    if (cfg.useProxy) {
-      return `/api/embed-proxy?u=${encodeURIComponent(url)}`;
-    }
     return url;
   };
 
@@ -687,13 +600,6 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   };
 
   const handleIframeError = () => {
-    if (currentServer === 2 && !server2Failed) {
-      console.warn('Primary Vidking URL unreachable. Activating high-availability mirror fallback...');
-      setServer2Failed(true);
-      setIframeLoading(true);
-      return;
-    }
-
     if (currentServer === 4) {
       console.warn('AutoEmbed failed; falling back to VAPlayer.');
       setCurrentServer(6);
@@ -807,6 +713,12 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     setCurrentServer(server);
   };
 
+  // Next server in the dropdown order (cycles through the listed servers).
+  const nextServer = () => {
+    const keys = Object.keys(serverConfigs).map(Number).sort((a, b) => a - b);
+    return keys[(keys.indexOf(currentServer) + 1) % keys.length];
+  };
+
   const retryPlayer = () => {
     setEmbedBlocked(false);
     setIframeLoading(true);
@@ -907,7 +819,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <button onClick={() => window.open(buildUrl(currentServer), '_blank')} style={{ background: '#22d3ee', color: '#080d18', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Open Player in New Tab</button>
                 <button onClick={retryPlayer} style={{ background: 'rgba(255,255,255,0.06)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Retry</button>
-                <button onClick={() => { const maxSrv = Object.keys(serverConfigs).length; const next = currentServer >= maxSrv ? (isDev ? 1 : 2) : currentServer + 1; switchServer(next); }} style={{ background: 'rgba(255,255,255,0.04)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Try Server {currentServer >= Object.keys(serverConfigs).length ? (isDev ? 1 : 2) : currentServer + 1}</button>
+                <button onClick={() => switchServer(nextServer())} style={{ background: 'rgba(255,255,255,0.04)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Try Server {nextServer()}</button>
               </div>
             </div>
           </div>
