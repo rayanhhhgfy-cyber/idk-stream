@@ -13,15 +13,12 @@ const serverConfigs = {
   5: { name: 'vidsrc.me', episodeOffset: 0, baseUrl: 'https://vidsrc.me', badge: 'Multi-Lang' },
   6: { name: 'VAPlayer', episodeOffset: 0, baseUrl: 'https://vaplayer.ru', badge: 'VidAPI' },
   11: { name: 'Archive', isArchive: true, badge: 'Free' },
-  // Third batch (tested 2026-11-23): template-based URLs.
-  // movie/tv are path templates; {id} = TMDB id, {s} = season, {e} = episode.
-  12: { name: 'VidSrc.to', episodeOffset: 0, baseUrl: 'https://vidsrc.to', badge: 'Backup', originReferrer: true, movie: '/embed/movie/{id}', tv: '/embed/tv/{id}/{s}/{e}' },
-  13: { name: 'VidSrc.top', episodeOffset: 0, baseUrl: 'https://vid-src.top', badge: 'Backup', originReferrer: true, movie: '/embed/movie/{id}', tv: '/embed/tv/{id}/{s}/{e}' },
-  14: { name: 'VsEmbed', episodeOffset: 0, baseUrl: 'https://vsembed.ru', badge: 'Fast', originReferrer: true, movie: '/embed/movie/{id}', tv: '/embed/tv/{id}/{s}-{e}' },
-  15: { name: 'VidFast.pro', episodeOffset: 0, baseUrl: 'https://vidfast.pro', badge: 'Subs', originReferrer: true, movie: '/movie/{id}', tv: '/tv/{id}/{s}/{e}' },
-  16: { name: 'Vidzee', episodeOffset: 0, baseUrl: 'https://player.vidzee.wtf', badge: 'Fast', originReferrer: true, movie: '/embed/movie/{id}', tv: '/embed/tv/{id}/{s}/{e}' },
-  17: { name: 'Videasy', episodeOffset: 0, baseUrl: 'https://player.videasy.net', badge: 'Multi', originReferrer: true, movie: '/movie/{id}', tv: '/tv/{id}/{s}/{e}' },
-  18: { name: '111movies', episodeOffset: 0, baseUrl: 'https://111movies.com', badge: 'Full', originReferrer: true, movie: '/movie/{id}', tv: '/tv/{id}/{s}/{e}' },
+  // Fourth batch (tested 2026-11-23): closest relatives of the working
+  // servers — vidsrc.net is the ?tmdb= mirror of vidsrc.me; autoembed.pro
+  // and autoembed.cc are the same family as the working autoembed.me.
+  12: { name: 'VidSrc.net', episodeOffset: 0, baseUrl: 'https://vidsrc.net', badge: 'Backup', originReferrer: true, movie: '/embed/movie/?tmdb={id}', tv: '/embed/tv/?tmdb={id}' },
+  13: { name: 'AutoEmbed.pro', episodeOffset: 0, baseUrl: 'https://autoembed.pro', badge: 'Backup', originReferrer: true, movie: '/embed/movie/{id}', tv: '/embed/tv/{id}/{s}/{e}' },
+  14: { name: 'AutoEmbed.cc', episodeOffset: 0, baseUrl: 'https://autoembed.cc', badge: 'Backup', originReferrer: true, movie: '/embed/movie/{id}', tv: '/embed/tv/{id}/{s}/{e}' },
 };
 
 export default function PlayerContainer({ type, id, season, episode, autoPlayNext, onNextEpisode, nextEpisodeTitle, episodeRuntime, onSyncTime, title, year }) {
