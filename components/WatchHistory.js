@@ -1,9 +1,21 @@
+// ╔══════════════════════════════════════════════════════════════════════╗
+// ║                 ⏱️  CONTINUE WATCHING  ⏱️                          ║
+// ║                                                                    ║
+// ║  Shows the user's recently watched movies/shows so they can resume ║
+// ║  where they left off.                                              ║
+// ║                                                                    ║
+// ║  STYLE: Lumi's Continue Watching card — the poster is clean (no    ║
+// ║  badge, no play button, no title inside it), a thin WHITE progress ║
+// ║  bar sits at the bottom inside the poster, and the title +         ║
+// ║  "Continue" sit BELOW the poster, outside the image.               ║
+// ╚══════════════════════════════════════════════════════════════════════╝
+
 "use client";
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Clock, Star, Trash2, Play } from 'lucide-react';
-import { getWatchHistory, clearWatchHistory, getWatchProgress, clearWatchProgress, formatWatchTime } from '@/lib/watchHistory';
+import { Clock, Trash2 } from 'lucide-react';
+import { getWatchHistory, clearWatchHistory, getWatchProgress, clearWatchProgress } from '@/lib/watchHistory';
 import { getImageUrl } from '@/lib/tmdb';
 
 export default function WatchHistory() {
@@ -53,36 +65,26 @@ export default function WatchHistory() {
             : `${item.type}_${item.id}`;
             
           const itemProgress = progressMap[key];
-          const resumeTime = itemProgress ? formatWatchTime(itemProgress.watchedSeconds) : null;
           
           return (
             <Link key={key} href={`/watch/${item.type}/${item.id}`} style={{ textDecoration: 'none', flexShrink: 0, width: '160px' }}>
-              <div style={{ position: 'relative', width: '160px', height: '240px', borderRadius: '12px', overflow: 'hidden', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.06)', transition: 'transform 0.3s ease, box-shadow 0.3s ease', cursor: 'pointer' }}>
+              {/* ── Poster — clean, like Lumi: thin outline, no badge, no
+                  play button, no title inside. Only the white progress
+                  bar lives inside the poster. */}
+              <div style={{ position: 'relative', width: '160px', height: '240px', borderRadius: '12px', overflow: 'hidden', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }}>
                 {item.poster && (<Image src={getImageUrl(item.poster)} alt={item.title || ''} fill sizes="160px" style={{ objectFit: 'cover' }} />)}
-                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '55%', background: 'linear-gradient(to top, rgba(0,0,0,0.95), transparent)' }} />
-                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(229,9,20,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.8 }}>
-                  <Play style={{ width: 18, height: 18, color: 'white', marginLeft: '2px' }} />
-                </div>
-                {resumeTime && (
-                  <div style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(229,9,20,0.85)', backdropFilter: 'blur(6px)', borderRadius: '6px', padding: '3px 8px', fontSize: '0.6rem', fontWeight: 700, color: 'white' }}>
-                    ▶ {resumeTime}
-                  </div>
-                )}
-                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '10px' }}>
-                  <p style={{ color: 'white', fontSize: '0.8rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '2px' }}>{item.title}</p>
-                  {item.season && (<p style={{ color: '#aaa', fontSize: '0.7rem' }}>S{item.season} : E{item.episode}</p>)}
-                  {item.rating > 0 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '3px', marginTop: '4px' }}>
-                      <Star style={{ width: 10, height: 10, fill: '#fbbf24', color: '#fbbf24' }} />
-                      <span style={{ color: '#fbbf24', fontSize: '0.7rem', fontWeight: 600 }}>{item.rating.toFixed(1)}</span>
-                    </div>
-                  )}
-                </div>
                 {itemProgress && itemProgress.percentage > 0 && (
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '3px', background: 'rgba(255,255,255,0.15)', zIndex: 5 }}>
-                    <div style={{ height: '100%', width: `${Math.min(itemProgress.percentage, 100)}%`, background: 'linear-gradient(90deg, #e50914, #ff3d3d)', borderRadius: '0 2px 2px 0', boxShadow: '0 0 6px rgba(229,9,20,0.5)' }} />
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '3px', background: 'rgba(255,255,255,0.25)', zIndex: 5 }}>
+                    <div style={{ height: '100%', width: `${Math.min(itemProgress.percentage, 100)}%`, background: '#ffffff', borderRadius: '0 2px 2px 0' }} />
                   </div>
                 )}
+              </div>
+              {/* ── Title + Continue — below the poster, outside the image. */}
+              <div style={{ padding: '8px 2px 4px' }}>
+                <p style={{ color: 'white', fontSize: '0.875rem', fontWeight: 600, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: '1.25', marginBottom: '4px' }}>{item.title}</p>
+                <p style={{ color: '#a1a1a1', fontSize: '0.8125rem' }}>
+                  {item.season ? `S${item.season} : E${item.episode} · Continue` : 'Continue'}
+                </p>
               </div>
             </Link>
           );
