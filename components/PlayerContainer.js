@@ -12,10 +12,17 @@ const serverConfigs = {
   // The site's own native player was deleted 2026-11-23 at Rayyan's
   // order: its CDN blocks datacenter IPs and no other provider's stream
   // works from a datacenter IP either.
+  // SmashyStream (12) and Nontongo (13) added 2026-11-23 at Rayyan's pick,
+  // both proven playing in a live browser test on Fight Club (TMDB 550):
+  // SmashyStream plays at normal speed (default audio is Hindi-dubbed,
+  // switch audio inside its player if English is offered); Nontongo's
+  // default MIX source stalls, switch to its HD source in its player.
   4: { name: 'autoembed.me', episodeOffset: 0, baseUrl: 'https://player.autoembed.me', badge: 'Backup' },
   5: { name: 'vidsrc.me', episodeOffset: 0, baseUrl: 'https://vidsrc.me', badge: 'Multi-Lang' },
   6: { name: 'VAPlayer', episodeOffset: 0, baseUrl: 'https://vaplayer.ru', badge: 'VidAPI' },
   11: { name: 'Archive', isArchive: true, badge: 'Free' },
+  12: { name: 'SmashyStream', episodeOffset: 0, baseUrl: 'https://player.smashystream.com', movie: '/playere.php?tmdb={id}', tv: '/playere.php?tmdb={id}&season={s}&episode={e}', badge: 'Fast' },
+  13: { name: 'Nontongo', episodeOffset: 0, baseUrl: 'https://www.nontongo.win', movie: '/embed/movie/{id}', tv: '/embed/tv/{id}/{s}/{e}', badge: 'HD' },
 };
 
 export default function PlayerContainer({ type, id, season, episode, autoPlayNext, onNextEpisode, nextEpisodeTitle, episodeRuntime, onSyncTime, title, year }) {
