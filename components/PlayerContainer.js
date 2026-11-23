@@ -15,10 +15,10 @@ const serverConfigs = {
   // that send NO referrer, and block embeds that send this site's full page URL.
   // Sending just the origin (https://idk-stream.vercel.app/) is what Lumi does
   // and what the providers accept. CineSrc also gets Lumi's sandbox.
-  7: { name: 'VidSrc.buzz', episodeOffset: 0, baseUrl: 'https://vidsrc.buzz', badge: 'Fast', originReferrer: true, useProxy: true },
+  7: { name: 'VidSrc.buzz', episodeOffset: 0, baseUrl: 'https://vidsrc.buzz', badge: 'Fast', originReferrer: true },
   8: { name: 'VidSrc.wtf', episodeOffset: 0, baseUrl: 'https://vidsrc.wtf', badge: 'Backup', originReferrer: true },
-  9: { name: 'VidFast', episodeOffset: 0, baseUrl: 'https://vidfast.vc', badge: 'Subs', originReferrer: true },
-  10: { name: 'CineSrc', episodeOffset: 0, baseUrl: 'https://cinesrc.st', badge: 'Auto-Next', originReferrer: true, sandbox: 'allow-scripts allow-same-origin allow-presentation' },
+  9: { name: 'VidFast', episodeOffset: 0, baseUrl: 'https://vidfast.vc', badge: 'Subs', originReferrer: true, useProxy: true },
+  10: { name: 'CineSrc', episodeOffset: 0, baseUrl: 'https://cinesrc.st', badge: 'Auto-Next', originReferrer: true, sandbox: 'allow-scripts allow-same-origin allow-presentation', useProxy: true },
   11: { name: 'Archive', isArchive: true, badge: 'Free' },
 };
 
