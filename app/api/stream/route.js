@@ -16,25 +16,34 @@
 // ║  Here it is ported to pure JS with tweetnacl — Vercel serverless  ║
 // ║  cannot spawn Python, so the route must be pure JS.               ║
 // ║                                                                    ║
-// ║  WHY THE BROWSER CANNOT FETCH THE URL ITSELF                      ║
-// ║  Every quality comes back requiresProxy:true. The CDN             ║
-// ║  (bcdn.hakunaymatata.com) serves the file to a plain request      ║
-// ║  (HTTP 206) but answers 429 to ANY request carrying a Referer or  ║
-// ║  Origin header — and a browser always sends Referer for a         ║
-// ║  cross-origin <video> load. So the player sets                    ║
-// ║  referrerPolicy="no-referrer" on the <video> element, which      ║
-// ║  makes the browser fetch exactly like the plain request that     ║
-// ║  works. The route itself only returns the URL; no video bytes    ║
-// ║  are proxied through Vercel (a full movie would blow the          ║
-// ║  serverless time limit).                                          ║
+// ║  WHAT requiresProxy MEANS (verified 2026-11-23)                   ║
+// ║  Every quality comes back requiresProxy:true, plus a headers      ║
+// ║  object, e.g. { referer: "https://filmboom.top/", origin:        ║
+// ║  "https://filmboom.top" }. The CDN (bcdnxw.hakunaymatata.com)     ║
+// ║  only serves the file with THOSE exact headers — and a browser    ║
+// ║  cannot set Referer/Origin on a <video> load (forbidden headers), ║
+// ║  so the raw CDN URL is unplayable in a browser by construction.   ║
+// ║  VidLink's own player (vidlink.pro/_next/static/chunks/3922-*.js, ║
+// ║  module 5196, function j) rewrites such URLs through its default  ║
+// ║  proxy base https://surge.flooderrr.store/ :                      ║
+// ║    {proxy}/mp{pathname}?{sign,t,...}&headers={sorted JSON}         ║
+// ║      &host={cdn origin}                                           ║
+// ║  The proxy fetches the CDN file with the required headers and     ║
+// ║  relays it to the browser. This route does the same rewrite and   ║
+// ║  returns the PROXIED URL as `url` (plus the raw CDN URL as        ║
+// ║  `directUrl` for reference). The browser fetches from the proxy,  ║
+// ║  NOT from Vercel — no video bytes ever pass through this route.   ║
 // ║                                                                    ║
-// ║  VERIFIED (2026-11-23, sandbox, Fight Club TMDB 550): the API    ║
-// ║  returns 200 with real MP4 URLs (360/480/720, HEVC) on bcdn; a   ║
-// ║  plain Range fetch gets 206, any Referer/Origin gets 429. TV     ║
-// ║  (Breaking Bad 1396 S1E1) also returns 200 with 360–1080, but    ║
-// ║  its CDN host (bcdnxw) answered 429 to every request from the    ║
-// ║  sandbox — TV direct playback is NOT yet proven and may need     ║
-// ║  VidLink's proxy. The live browser test is the verdict.          ║
+// ║  HONEST STATUS (2026-11-23, sandbox + live browser test)          ║
+// ║  The raw CDN URL 429s (no Referer) and 428s (filmboom.top         ║
+// ║  Referer) from the sandbox, and the live browser test failed to   ║
+// ║  load it ("Unable to play media"). The proxied URL 403s from the  ║
+// ║  sandbox with a Cloudflare "Attention Required!" challenge page   ║
+// ║  — Cloudflare gates the proxy for datacenter IPs (even the proxy  ║
+// ║  root 403s). So Direct CANNOT be proven working from here; the    ║
+// ║  verdict is a real phone (residential/mobile IP). If the proxy    ║
+// ║  also challenges the phone, the player falls back to autoembed.me ║
+// ║  instead of dead-ending.                                          ║
 // ║                                                                    ║
 // ║  The signed URLs carry ?sign=…&t=… and expire (TTL 3600s), so    ║
 // ║  the route fetches a fresh token + fresh URLs on every call —    ║
@@ -60,6 +69,65 @@ const VIDLINK_HEADERS = {
   Origin: 'https://vidlink.pro',
   Referer: 'https://vidlink.pro/',
 };
+
+// VidLink's proxy base, hardcoded as the default in its own player
+// (module 5196, function j). The browser fetches video from here, not
+// from Vercel — this route only returns the URL.
+const PROXY_BASE = 'https://surge.flooderrr.store';
+// Original query params the proxy keeps (VidLink module 5196, set `o`).
+// Everything else in the signed URL's query is dropped by the rewrite.
+const KEPT_QUERY_PARAMS = new Set([
+  'auth',
+  'expires',
+  'hash',
+  'key',
+  'sign',
+  't',
+  'token',
+]);
+
+// Mirror of VidLink's player function m() (module 5196) for MP4
+// qualities: {proxy}/mp{pathname}?{kept query}&headers={sorted JSON}
+// &host={cdn origin}. Returns null when the quality cannot be proxied
+// (no headers, bad URL, or the URL already carries a proxy param) —
+// the caller then falls back to the raw CDN URL.
+function proxiedMp4Url(q) {
+  if (!q || q.requiresProxy !== true || typeof q.url !== 'string') return null;
+  let u;
+  try {
+    u = new URL(q.url);
+  } catch {
+    return null;
+  }
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+  if (u.username || u.password || u.hash) return null;
+  const headers = q.headers;
+  if (!headers || typeof headers !== 'object' || Array.isArray(headers)) return null;
+  const clean = {};
+  for (const [k, v] of Object.entries(headers)) {
+    if (typeof v !== 'string' || /[\0\r\n]/.test(k + v)) return null;
+    clean[k] = v;
+  }
+  const existing = new URLSearchParams(u.search);
+  for (const k of existing.keys()) {
+    const lower = k.toLowerCase();
+    if (lower === 'headers' || lower === 'host') return null; // already proxied
+  }
+  const headersJson = JSON.stringify(
+    Object.fromEntries(
+      Object.entries(clean).sort(([a], [b]) => a.localeCompare(b))
+    )
+  );
+  const parts = [];
+  for (const [k, v] of existing.entries()) {
+    if (KEPT_QUERY_PARAMS.has(k.toLowerCase())) {
+      parts.push(`${encodeURIComponent(k)}=${encodeURIComponent(v)}`);
+    }
+  }
+  parts.push(`headers=${encodeURIComponent(headersJson)}`);
+  parts.push(`host=${encodeURIComponent(u.origin)}`);
+  return `${PROXY_BASE}/mp${u.pathname}?${parts.join('&')}`;
+}
 
 // Port of the decryptor's encrypt_token(): message = mediaId bytes +
 // 64-bit big-endian timestamp (now + 480s), sealed with NaCl secretbox
@@ -139,14 +207,25 @@ export async function GET(request) {
   }
 
   const out = Object.entries(qualities)
-    .map(([quality, q]) => ({
-      quality,
-      height: Number(quality) || 0,
-      url: q?.url || '',
-      type: q?.type || 'mp4',
-      codec: q?.codecName || null,
-      requiresProxy: q?.requiresProxy === true,
-    }))
+    .map(([quality, q]) => {
+      const directUrl = q?.url || '';
+      // requiresProxy MP4s are rewritten through VidLink's proxy (see
+      // proxiedMp4Url); anything else keeps its raw URL. `url` is what
+      // the player plays; `directUrl` is the raw CDN URL for reference.
+      const proxied =
+        q?.type === 'mp4' ? proxiedMp4Url(q) : null;
+      return {
+        quality,
+        height: Number(quality) || 0,
+        url: proxied || directUrl,
+        directUrl,
+        proxied: Boolean(proxied),
+        type: q?.type || 'mp4',
+        codec: q?.codecName || null,
+        requiresProxy: q?.requiresProxy === true,
+        headers: q?.headers || null,
+      };
+    })
     .filter((q) => q.url)
     .sort((a, b) => b.height - a.height);
 

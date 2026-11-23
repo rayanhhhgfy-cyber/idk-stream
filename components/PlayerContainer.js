@@ -132,12 +132,22 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   // Direct native player (server 0): a direct MP4 URL extracted by
   // /api/stream (VidLink). The URL is picked from the returned qualities
   // according to the quality setting; the <video> plays it with
-  // referrerPolicy="no-referrer" because the CDN 429s any request that
-  // carries a Referer or Origin header. On any failure the player falls
-  // back to server 4 (autoembed.me) once per title.
+  // referrerPolicy="no-referrer". On any failure the player falls back
+  // to server 4 (autoembed.me) once per title — and the fallback is
+  // re-armed whenever the user manually picks a server (switchServer),
+  // so a manual Direct pick that fails falls back instead of dead-ending.
+  // requiresProxy streams come back from /api/stream already rewritten
+  // through VidLink's proxy (surge.flooderrr.store); the raw CDN URL is
+  // unplayable in a browser because it needs the source's Referer/Origin
+  // headers, which a browser cannot forge on a <video> load.
   const [directQualities, setDirectQualities] = useState([]);
   const [directUrl, setDirectUrl] = useState('');
   const directFallbackDoneRef = useRef(false);
+  // Bumped whenever the user manually re-picks Direct (or hits Retry on
+  // Direct) so the /api/stream fetch below re-runs even when the server
+  // number itself did not change — without it the <video> would remount
+  // with no src and look dead.
+  const [directRefreshTick, setDirectRefreshTick] = useState(0);
 
   // Pick the best Direct URL for the current quality setting.
   const pickDirectUrl = useCallback((qualities, wanted) => {
@@ -248,7 +258,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         }
       });
     return () => { cancelled = true; };
-  }, [currentServer, type, id, season, episode]);
+  }, [currentServer, type, id, season, episode, directRefreshTick]);
 
   // Pick the Direct URL whenever the quality list or the quality setting changes
   useEffect(() => {
@@ -834,7 +844,16 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const dismissCountdown = () => { setShowCountdown(false); setCountdown(15); clearTimeout(autoPlayTimerRef.current); clearInterval(countdownRef.current); };
   const skipToNext = () => { clearInterval(countdownRef.current); setShowCountdown(false); setCountdown(15); if (onNextEpisode) onNextEpisode(); };
 
+  // Manual server change (dropdown, "Try Server" button): re-arm the
+  // Direct once-per-title fallback, so a manual Direct pick that fails
+  // falls back to autoembed.me instead of a dead end. Automatic failures
+  // still only fall back once per title — the automatic fallback calls
+  // setCurrentServer(4) directly and never comes through here. Re-picking
+  // Direct itself also forces a fresh /api/stream fetch (signed URLs
+  // expire), otherwise the <video> would remount with no src.
   const switchServer = (server) => {
+    directFallbackDoneRef.current = false;
+    if (server === 0) setDirectRefreshTick((t) => t + 1);
     setIframeLoading(true);
     setEmbedBlocked(false);
     setCurrentServer(server);
@@ -846,7 +865,15 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     return keys[(keys.indexOf(currentServer) + 1) % keys.length];
   };
 
+  // Retry: on Direct, re-arm the fallback and force a fresh /api/stream
+  // fetch. Without the re-fetch the <video> remounts with no src (the
+  // playback effect only runs when directUrl changes) and the button
+  // looks dead. A retry that fails again falls back to autoembed.me.
   const retryPlayer = () => {
+    if (currentServer === 0) {
+      directFallbackDoneRef.current = false;
+      setDirectRefreshTick((t) => t + 1);
+    }
     setEmbedBlocked(false);
     setIframeLoading(true);
   };
