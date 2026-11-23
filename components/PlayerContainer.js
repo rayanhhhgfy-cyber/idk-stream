@@ -4,11 +4,16 @@ import { Server, SkipForward, X, PictureInPicture2, PictureInPicture, Monitor, C
 import Hls from 'hls.js';
 
 const serverConfigs = {
+  // 0 = Direct: the site's own native <video> player, fed by /api/stream
+  // (VidLink extraction). It is the DEFAULT because the embeds below are
+  // blocked or captcha-gated for this domain. On any Direct failure the
+  // player falls back to server 4 automatically.
   // Only the servers that actually play are listed.
   // Everything else was tested and removed (2026-11-23): the vidsrc family
   // and 16 other providers all block this site's domain, Vidking is dead,
   // and the HLS player is dev-only (localhost). Do not re-add a provider
   // without a live browser test proving it plays from this domain.
+  0: { name: 'Direct', isDirect: true, badge: 'Native' },
   4: { name: 'autoembed.me', episodeOffset: 0, baseUrl: 'https://player.autoembed.me', badge: 'Backup' },
   5: { name: 'vidsrc.me', episodeOffset: 0, baseUrl: 'https://vidsrc.me', badge: 'Multi-Lang' },
   6: { name: 'VAPlayer', episodeOffset: 0, baseUrl: 'https://vaplayer.ru', badge: 'VidAPI' },
@@ -27,7 +32,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     }
   }, []);
 
-  const [currentServer, setCurrentServer] = useState(4);
+  const [currentServer, setCurrentServer] = useState(0);
 
   const [quality, setQuality] = useState('auto');
   const [showQualityMenu, setShowQualityMenu] = useState(false);
@@ -124,9 +129,31 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const [archiveTitle, setArchiveTitle] = useState('');
   const archiveAlternativesRef = useRef([]);
 
+  // Direct native player (server 0): a direct MP4 URL extracted by
+  // /api/stream (VidLink). The URL is picked from the returned qualities
+  // according to the quality setting; the <video> plays it with
+  // referrerPolicy="no-referrer" because the CDN 429s any request that
+  // carries a Referer or Origin header. On any failure the player falls
+  // back to server 4 (autoembed.me) once per title.
+  const [directQualities, setDirectQualities] = useState([]);
+  const [directUrl, setDirectUrl] = useState('');
+  const directFallbackDoneRef = useRef(false);
+
+  // Pick the best Direct URL for the current quality setting.
+  const pickDirectUrl = useCallback((qualities, wanted) => {
+    if (!qualities || qualities.length === 0) return '';
+    if (wanted === 'auto') return qualities[0]?.url || '';
+    const wantedHeight = parseInt(String(wanted).replace('p', ''), 10) || 0;
+    const exact = qualities.find((q) => q.height === wantedHeight);
+    if (exact) return exact.url;
+    const lower = qualities.filter((q) => q.height < wantedHeight);
+    if (lower.length) return lower[0].url; // closest below (list is desc)
+    return qualities[qualities.length - 1].url; // lowest available
+  }, []);
+
   const buildUrl = (server) => {
     const cfg = serverConfigs[server];
-    if (!cfg || cfg.isHls || cfg.isArchive) return '';
+    if (!cfg || cfg.isHls || cfg.isArchive || cfg.isDirect) return '';
     const ep = isTv ? Number(episode) + cfg.episodeOffset : null;
     // The three working embed providers share one URL shape:
     // /embed/movie/{id} and /embed/tv/{id}/{season}/{episode}.
@@ -184,6 +211,97 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       });
     return () => { cancelled = true; };
   }, [currentServer, title, year, type]);
+
+  // Direct: resolve a direct stream URL from /api/stream when picked
+  useEffect(() => {
+    if (currentServer !== 0) return;
+    let cancelled = false;
+    setIframeLoading(true);
+    setEmbedBlocked(false);
+    setLoadErrorMessage('');
+    setDirectQualities([]);
+    setDirectUrl('');
+    const params = new URLSearchParams({ type: type || 'movie', id: String(id) });
+    if (type === 'tv') {
+      params.set('season', String(season));
+      params.set('episode', String(episode));
+    }
+    fetch(`/api/stream?${params.toString()}`)
+      .then(async (r) => {
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(data?.error || 'Direct stream lookup failed');
+        if (cancelled) return;
+        const list = Array.isArray(data.qualities) ? data.qualities : [];
+        if (list.length === 0) throw new Error('No direct stream found for this title.');
+        setDirectQualities(list);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.warn('Direct stream failed, falling back to autoembed.me:', err?.message);
+        if (!directFallbackDoneRef.current) {
+          directFallbackDoneRef.current = true;
+          setCurrentServer(4);
+        } else {
+          setEmbedBlocked(true);
+          setIframeLoading(false);
+          setLoadErrorMessage('Direct stream failed. Try another server.');
+        }
+      });
+    return () => { cancelled = true; };
+  }, [currentServer, type, id, season, episode]);
+
+  // Pick the Direct URL whenever the quality list or the quality setting changes
+  useEffect(() => {
+    if (currentServer !== 0) return;
+    setDirectUrl(pickDirectUrl(directQualities, quality));
+  }, [directQualities, quality, currentServer, pickDirectUrl]);
+
+  // Direct playback: native <video>, MP4 progressive (no hls.js needed).
+  // referrerPolicy="no-referrer" is set on the element in JSX and the src
+  // is assigned here after mount, so the CDN never sees a Referer header.
+  useEffect(() => {
+    let isMounted = true;
+    if (!playerReady || currentServer !== 0 || !directUrl) return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handlePlaying = () => {
+      if (!isMounted) return;
+      setIframeLoading(false);
+      setIsBuffering(false);
+    };
+    const handleWaiting = () => {
+      if (!isMounted) return;
+      setIsBuffering(true);
+    };
+    const handleError = () => {
+      if (!isMounted) return;
+      console.warn('Direct video failed, falling back to autoembed.me.');
+      if (!directFallbackDoneRef.current) {
+        directFallbackDoneRef.current = true;
+        setCurrentServer(4);
+      } else {
+        setIframeLoading(false);
+        setEmbedBlocked(true);
+        setLoadErrorMessage('Direct stream failed to play. Try another server.');
+      }
+    };
+
+    video.addEventListener('playing', handlePlaying);
+    video.addEventListener('waiting', handleWaiting);
+    video.addEventListener('error', handleError);
+
+    video.src = directUrl;
+    video.load();
+    video.play().catch(() => {});
+
+    return () => {
+      isMounted = false;
+      video.removeEventListener('playing', handlePlaying);
+      video.removeEventListener('waiting', handleWaiting);
+      video.removeEventListener('error', handleError);
+    };
+  }, [currentServer, directUrl, playerReady]);
 
   // Archive direct playback: native <video>, hls.js only for .m3u8 streams
   useEffect(() => {
@@ -466,6 +584,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
 
   // Reset player when parameters change
   useEffect(() => {
+    directFallbackDoneRef.current = false;
     setTimeout(() => {
       setIframeLoading(true);
       setShowCountdown(false);
@@ -474,6 +593,8 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       setLoadErrorMessage('');
       setCountdown(15);
       setQuality('auto');
+      setDirectQualities([]);
+      setDirectUrl('');
     }, 0);
     clearTimeout(autoPlayTimerRef.current);
     clearInterval(countdownRef.current);
@@ -760,7 +881,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         }}
       >
 
-        {playerReady && !serverConfigs[currentServer].isHls && !serverConfigs[currentServer].isArchive && (
+        {playerReady && !serverConfigs[currentServer].isHls && !serverConfigs[currentServer].isArchive && !serverConfigs[currentServer].isDirect && (
           <iframe
             key={`${currentServer}-${id}-${season}-${episode}-${quality}`}
             ref={iframeRef}
@@ -797,6 +918,25 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
             data-player="true"
             autoPlay
             title={archiveTitle || title}
+          />
+        )}
+
+        {/* Direct native player: the <video> plays the extracted MP4 straight
+            from the CDN. referrerPolicy="no-referrer" is REQUIRED — the CDN
+            429s any request carrying a Referer or Origin header, and a plain
+            <video> load would send the page URL as Referer. No src here on
+            purpose: the effect assigns video.src after mount, once this
+            attribute is already in the DOM. */}
+        {playerReady && serverConfigs[currentServer].isDirect && directUrl && !embedBlocked && (
+          <video
+            ref={videoRef}
+            controls
+            playsInline
+            referrerPolicy="no-referrer"
+            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none', background: '#000' }}
+            data-player="true"
+            autoPlay
+            title={title}
           />
         )}
 
