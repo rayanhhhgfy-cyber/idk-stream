@@ -131,15 +131,18 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
 
   // Direct native player (server 0): a direct MP4 URL extracted by
   // /api/stream (VidLink). The URL is picked from the returned qualities
-  // according to the quality setting; the <video> plays it with
-  // referrerPolicy="no-referrer". On any failure the player falls back
-  // to server 4 (autoembed.me) once per title — and the fallback is
+  // according to the quality setting; the <video> plays it through
+  // /api/proxy, which fetches the CDN file server-side with the source's
+  // Referer/Origin headers (a browser cannot set them on a <video> load)
+  // and streams each Range chunk back. On any failure the player falls
+  // back to server 4 (autoembed.me) once per title — and the fallback is
   // re-armed whenever the user manually picks a server (switchServer),
   // so a manual Direct pick that fails falls back instead of dead-ending.
   // requiresProxy streams come back from /api/stream already rewritten
-  // through VidLink's proxy (surge.flooderrr.store); the raw CDN URL is
-  // unplayable in a browser because it needs the source's Referer/Origin
-  // headers, which a browser cannot forge on a <video> load.
+  // through VidLink's proxy (surge.flooderrr.store), but that proxy is
+  // Cloudflare-gated and failed on a real phone too — so the player now
+  // uses the RAW CDN URL (directUrl) as the /api/proxy upstream instead.
+  // referrerPolicy="no-referrer" is set on the element in JSX.
   const [directQualities, setDirectQualities] = useState([]);
   const [directUrl, setDirectUrl] = useState('');
   const directFallbackDoneRef = useRef(false);
@@ -149,16 +152,24 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   // with no src and look dead.
   const [directRefreshTick, setDirectRefreshTick] = useState(0);
 
-  // Pick the best Direct URL for the current quality setting.
+  // Pick the best Direct URL for the current quality setting. Returns
+  // the RAW CDN URL (directUrl) — the <video> never fetches it directly;
+  // it goes through /api/proxy, which adds the source's Referer/Origin
+  // headers server-side (a browser cannot set them on a <video> load).
   const pickDirectUrl = useCallback((qualities, wanted) => {
     if (!qualities || qualities.length === 0) return '';
-    if (wanted === 'auto') return qualities[0]?.url || '';
-    const wantedHeight = parseInt(String(wanted).replace('p', ''), 10) || 0;
-    const exact = qualities.find((q) => q.height === wantedHeight);
-    if (exact) return exact.url;
-    const lower = qualities.filter((q) => q.height < wantedHeight);
-    if (lower.length) return lower[0].url; // closest below (list is desc)
-    return qualities[qualities.length - 1].url; // lowest available
+    let picked;
+    if (wanted === 'auto') {
+      picked = qualities[0];
+    } else {
+      const wantedHeight = parseInt(String(wanted).replace('p', ''), 10) || 0;
+      picked = qualities.find((q) => q.height === wantedHeight);
+      if (!picked) {
+        const lower = qualities.filter((q) => q.height < wantedHeight);
+        picked = lower.length ? lower[0] : qualities[qualities.length - 1];
+      }
+    }
+    return picked?.directUrl || picked?.url || '';
   }, []);
 
   const buildUrl = (server) => {
@@ -267,8 +278,11 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   }, [directQualities, quality, currentServer, pickDirectUrl]);
 
   // Direct playback: native <video>, MP4 progressive (no hls.js needed).
-  // referrerPolicy="no-referrer" is set on the element in JSX and the src
-  // is assigned here after mount, so the CDN never sees a Referer header.
+  // The src is NOT the CDN URL itself — it is our own /api/proxy, which
+  // fetches the CDN file server-side with the source's Referer/Origin
+  // headers (a browser cannot set them on a <video> load) and streams
+  // each Range chunk back. referrerPolicy="no-referrer" is set on the
+  // element in JSX and the src is assigned here after mount.
   useEffect(() => {
     let isMounted = true;
     if (!playerReady || currentServer !== 0 || !directUrl) return;
@@ -301,7 +315,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     video.addEventListener('waiting', handleWaiting);
     video.addEventListener('error', handleError);
 
-    video.src = directUrl;
+    video.src = `/api/proxy?u=${encodeURIComponent(directUrl)}`;
     video.load();
     video.play().catch(() => {});
 
@@ -948,12 +962,12 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           />
         )}
 
-        {/* Direct native player: the <video> plays the extracted MP4 straight
-            from the CDN. referrerPolicy="no-referrer" is REQUIRED — the CDN
-            429s any request carrying a Referer or Origin header, and a plain
-            <video> load would send the page URL as Referer. No src here on
-            purpose: the effect assigns video.src after mount, once this
-            attribute is already in the DOM. */}
+        {/* Direct native player: the <video> plays the extracted MP4 via
+            our own /api/proxy (which fetches the CDN file server-side
+            with the source's Referer/Origin headers). referrerPolicy=
+            "no-referrer" is kept so the page URL never leaks as a
+            Referer. No src here on purpose: the effect assigns
+            video.src after mount, once this attribute is in the DOM. */}
         {playerReady && serverConfigs[currentServer].isDirect && directUrl && !embedBlocked && (
           <video
             ref={videoRef}
