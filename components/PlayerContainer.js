@@ -20,6 +20,18 @@ const serverConfigs = {
   9: { name: 'VidFast', episodeOffset: 0, baseUrl: 'https://vidfast.vc', badge: 'Subs', originReferrer: true },
   10: { name: 'CineSrc', episodeOffset: 0, baseUrl: 'https://cinesrc.st', badge: 'Auto-Next', originReferrer: true, sandbox: 'allow-scripts allow-same-origin allow-presentation' },
   11: { name: 'Archive', isArchive: true, badge: 'Free' },
+  // New candidate providers (tested 2026-11-23): template-based URLs.
+  // movie/tv are path templates; {id} = TMDB id, {s} = season, {e} = episode.
+  12: { name: 'VidLink', episodeOffset: 0, baseUrl: 'https://vidlink.pro', badge: 'Fast', originReferrer: true, movie: '/movie/{id}', tv: '/tv/{id}/{s}/{e}' },
+  13: { name: 'Embed.su', episodeOffset: 0, baseUrl: 'https://embed.su', badge: 'Backup', originReferrer: true, movie: '/embed/movie/{id}', tv: '/embed/tv/{id}/{s}/{e}' },
+  14: { name: 'MultiEmbed', episodeOffset: 0, baseUrl: 'https://multiembed.mov', badge: 'Multi', originReferrer: true, movie: '/?video_id={id}&tmdb=1', tv: '/?video_id={id}&tmdb=1&s={s}&e={e}' },
+  15: { name: '2Embed', episodeOffset: 0, baseUrl: 'https://www.2embed.cc', badge: 'Classic', originReferrer: true, movie: '/embed/{id}', tv: '/embedtv/{id}&s={s}&e={e}' },
+  16: { name: 'VidSrc.cc', episodeOffset: 0, baseUrl: 'https://vidsrc.cc', badge: 'HD', originReferrer: true, movie: '/v2/embed/movie/{id}', tv: '/v2/embed/tv/{id}/{s}/{e}' },
+  17: { name: 'VidSrc.xyz', episodeOffset: 0, baseUrl: 'https://vidsrc.xyz', badge: 'Backup', originReferrer: true, movie: '/embed/movie/{id}', tv: '/embed/tv/{id}/{s}-{e}' },
+  18: { name: 'MoviesApi', episodeOffset: 0, baseUrl: 'https://moviesapi.club', badge: 'Fast', originReferrer: true, movie: '/movie/{id}', tv: '/tv/{id}-{s}-{e}' },
+  19: { name: 'Smashy', episodeOffset: 0, baseUrl: 'https://player.smashy.stream', badge: 'Fast', originReferrer: true, movie: '/movie/{id}', tv: '/tv/{id}?s={s}&e={e}' },
+  20: { name: 'EmbedWave', episodeOffset: 0, baseUrl: 'https://embedwave.cc', badge: 'No Ads', originReferrer: true, movie: '/embed/movie/{id}', tv: '/embed/tv/{id}/{s}/{e}' },
+  21: { name: 'EmbedMaster', episodeOffset: 0, baseUrl: 'https://embedmaster.link', badge: 'Multi', originReferrer: true, movie: '/movie/{id}', tv: '/tv/{id}/{s}/{e}' },
 };
 
 export default function PlayerContainer({ type, id, season, episode, autoPlayNext, onNextEpisode, nextEpisodeTitle, episodeRuntime, onSyncTime, title, year }) {
@@ -179,6 +191,12 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       url = isTv
         ? `${cfg.baseUrl}/embed/tv/${id}`
         : `${cfg.baseUrl}/embed/movie/${id}`;
+    }
+    // New providers (12+): template-based URL from the config.
+    // {id} = TMDB id, {s} = season, {e} = episode (offset applied).
+    if (!url && cfg.movie) {
+      const tpl = isTv ? (cfg.tv || cfg.movie) : cfg.movie;
+      url = cfg.baseUrl + tpl.replace('{id}', id).replace('{s}', season).replace('{e}', ep);
     }
     const params = [];
     if (server === 2) {
