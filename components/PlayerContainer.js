@@ -13,6 +13,15 @@ const serverConfigs = {
   5: { name: 'vidsrc.me', episodeOffset: 0, baseUrl: 'https://vidsrc.me', badge: 'Multi-Lang' },
   6: { name: 'VAPlayer', episodeOffset: 0, baseUrl: 'https://vaplayer.ru', badge: 'VidAPI' },
   11: { name: 'Archive', isArchive: true, badge: 'Free' },
+  // Third batch (tested 2026-11-23): template-based URLs.
+  // movie/tv are path templates; {id} = TMDB id, {s} = season, {e} = episode.
+  12: { name: 'VidSrc.to', episodeOffset: 0, baseUrl: 'https://vidsrc.to', badge: 'Backup', originReferrer: true, movie: '/embed/movie/{id}', tv: '/embed/tv/{id}/{s}/{e}' },
+  13: { name: 'VidSrc.top', episodeOffset: 0, baseUrl: 'https://vid-src.top', badge: 'Backup', originReferrer: true, movie: '/embed/movie/{id}', tv: '/embed/tv/{id}/{s}/{e}' },
+  14: { name: 'VsEmbed', episodeOffset: 0, baseUrl: 'https://vsembed.ru', badge: 'Fast', originReferrer: true, movie: '/embed/movie/{id}', tv: '/embed/tv/{id}/{s}-{e}' },
+  15: { name: 'VidFast.pro', episodeOffset: 0, baseUrl: 'https://vidfast.pro', badge: 'Subs', originReferrer: true, movie: '/movie/{id}', tv: '/tv/{id}/{s}/{e}' },
+  16: { name: 'Vidzee', episodeOffset: 0, baseUrl: 'https://player.vidzee.wtf', badge: 'Fast', originReferrer: true, movie: '/embed/movie/{id}', tv: '/embed/tv/{id}/{s}/{e}' },
+  17: { name: 'Videasy', episodeOffset: 0, baseUrl: 'https://player.videasy.net', badge: 'Multi', originReferrer: true, movie: '/movie/{id}', tv: '/tv/{id}/{s}/{e}' },
+  18: { name: '111movies', episodeOffset: 0, baseUrl: 'https://111movies.com', badge: 'Full', originReferrer: true, movie: '/movie/{id}', tv: '/tv/{id}/{s}/{e}' },
 };
 
 export default function PlayerContainer({ type, id, season, episode, autoPlayNext, onNextEpisode, nextEpisodeTitle, episodeRuntime, onSyncTime, title, year }) {
@@ -133,6 +142,12 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     let url = isTv
       ? `${cfg.baseUrl}/embed/tv/${id}/${season}/${ep}`
       : `${cfg.baseUrl}/embed/movie/${id}`;
+    // Template-based providers (12+): build the URL from the config.
+    // {id} = TMDB id, {s} = season, {e} = episode (offset applied).
+    if (cfg.movie) {
+      const tpl = isTv ? (cfg.tv || cfg.movie) : cfg.movie;
+      url = cfg.baseUrl + tpl.replace('{id}', id).replace('{s}', season).replace('{e}', ep);
+    }
     const params = [];
     if (quality !== 'auto') params.push(`quality=${quality}`);
     if (autoPlayNext) params.push('autoplay=1', 'autoPlay=true');
