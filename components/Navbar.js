@@ -182,15 +182,15 @@ export default function Navbar() {
           {/* LOGO */}
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
             <div style={{
-              background: '#22d3ee',
+              background: '#e50914',
               padding: '6px',
               borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 0 15px rgba(34, 211, 238, 0.4)'
+              boxShadow: '0 0 15px rgba(229, 9, 20, 0.4)'
             }}>
-              <Tv style={{ color: '#080d18', width: 22, height: 22 }} />
+              <Tv style={{ color: 'white', width: 22, height: 22 }} />
             </div>
             <span style={{
               color: 'white',
@@ -198,7 +198,7 @@ export default function Navbar() {
               fontWeight: 800,
               letterSpacing: '-1px'
             }}>
-              idk<span style={{ color: '#22d3ee' }}>stream</span>
+              idk<span style={{ color: '#e50914' }}>stream</span>
             </span>
           </Link>
 
@@ -334,7 +334,7 @@ export default function Navbar() {
                 }}
               >
                 {/* Cyan icon + link name */}
-                <Icon style={{ width: 20, height: 20, color: '#22d3ee' }} />
+                <Icon style={{ width: 20, height: 20, color: '#e50914' }} />
                 {link.name}
               </Link>
             );

@@ -43,7 +43,7 @@ export default function CastSection({ credits }) {
             gap: '8px',
             marginBottom: '12px',
           }}>
-            <Clapperboard style={{ width: 18, height: 18, color: '#22d3ee' }} />
+            <Clapperboard style={{ width: 18, height: 18, color: '#e50914' }} />
             <h4 style={{
               color: 'white',
               fontSize: '1rem',
@@ -69,8 +69,8 @@ export default function CastSection({ credits }) {
                   transition: 'all 0.25s ease',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(34,211,238,0.1)';
-                  e.currentTarget.style.borderColor = 'rgba(34,211,238,0.3)';
+                  e.currentTarget.style.background = 'rgba(229,9,20,0.1)';
+                  e.currentTarget.style.borderColor = 'rgba(229,9,20,0.3)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
@@ -125,7 +125,7 @@ export default function CastSection({ credits }) {
             alignItems: 'center',
             gap: '8px',
           }}>
-            <User style={{ width: 18, height: 18, color: '#22d3ee' }} />
+            <User style={{ width: 18, height: 18, color: '#e50914' }} />
             Cast
           </h4>
 
@@ -170,7 +170,7 @@ export default function CastSection({ credits }) {
                   transition: 'border-color 0.25s ease',
                 }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(34,211,238,0.5)';
+                    e.currentTarget.style.borderColor = 'rgba(229,9,20,0.5)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';

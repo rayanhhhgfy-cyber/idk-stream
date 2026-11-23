@@ -87,7 +87,7 @@ export default function Footer() {
           transform: 'translateX(-50%)',
           width: '120px',
           height: '2px',
-          background: 'linear-gradient(90deg, transparent, #22d3ee, transparent)',
+          background: 'linear-gradient(90deg, transparent, #e50914, transparent)',
         }}
       />
 
@@ -117,7 +117,7 @@ export default function Footer() {
           {/* Red icon box */}
           <div
             style={{
-              background: 'linear-gradient(135deg, #22d3ee, #0e7490)',
+              background: 'linear-gradient(135deg, #e50914, #b20710)',
               borderRadius: '12px',
               padding: '8px',
               display: 'flex',
@@ -134,7 +134,7 @@ export default function Footer() {
               letterSpacing: '-0.5px',
             }}
           >
-            idk<span style={{ color: '#22d3ee' }}>stream</span>
+            idk<span style={{ color: '#e50914' }}>stream</span>
           </span>
         </div>
 
@@ -183,7 +183,7 @@ export default function Footer() {
               fontWeight: 700,
               // Gradient text effect:
               // Creates a gradient background, then clips it to the text shape.
-              background: 'linear-gradient(135deg, #22d3ee, #67e8f9)',
+              background: 'linear-gradient(135deg, #e50914, #ff3d3d)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
@@ -202,8 +202,8 @@ export default function Footer() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                background: 'linear-gradient(135deg, #22d3ee, #0e7490)',
-                color: '#080d18',
+                background: 'linear-gradient(135deg, #e50914, #b20710)',
+                color: 'white',
                 border: 'none',
                 padding: '10px 20px',
                 borderRadius: '12px',
@@ -211,7 +211,7 @@ export default function Footer() {
                 fontWeight: 600,
                 cursor: 'pointer',
                 marginTop: '8px',
-                boxShadow: '0 4px 15px rgba(34,211,238,0.3)',
+                boxShadow: '0 4px 15px rgba(229,9,20,0.3)',
                 transition: 'transform 0.2s',
               }}
               onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}

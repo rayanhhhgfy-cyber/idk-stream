@@ -52,13 +52,13 @@ export default function EpisodeSelector({
           style={{
             padding: '20px 24px',
             borderBottom: '1px solid rgba(255,255,255,0.06)',
-            background: 'rgba(34,211,238,0.04)',
+            background: 'rgba(229,9,20,0.04)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
             <span
               style={{
-                background: '#22d3ee',
+                background: '#e50914',
                 color: 'white',
                 fontSize: '0.65rem',
                 fontWeight: 700,
@@ -228,11 +228,11 @@ export default function EpisodeSelector({
                 borderRadius: '14px',
                 cursor: 'pointer',
                 background: isActive
-                  ? 'rgba(34,211,238,0.08)'
+                  ? 'rgba(229,9,20,0.08)'
                   : isHovered
                     ? 'rgba(255,255,255,0.04)'
                     : 'transparent',
-                borderLeft: isActive ? '3px solid #22d3ee' : '3px solid transparent',
+                borderLeft: isActive ? '3px solid #e50914' : '3px solid transparent',
                 transition: 'all 0.2s ease',
                 marginBottom: '4px',
                 position: 'relative',
@@ -297,11 +297,11 @@ export default function EpisodeSelector({
                       width: '40px',
                       height: '40px',
                       borderRadius: '50%',
-                      background: 'rgba(34,211,238,0.9)',
+                      background: 'rgba(229,9,20,0.9)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      boxShadow: '0 4px 15px rgba(34,211,238,0.4)',
+                      boxShadow: '0 4px 15px rgba(229,9,20,0.4)',
                     }}
                   >
                     <Play style={{ width: 18, height: 18, color: 'white', marginLeft: '2px' }} />
@@ -325,10 +325,10 @@ export default function EpisodeSelector({
                       style={{
                         height: '100%',
                         width: `${Math.min(progressPct, 100)}%`,
-                        background: 'linear-gradient(90deg, #22d3ee, #67e8f9)',
+                        background: 'linear-gradient(90deg, #e50914, #ff3d3d)',
                         borderRadius: '0 2px 2px 0',
                         transition: 'width 0.3s ease',
-                        boxShadow: '0 0 6px rgba(34,211,238,0.5)',
+                        boxShadow: '0 0 6px rgba(229,9,20,0.5)',
                       }}
                     />
                   </div>
@@ -409,7 +409,7 @@ export default function EpisodeSelector({
                         style={{
                           height: '100%',
                           width: `${Math.min(progressPct, 100)}%`,
-                          background: '#22d3ee',
+                          background: '#e50914',
                           borderRadius: '2px',
                           transition: 'width 0.3s ease',
                         }}

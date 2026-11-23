@@ -67,8 +67,8 @@ export default function MoviesPage() {
   const activeSelectStyle = (isActive) => ({
     ...selectStyle,
     ...(isActive ? {
-      borderColor: 'rgba(34,211,238,0.5)',
-      background: 'rgba(34,211,238,0.08)',
+      borderColor: 'rgba(229,9,20,0.5)',
+      background: 'rgba(229,9,20,0.08)',
     } : {}),
   });
 
@@ -78,8 +78,8 @@ export default function MoviesPage() {
 
         {/* Page Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-          <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'linear-gradient(135deg, rgba(34,211,238,0.2), rgba(34,211,238,0.05))', border: '1px solid rgba(34,211,238,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Film style={{ width: 24, height: 24, color: '#22d3ee' }} />
+          <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'linear-gradient(135deg, rgba(229,9,20,0.2), rgba(229,9,20,0.05))', border: '1px solid rgba(229,9,20,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Film style={{ width: 24, height: 24, color: '#e50914' }} />
           </div>
           <div>
             <h1 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 900, color: 'white', letterSpacing: '-1px' }}>Movies</h1>
@@ -95,7 +95,7 @@ export default function MoviesPage() {
           backdropFilter: 'blur(10px)', alignItems: 'center',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#888', fontSize: '0.85rem', fontWeight: 600, marginRight: '8px' }}>
-            <SlidersHorizontal style={{ width: 16, height: 16, color: '#22d3ee' }} /> Filters
+            <SlidersHorizontal style={{ width: 16, height: 16, color: '#e50914' }} /> Filters
           </div>
 
           {/* Genre Filter */}
@@ -118,7 +118,7 @@ export default function MoviesPage() {
           {/* Clear Filters */}
           {(selectedGenre || selectedYear || selectedSort !== 'popularity.desc') && (
             <button onClick={() => { setSelectedGenre(''); setSelectedYear(''); setSelectedSort('popularity.desc'); setPage(1); setMovies([]); }}
-              style={{ background: 'rgba(34,211,238,0.1)', border: '1px solid rgba(34,211,238,0.3)', color: '#22d3ee', padding: '10px 16px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.25s' }}>
+              style={{ background: 'rgba(229,9,20,0.1)', border: '1px solid rgba(229,9,20,0.3)', color: '#e50914', padding: '10px 16px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.25s' }}>
               Clear All
             </button>
           )}
@@ -143,7 +143,7 @@ export default function MoviesPage() {
         {/* Loading Spinner */}
         {loading && (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
-            <div style={{ width: '36px', height: '36px', border: '3px solid rgba(34,211,238,0.2)', borderTopColor: '#22d3ee', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            <div style={{ width: '36px', height: '36px', border: '3px solid rgba(229,9,20,0.2)', borderTopColor: '#e50914', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
             <style jsx>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </div>
         )}
@@ -151,7 +151,7 @@ export default function MoviesPage() {
         {/* Load More Button */}
         {!loading && page < totalPages && (
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: '48px' }}>
-            <button onClick={loadMore} style={{ background: 'linear-gradient(135deg, #22d3ee, #0e7490)', color: '#080d18', border: 'none', padding: '14px 40px', borderRadius: '12px', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.3s ease', boxShadow: '0 4px 20px rgba(34,211,238,0.3)' }}>
+            <button onClick={loadMore} style={{ background: 'linear-gradient(135deg, #e50914, #b20710)', color: 'white', border: 'none', padding: '14px 40px', borderRadius: '12px', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.3s ease', boxShadow: '0 4px 20px rgba(229,9,20,0.3)' }}>
               Load More Movies
             </button>
           </div>

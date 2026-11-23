@@ -13,12 +13,6 @@ const serverConfigs = {
   5: { name: 'vidsrc.me', episodeOffset: 0, baseUrl: 'https://vidsrc.me', badge: 'Multi-Lang' },
   6: { name: 'VAPlayer', episodeOffset: 0, baseUrl: 'https://vaplayer.ru', badge: 'VidAPI' },
   11: { name: 'Archive', isArchive: true, badge: 'Free' },
-  // Fourth batch (tested 2026-11-23): closest relatives of the working
-  // servers — vidsrc.net is the ?tmdb= mirror of vidsrc.me; autoembed.pro
-  // and autoembed.cc are the same family as the working autoembed.me.
-  12: { name: 'VidSrc.net', episodeOffset: 0, baseUrl: 'https://vidsrc.net', badge: 'Backup', originReferrer: true, movie: '/embed/movie/?tmdb={id}', tv: '/embed/tv/?tmdb={id}' },
-  13: { name: 'AutoEmbed.pro', episodeOffset: 0, baseUrl: 'https://autoembed.pro', badge: 'Backup', originReferrer: true, movie: '/embed/movie/{id}', tv: '/embed/tv/{id}/{s}/{e}' },
-  14: { name: 'AutoEmbed.cc', episodeOffset: 0, baseUrl: 'https://autoembed.cc', badge: 'Backup', originReferrer: true, movie: '/embed/movie/{id}', tv: '/embed/tv/{id}/{s}/{e}' },
 };
 
 export default function PlayerContainer({ type, id, season, episode, autoPlayNext, onNextEpisode, nextEpisodeTitle, episodeRuntime, onSyncTime, title, year }) {
@@ -752,7 +746,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           borderRadius: '12px',
           overflow: 'hidden',
           border: '1px solid rgba(255, 255, 255, 0.25)',
-          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.9), 0 0 20px rgba(34, 211, 238, 0.25)',
+          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.9), 0 0 20px rgba(229, 9, 20, 0.25)',
         } : {
           position: 'relative',
           width: '100%',
@@ -761,7 +755,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           borderRadius: '20px',
           overflow: 'hidden',
           border: '1px solid rgba(255, 255, 255, 0.1)',
-          boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 30px rgba(34, 211, 238, 0.08)',
+          boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 30px rgba(229, 9, 20, 0.08)',
           backdropFilter: 'blur(10px)',
         }}
       >
@@ -809,7 +803,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         {iframeLoading && playerReady && !embedBlocked && (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#111', zIndex: 5, pointerEvents: 'none' }}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ width: '36px', height: '36px', border: '3px solid rgba(34,211,238,0.2)', borderTopColor: '#22d3ee', borderRadius: '50%', animation: 'playerSpin 0.8s linear infinite', margin: '0 auto 10px' }} />
+              <div style={{ width: '36px', height: '36px', border: '3px solid rgba(229,9,20,0.2)', borderTopColor: '#e50914', borderRadius: '50%', animation: 'playerSpin 0.8s linear infinite', margin: '0 auto 10px' }} />
               <p style={{ color: '#555', fontSize: '0.8rem' }}>Loading player...</p>
             </div>
           </div>
@@ -829,7 +823,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
               <h3 style={{ color: 'white', margin: '0 0 8px' }}>Player Unavailable</h3>
               <p style={{ color: '#aaa', margin: '0 0 16px' }}>{loadErrorMessage || 'The embed provider blocked playback or the content failed to load.'}</p>
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <button onClick={() => window.open(buildUrl(currentServer), '_blank')} style={{ background: '#22d3ee', color: '#080d18', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Open Player in New Tab</button>
+                <button onClick={() => window.open(buildUrl(currentServer), '_blank')} style={{ background: '#e50914', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Open Player in New Tab</button>
                 <button onClick={retryPlayer} style={{ background: 'rgba(255,255,255,0.06)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Retry</button>
                 <button onClick={() => switchServer(nextServer())} style={{ background: 'rgba(255,255,255,0.04)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Try Server {nextServer()}</button>
               </div>
@@ -851,10 +845,10 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
               width: '40px',
               height: '40px',
               borderRadius: '10px',
-              border: pipActive ? '1px solid rgba(34,211,238,0.6)' : '1px solid rgba(255,255,255,0.15)',
-              background: pipActive ? 'rgba(34,211,238,0.25)' : 'rgba(0,0,0,0.6)',
+              border: pipActive ? '1px solid rgba(229,9,20,0.6)' : '1px solid rgba(255,255,255,0.15)',
+              background: pipActive ? 'rgba(229,9,20,0.25)' : 'rgba(0,0,0,0.6)',
               backdropFilter: 'blur(8px)',
-              color: pipActive ? '#67e8f9' : 'rgba(255,255,255,0.85)',
+              color: pipActive ? '#ff3d3d' : 'rgba(255,255,255,0.85)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -863,11 +857,11 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
               padding: 0,
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = pipActive ? 'rgba(34,211,238,0.4)' : 'rgba(255,255,255,0.15)';
+              e.currentTarget.style.background = pipActive ? 'rgba(229,9,20,0.4)' : 'rgba(255,255,255,0.15)';
               e.currentTarget.style.transform = 'scale(1.08)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = pipActive ? 'rgba(34,211,238,0.25)' : 'rgba(0,0,0,0.6)';
+              e.currentTarget.style.background = pipActive ? 'rgba(229,9,20,0.25)' : 'rgba(0,0,0,0.6)';
               e.currentTarget.style.transform = 'scale(1)';
             }}
           >
@@ -888,15 +882,15 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            background: 'rgba(34,211,238,0.2)',
-            border: '1px solid rgba(34,211,238,0.4)',
+            background: 'rgba(229,9,20,0.2)',
+            border: '1px solid rgba(229,9,20,0.4)',
             backdropFilter: 'blur(8px)',
             borderRadius: '8px',
             padding: '5px 12px',
             animation: 'pipPulse 2s ease-in-out infinite',
           }}>
-            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22d3ee', boxShadow: '0 0 6px rgba(34,211,238,0.8)' }} />
-            <span style={{ color: '#67e8f9', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase' }}>PiP Active</span>
+            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#e50914', boxShadow: '0 0 6px rgba(229,9,20,0.8)' }} />
+            <span style={{ color: '#ff3d3d', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase' }}>PiP Active</span>
           </div>
         )}
 
@@ -904,14 +898,14 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         {showCountdown && (
           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 100%)', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', zIndex: 20, animation: 'fadeInUp 0.4s ease-out' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1 }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(34,211,238,0.15)', border: '3px solid #22d3ee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>{countdown}</div>
+              <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(229,9,20,0.15)', border: '3px solid #e50914', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 700, color: 'white', flexShrink: 0 }}>{countdown}</div>
               <div>
                 <p style={{ color: '#aaa', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '2px' }}>Up Next</p>
                 <p style={{ color: 'white', fontSize: '0.95rem', fontWeight: 600 }}>{nextEpisodeTitle || 'Next Episode'}</p>
               </div>
             </div>
             <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-              <button onClick={skipToNext} style={{ background: '#22d3ee', color: '#080d18', border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button onClick={skipToNext} style={{ background: '#e50914', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <SkipForward style={{ width: 14, height: 14 }} /> Play Now
               </button>
               <button onClick={dismissCountdown} style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', padding: '10px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -940,14 +934,14 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         <div className="server-selector-header">
           <div className="server-title-group">
             <div className="server-icon-pulse">
-              <Server style={{ width: 15, height: 15, color: '#22d3ee' }} />
+              <Server style={{ width: 15, height: 15, color: '#e50914' }} />
             </div>
             <span className="server-title">
               <span className="status-dot" /> Streaming Mirrors
             </span>
           </div>
           <span className="server-active-label">
-            Active: <strong style={{ color: '#22d3ee' }}>{serverConfigs[currentServer]?.name}</strong>
+            Active: <strong style={{ color: '#e50914' }}>{serverConfigs[currentServer]?.name}</strong>
           </span>
         </div>
 
@@ -959,7 +953,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
               aria-haspopup="listbox"
               aria-expanded={showServerDropdown}
             >
-              <Server style={{ width: 14, height: 14, color: '#22d3ee' }} />
+              <Server style={{ width: 14, height: 14, color: '#e50914' }} />
               <span className="srv-name">{serverConfigs[currentServer]?.name}</span>
               {serverConfigs[currentServer]?.badge && (
                 <span className="srv-badge">{serverConfigs[currentServer].badge}</span>
@@ -982,7 +976,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
                         onClick={() => { switchServer(srvNum); setShowServerDropdown(false); }}
                         className={`server-dropdown-opt ${active ? 'selected' : ''}`}
                       >
-                        <Server style={{ width: 14, height: 14, color: active ? '#22d3ee' : '#888' }} />
+                        <Server style={{ width: 14, height: 14, color: active ? '#e50914' : '#888' }} />
                         <span className="srv-name">{cfg.name}</span>
                         {cfg.badge && (
                           <span className="srv-badge">
@@ -1073,12 +1067,12 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           width: 28px;
           height: 28px;
           border-radius: 8px;
-          background: rgba(34, 211, 238, 0.15);
-          border: 1px solid rgba(34, 211, 238, 0.3);
+          background: rgba(229, 9, 20, 0.15);
+          border: 1px solid rgba(229, 9, 20, 0.3);
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 0 12px rgba(34, 211, 238, 0.25);
+          box-shadow: 0 0 12px rgba(229, 9, 20, 0.25);
         }
 
         .server-title {
@@ -1152,7 +1146,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         }
 
         .server-dropdown-btn:hover {
-          border-color: rgb(34 211 238 / 0.76);
+          border-color: rgb(229 9 20 / 0.76);
           background: rgb(24 34 54 / 0.82);
         }
 
@@ -1197,12 +1191,12 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         }
 
         .server-dropdown-opt:hover {
-          background: rgb(34 211 238 / 0.1);
+          background: rgb(229 9 20 / 0.1);
           color: #ffffff;
         }
 
         .server-dropdown-opt.selected {
-          background: rgb(34 211 238 / 0.15);
+          background: rgb(229 9 20 / 0.15);
           color: #ffffff;
           font-weight: 700;
         }
@@ -1246,9 +1240,9 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         }
 
         .action-btn.pip-active {
-          border-color: rgba(34, 211, 238, 0.6);
-          background: linear-gradient(135deg, rgba(34, 211, 238, 0.3), rgba(34, 211, 238, 0.1));
-          color: #22d3ee;
+          border-color: rgba(229, 9, 20, 0.6);
+          background: linear-gradient(135deg, rgba(229, 9, 20, 0.3), rgba(229, 9, 20, 0.1));
+          color: #e50914;
         }
 
         .quality-dropdown-menu {
@@ -1287,8 +1281,8 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
         }
 
         .quality-opt-btn.selected {
-          background: rgba(34, 211, 238, 0.25);
-          color: #22d3ee;
+          background: rgba(229, 9, 20, 0.25);
+          color: #e50914;
           font-weight: 700;
         }
 

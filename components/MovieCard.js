@@ -10,9 +10,11 @@
 // ║    - In the watch history section                                  ║
 // ║    - In the Movies and TV Shows browse pages                       ║
 // ║                                                                    ║
-// ║  FEATURES:                                                         ║
-// ║    - Hover effect: card scales up and shows a play button overlay  ║
-// ║    - Star rating badge in the top-right corner                     ║
+// ║  STYLE: Lumi's portrait poster card (lumi-movies.vercel.app) —    ║
+// ║  thin outline around the poster, rating pill at the bottom-right  ║
+// ║  inside the poster, title (max 2 lines) + grey year below, and   ║
+// ║  NO lift, scale or glow on hover — in the site's red palette.     ║
+// ║    - Star rating badge in the bottom-right corner of the poster    ║
 // ║    - Clicking the card navigates to the watch page                 ║
 // ║    - "compact" mode for smaller cards on mobile devices            ║
 // ║    - RED PROGRESS BAR at the bottom for "Continue Watching" items ║
@@ -74,7 +76,9 @@ export default function MovieCard({ movie, type = 'movie', compact = false }) {
         flexShrink: 0,
       }}
     >
-      {/* ── Card Container ── */}
+      {/* ── Card Container ──
+          Lumi style: the card does NOT lift, scale or glow on hover.
+          Hover only reveals the play overlay. */}
       <div
         style={{
           width: `${cardWidth}px`,
@@ -82,22 +86,18 @@ export default function MovieCard({ movie, type = 'movie', compact = false }) {
           position: 'relative',
           borderRadius: '12px',
           overflow: 'visible',
-          transition: 'transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94), box-shadow 0.35s ease',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'scale(1.06) translateY(-6px)';
-          e.currentTarget.style.boxShadow = '0 16px 40px rgba(0,0,0,0.5), 0 0 20px rgba(34,211,238,0.1)';
           const overlay = e.currentTarget.querySelector('.play-overlay');
           if (overlay) overlay.style.opacity = '1';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'scale(1) translateY(0)';
-          e.currentTarget.style.boxShadow = 'none';
           const overlay = e.currentTarget.querySelector('.play-overlay');
           if (overlay) overlay.style.opacity = '0';
         }}
       >
-        {/* ── Poster Image Area ── */}
+        {/* ── Poster Image Area ──
+            Lumi style: thin muted outline around the poster only. */}
         <div
           style={{
             position: 'relative',
@@ -106,6 +106,7 @@ export default function MovieCard({ movie, type = 'movie', compact = false }) {
             borderRadius: '12px',
             overflow: 'hidden',
             background: '#1a1a1a',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
           }}
         >
           {posterPath ? (
@@ -152,34 +153,35 @@ export default function MovieCard({ movie, type = 'movie', compact = false }) {
                 width: compact ? '38px' : '48px',
                 height: compact ? '38px' : '48px',
                 borderRadius: '50%',
-                background: 'rgba(34, 211, 238, 0.9)',
+                background: 'rgba(229, 9, 20, 0.9)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 4px 20px rgba(34, 211, 238, 0.4)',
               }}
             >
               <Play style={{ width: compact ? 16 : 22, height: compact ? 16 : 22, color: 'white', marginLeft: '2px' }} />
             </div>
           </div>
 
-          {/* ── Rating Badge ── */}
+          {/* ── Rating Badge ──
+              Lumi style: small black pill at the BOTTOM-right of the
+              poster, gold star + white rating. */}
           {rating > 0 && (
             <div
               style={{
                 position: 'absolute',
-                top: '8px',
+                bottom: '8px',
                 right: '8px',
                 background: 'rgba(0,0,0,0.75)',
                 backdropFilter: 'blur(8px)',
-                borderRadius: '8px',
+                borderRadius: '7px',
                 padding: compact ? '2px 6px' : '4px 8px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '3px',
                 fontSize: compact ? '0.65rem' : '0.75rem',
                 fontWeight: 600,
-                color: '#fbbf24',
+                color: '#ffffff',
               }}
             >
               <Star style={{ width: compact ? 10 : 12, height: compact ? 10 : 12, fill: '#fbbf24', color: '#fbbf24' }} />
@@ -204,31 +206,34 @@ export default function MovieCard({ movie, type = 'movie', compact = false }) {
               <div style={{
                 height: '100%',
                 width: `${Math.min(progress.percentage, 100)}%`,
-                background: 'linear-gradient(90deg, #22d3ee, #67e8f9)',
+                background: 'linear-gradient(90deg, #e50914, #ff3d3d)',
                 borderRadius: '0 2px 2px 0',
                 transition: 'width 0.3s ease',
-                boxShadow: '0 0 8px rgba(34,211,238,0.5)',
               }} />
             </div>
           )}
         </div>
 
-        {/* ── Title and Year ── */}
+        {/* ── Title and Year ──
+            Lumi style: title wraps to at most 2 lines, year in muted
+            grey below it. */}
         <div style={{ padding: '8px 2px 4px' }}>
           <h3
             style={{
               color: 'white',
-              fontSize: compact ? '0.75rem' : '0.875rem',
+              fontSize: compact ? '0.75rem' : '0.9375rem',
               fontWeight: 600,
               overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              marginBottom: '2px',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              lineHeight: '1.25',
+              marginBottom: '4px',
             }}
           >
             {title}
           </h3>
-          <p style={{ color: '#555', fontSize: compact ? '0.65rem' : '0.75rem' }}>
+          <p style={{ color: '#a1a1a1', fontSize: compact ? '0.65rem' : '0.8125rem' }}>
             {releaseDate ? new Date(releaseDate).getFullYear() : ''}
           </p>
         </div>

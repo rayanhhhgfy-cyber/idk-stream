@@ -23,7 +23,7 @@
    SECTION 1: CUSTOM PROPERTIES (CSS Variables)
    ═══════════════════════════════════════════════════════════════════════
    CSS variables are like "shortcuts" for colors and values.
-   Instead of typing "#22d3ee" every time we want our cyan accent,
+   Instead of typing "#e50914" every time we want our red color,
    we can just type "var(--accent)" — it's shorter AND if we ever
    want to change the red color, we only change it in ONE place!
 
@@ -36,25 +36,25 @@
      --text-primary = "White"
 */
 :root {
-  --accent: #22d3ee;             /* Lumi cyan accent (was Netflix red) */
-  --accent-hover: #0e7490;       /* A darker cyan for hover states */
-  --bg-primary: #000000;         /* The main background color (black, like Lumi) */
-  --bg-secondary: #080d18;       /* Lumi theme navy */
-  --bg-card: rgb(9 15 28);       /* Lumi glass panel base */
-  --text-primary: #f5f7fa;       /* Main text color (Lumi foreground) */
-  --text-secondary: #8C97A8;     /* Secondary text color (Lumi muted) */
-  --glass: rgb(12 19 34 / 0.52); /* Lumi glass control background */
-  /* Lumi glass system (from lumi-movies.vercel.app) */
-  --ui-glass-control-bg: rgb(12 19 34 / 0.52);
-  --ui-glass-control-bg-hover: rgb(24 34 54 / 0.82);
-  --ui-glass-control-bg-active: rgb(42 29 47 / 0.86);
-  --ui-glass-panel-bg: rgb(9 15 28 / 0.84);
-  --ui-glass-panel-strong-bg: rgb(9 15 28 / 0.92);
-  --ui-glass-overlay-bg: rgb(3 6 14 / 0.82);
-  --ui-glass-border: rgb(139 155 180 / 0.34);
-  --ui-glass-border-strong: rgb(165 178 199 / 0.52);
-  --ui-glass-border-hover: rgb(34 211 238 / 0.76);
-  --ui-glass-divider: rgb(139 155 180 / 0.28);
+  --accent: #e50914;             /* Our brand red color (Netflix-style red) */
+  --accent-hover: #b20710;       /* A darker red for hover states */
+  --bg-primary: #0a0a0a;         /* The main background color (nearly black) */
+  --bg-secondary: #141414;       /* A slightly lighter dark background */
+  --bg-card: #1a1a1a;            /* Background for card elements */
+  --text-primary: #ffffff;       /* Main text color (white) */
+  --text-secondary: #a1a1a1;     /* Secondary text color (gray) */
+  --glass: rgba(10, 10, 10, 0.7); /* Semi-transparent dark for glass effects */
+  /* Glass system (Lumi structure, recolored to the red palette) */
+  --ui-glass-control-bg: rgba(20, 20, 20, 0.6);
+  --ui-glass-control-bg-hover: rgba(40, 40, 40, 0.82);
+  --ui-glass-control-bg-active: rgba(229, 9, 20, 0.2);
+  --ui-glass-panel-bg: rgba(26, 26, 26, 0.84);
+  --ui-glass-panel-strong-bg: rgba(26, 26, 26, 0.92);
+  --ui-glass-overlay-bg: rgba(0, 0, 0, 0.82);
+  --ui-glass-border: rgba(255, 255, 255, 0.08);
+  --ui-glass-border-strong: rgba(255, 255, 255, 0.15);
+  --ui-glass-border-hover: rgb(229 9 20 / 0.76);
+  --ui-glass-divider: rgba(255, 255, 255, 0.08);
   --ui-blur-glass: 24px;
   --ui-blur-glass-strong: 32px;
   --ui-radius-control: 999px;
@@ -63,9 +63,9 @@
   --ui-radius-card: 12px;
   --ui-radius-row: 12px;
   --ui-radius-input: 10px;
-  --ui-shadow-control: 0 8px 18px rgb(3 4 14 / 0.34);
-  --ui-shadow-panel: 0 12px 30px rgb(3 4 14 / 0.58);
-  --ui-shadow-dialog: 0 30px 80px rgb(3 4 14 / 0.62);
+  --ui-shadow-control: 0 8px 18px rgb(0 0 0 / 0.34);
+  --ui-shadow-panel: 0 12px 30px rgb(0 0 0 / 0.58);
+  --ui-shadow-dialog: 0 30px 80px rgb(0 0 0 / 0.62);
 }
 
 
@@ -219,12 +219,12 @@ body {
   100% { background-position: 200% 0; }  /* Light sweeps to far right */
 }
 
-/* pulse-glow: A pulsing cyan glow that gets brighter and dimmer.
+/* pulse-glow: A pulsing red glow that gets brighter and dimmer.
    Used for: the "Trending Now" badge's glowing dot.
    Visual: the glow alternates between subtle and strong. */
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(34, 211, 238, 0.2); } /* Subtle glow */
-  50% { box-shadow: 0 0 40px rgba(34, 211, 238, 0.4); }      /* Stronger glow */
+  0%, 100% { box-shadow: 0 0 20px rgba(229, 9, 20, 0.2); } /* Subtle glow */
+  50% { box-shadow: 0 0 40px rgba(229, 9, 20, 0.4); }      /* Stronger glow */
 }
 
 /* spin: A continuous spinning/rotating animation.
@@ -359,12 +359,13 @@ body {
    "will-change: transform" tells the browser to optimize for
    the transform animation (makes it smoother). */
 .movie-card {
-  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.35s ease;
-  will-change: transform;
+  /* Lumi style: cards do not lift, scale or glow on hover. */
+  transition: none;
+  will-change: auto;
 }
 .movie-card:hover {
-  transform: scale(1.08) translateY(-8px);  /* Scale up 8% and lift 8px */
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(34, 211, 238, 0.15);
+  transform: none;
+  box-shadow: none;
   z-index: 10;  /* Appear above neighboring cards */
 }
 
@@ -384,7 +385,7 @@ body {
    single solid color. Works by creating a gradient background,
    then clipping it to only show through the text characters. */
 .gradient-text {
-  background: linear-gradient(135deg, #ffffff 0%, #22d3ee 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #e50914 100%);
   -webkit-background-clip: text;            /* Clip gradient to text (Chrome/Safari) */
   -webkit-text-fill-color: transparent;     /* Make text fill transparent */
   background-clip: text;                    /* Standard property */
@@ -421,7 +422,7 @@ body {
    ═══════════════════════════════════════════════════════════════════════
    Glass components copied from Lumi's design language
    (lumi-movies.vercel.app): dark navy panels, pill controls,
-   cyan accent on hover, heavy blur. Use these classes for any
+   red accent on hover, heavy blur. Use these classes for any
    panel, control, pill or dialog that should look like Lumi.
 */
 .ui-glass-control {
@@ -474,7 +475,7 @@ body {
   transition: background-color .16s ease, color .16s ease;
 }
 .ui-glass-row:hover {
-  background: rgb(34 211 238 / 0.1);
+  background: rgb(229 9 20 / 0.1);
 }
 .ui-glass-divider {
   background: var(--ui-glass-divider);

@@ -65,10 +65,10 @@ export default function CollapsibleSidebar({ children, title = 'Chat' }) {
             style={{
               position: 'fixed', bottom: '20px', right: '20px', zIndex: 40,
               width: '56px', height: '56px', borderRadius: '50%',
-              background: 'linear-gradient(135deg, #22d3ee, #0e7490)',
+              background: 'linear-gradient(135deg, #e50914, #b20710)',
               border: 'none', color: 'white', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 8px 24px rgba(34,211,238,0.4)',
+              boxShadow: '0 8px 24px rgba(229,9,20,0.4)',
             }}
           >
             <MessageSquare style={{ width: 24, height: 24 }} />

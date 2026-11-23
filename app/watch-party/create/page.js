@@ -84,7 +84,7 @@ export default function CreateRoom() {
   return (
     <div style={{ background: '#0a0a0a', minHeight: '100vh', paddingTop: '100px', paddingBottom: '80px' }}>
       <div style={{ maxWidth: '680px', margin: '0 auto', padding: '0 24px' }}>
-        <Link href="/watch-party" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#22d3ee', fontSize: '0.9rem', textDecoration: 'none', fontWeight: 600, marginBottom: '24px' }}>
+        <Link href="/watch-party" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#e50914', fontSize: '0.9rem', textDecoration: 'none', fontWeight: 600, marginBottom: '24px' }}>
           <ArrowLeft style={{ width: 16, height: 16 }} /> Back to rooms
         </Link>
 
@@ -135,7 +135,7 @@ export default function CreateRoom() {
                 type="checkbox"
                 checked={hasPassword}
                 onChange={(e) => { setHasPassword(e.target.checked); if (!e.target.checked) setPassword(''); }}
-                style={{ accentColor: '#22d3ee', width: '16px', height: '16px', cursor: 'pointer' }}
+                style={{ accentColor: '#e50914', width: '16px', height: '16px', cursor: 'pointer' }}
               />
               <Lock style={{ width: 14, height: 14 }} />
               Lock room with password
@@ -147,7 +147,7 @@ export default function CreateRoom() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter room password..."
                 style={{
-                  width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(34,211,238,0.3)',
+                  width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(229,9,20,0.3)',
                   borderRadius: '12px', padding: '12px 16px', color: 'white', fontSize: '0.85rem',
                   outline: 'none', marginTop: '12px',
                 }}
@@ -164,7 +164,7 @@ export default function CreateRoom() {
               <div style={{
                 display: 'flex', gap: '16px', alignItems: 'center',
                 background: 'rgba(255,255,255,0.04)', borderRadius: '12px',
-                padding: '12px', border: '1px solid rgba(34,211,238,0.3)',
+                padding: '12px', border: '1px solid rgba(229,9,20,0.3)',
               }}>
                 <div style={{ position: 'relative', width: '60px', height: '90px', borderRadius: '8px', overflow: 'hidden', background: '#1a1a1a', flexShrink: 0 }}>
                   {selectedMedia.poster_path && (
@@ -250,11 +250,11 @@ export default function CreateRoom() {
             disabled={creating || !roomName.trim() || !selectedMedia || !displayNameInput.trim()}
             style={{
               width: '100%', padding: '16px', borderRadius: '14px', fontSize: '1rem', fontWeight: 700,
-              background: 'linear-gradient(135deg, #22d3ee, #0e7490)',
+              background: 'linear-gradient(135deg, #e50914, #b20710)',
               color: 'white', border: 'none', cursor: creating ? 'default' : 'pointer',
               opacity: (creating || !roomName.trim() || !selectedMedia || !displayNameInput.trim()) ? 0.5 : 1,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              boxShadow: '0 4px 20px rgba(34,211,238,0.3)',
+              boxShadow: '0 4px 20px rgba(229,9,20,0.3)',
             }}
           >
             {creating ? (

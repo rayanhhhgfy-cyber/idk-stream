@@ -64,7 +64,7 @@ export default function RoomCard({ room }) {
                 borderRadius: '20px', padding: '4px 8px',
                 display: 'flex', alignItems: 'center',
               }}>
-                <Lock style={{ width: 12, height: 12, color: '#22d3ee' }} />
+                <Lock style={{ width: 12, height: 12, color: '#e50914' }} />
               </div>
             )}
           </div>

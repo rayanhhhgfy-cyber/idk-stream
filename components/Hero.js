@@ -192,14 +192,14 @@ export default function Hero({ featured }) {
             display: 'inline-flex',
             alignItems: 'center',
             gap: '8px',
-            background: 'rgba(34, 211, 238, 0.15)',
-            border: '1px solid rgba(34, 211, 238, 0.3)',
+            background: 'rgba(229, 9, 20, 0.15)',
+            border: '1px solid rgba(229, 9, 20, 0.3)',
             borderRadius: '999px',
             padding: '6px 14px',
             marginBottom: '16px',
             fontSize: '0.75rem',
             fontWeight: 600,
-            color: '#22d3ee',
+            color: '#e50914',
             textTransform: 'uppercase',
             letterSpacing: '1px',
           }}
@@ -209,7 +209,7 @@ export default function Hero({ featured }) {
             width: '6px',
             height: '6px',
             borderRadius: '50%',
-            background: '#22d3ee',
+            background: '#e50914',
             animation: 'pulse-glow 2s infinite',
           }} />
           Trending Now
@@ -296,8 +296,8 @@ export default function Hero({ featured }) {
               alignItems: 'center',
               gap: '8px',
               padding: '14px 32px',
-              background: 'linear-gradient(135deg, #22d3ee, #0e7490)',
-              color: '#080d18',
+              background: 'linear-gradient(135deg, #e50914, #b20710)',
+              color: 'white',
               borderRadius: '12px',
               fontWeight: 700,
               fontSize: '0.95rem',
@@ -305,10 +305,10 @@ export default function Hero({ featured }) {
               border: 'none',
               cursor: 'pointer',
               transition: 'all 0.3s ease',
-              boxShadow: '0 4px 20px rgba(34, 211, 238, 0.3)',
+              boxShadow: '0 4px 20px rgba(229, 9, 20, 0.3)',
             }}
           >
-            <Play style={{ width: 18, height: 18, fill: '#080d18' }} />
+            <Play style={{ width: 18, height: 18, fill: 'white' }} />
             Watch Now
           </Link>
           {/* "More Info" — Secondary ghost button with info icon */}
@@ -383,7 +383,7 @@ export default function Hero({ featured }) {
                 width: idx === currentIndex ? '24px' : '8px', // Active dot is wider
                 height: '8px',
                 borderRadius: '999px',
-                background: idx === currentIndex ? '#22d3ee' : 'rgba(255,255,255,0.3)',
+                background: idx === currentIndex ? '#e50914' : 'rgba(255,255,255,0.3)',
                 border: 'none',
                 cursor: 'pointer',
                 transition: 'all 0.3s ease',
