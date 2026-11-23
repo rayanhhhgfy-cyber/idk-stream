@@ -20,6 +20,14 @@ const serverConfigs = {
   9: { name: 'VidFast', episodeOffset: 0, baseUrl: 'https://vidfast.vc', badge: 'Subs', originReferrer: true },
   10: { name: 'CineSrc', episodeOffset: 0, baseUrl: 'https://cinesrc.st', badge: 'Auto-Next', originReferrer: true, sandbox: 'allow-scripts allow-same-origin allow-presentation' },
   11: { name: 'Archive', isArchive: true, badge: 'Free' },
+  // Second batch (tested 2026-11-23): template-based URLs.
+  // movie/tv are path templates; {id} = TMDB id, {s} = season, {e} = episode.
+  12: { name: 'AutoEmbed.co', episodeOffset: 0, baseUrl: 'https://autoembed.co', badge: 'Backup', originReferrer: true, movie: '/movie/tmdb/{id}', tv: '/tv/tmdb/{id}-{s}-{e}' },
+  13: { name: 'Vidora', episodeOffset: 0, baseUrl: 'https://vidora.su', badge: 'Fast', originReferrer: true, movie: '/movie/{id}', tv: '/tv/{id}/{s}/{e}' },
+  14: { name: 'VixSrc', episodeOffset: 0, baseUrl: 'https://vixsrc.to', badge: 'Fast', originReferrer: true, movie: '/movie/{id}', tv: '/tv/{id}/{s}/{e}' },
+  15: { name: 'RiveStream', episodeOffset: 0, baseUrl: 'https://rivestream.org', badge: 'Multi', originReferrer: true, movie: '/embed?type=movie&id={id}', tv: '/embed?type=tv&id={id}&season={s}&episode={e}' },
+  16: { name: 'Vidify', episodeOffset: 0, baseUrl: 'https://vidify.top', badge: 'Fast', originReferrer: true, movie: '/embed/movie/{id}', tv: '/embed/tv/{id}/{s}/{e}' },
+  17: { name: 'VidSrc.icu', episodeOffset: 0, baseUrl: 'https://vidsrc.icu', badge: 'Backup', originReferrer: true, movie: '/embed/movie/{id}', tv: '/embed/tv/{id}/{s}/{e}' },
 };
 
 export default function PlayerContainer({ type, id, season, episode, autoPlayNext, onNextEpisode, nextEpisodeTitle, episodeRuntime, onSyncTime, title, year }) {
@@ -179,6 +187,12 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
       url = isTv
         ? `${cfg.baseUrl}/embed/tv/${id}`
         : `${cfg.baseUrl}/embed/movie/${id}`;
+    }
+    // Template-based providers (12+): build the URL from the config.
+    // {id} = TMDB id, {s} = season, {e} = episode (offset applied).
+    if (!url && cfg.movie) {
+      const tpl = isTv ? (cfg.tv || cfg.movie) : cfg.movie;
+      url = cfg.baseUrl + tpl.replace('{id}', id).replace('{s}', season).replace('{e}', ep);
     }
     const params = [];
     if (server === 2) {
