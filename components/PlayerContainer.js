@@ -15,7 +15,7 @@ const serverConfigs = {
   // that send NO referrer, and block embeds that send this site's full page URL.
   // Sending just the origin (https://idk-stream.vercel.app/) is what Lumi does
   // and what the providers accept. CineSrc also gets Lumi's sandbox.
-  7: { name: 'VidSrc.buzz', episodeOffset: 0, baseUrl: 'https://vidsrc.buzz', badge: 'Fast', originReferrer: true },
+  7: { name: 'VidSrc.buzz', episodeOffset: 0, baseUrl: 'https://vidsrc.buzz', badge: 'Fast', originReferrer: true, useProxy: true },
   8: { name: 'VidSrc.wtf', episodeOffset: 0, baseUrl: 'https://vidsrc.wtf', badge: 'Backup', originReferrer: true },
   9: { name: 'VidFast', episodeOffset: 0, baseUrl: 'https://vidfast.vc', badge: 'Subs', originReferrer: true },
   10: { name: 'CineSrc', episodeOffset: 0, baseUrl: 'https://cinesrc.st', badge: 'Auto-Next', originReferrer: true, sandbox: 'allow-scripts allow-same-origin allow-presentation' },
@@ -204,6 +204,12 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
     // The extra autoplay params broke the providers' URL matching.
     if (autoPlayNext && server < 7) params.push('autoplay=1', 'autoPlay=true');
     if (params.length) url += (url.includes('?') ? '&' : '?') + params.join('&');
+    // Proxied servers: serve the embed through this site's own
+    // /api/embed-proxy so the provider sees a direct server-side visit
+    // (no Referer) instead of an embed from this domain, which it blocks.
+    if (cfg.useProxy) {
+      return `/api/embed-proxy?u=${encodeURIComponent(url)}`;
+    }
     return url;
   };
 
