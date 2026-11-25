@@ -20,18 +20,15 @@ const serverConfigs = {
   // so no provider ever sees this domain as an embedding origin.
   // CineSrc (15), VidSrc.buzz (16), VidFast (17) and VidSrc.wtf (18) were
   // added 2026-11-23 at Rayyan's direct order, ported from Lumi's provider
-  // list (src/lib/tmdb-player-sources.ts). This overrides the "do not re-add
-  // without a live test" rule for these four only. Live-test results:
-  // (to be filled in after the live browser test on Fight Club, TMDB 550.)
+  // list. Live browser test on Fight Club (TMDB 550) 2026-11-23: ALL FOUR
+  // BLOCKED — blank player, "This content is blocked" (domain allowlist).
+  // Removed 2026-11-25 at Rayyan's order ("remove the dead servers").
+  // Do not re-add without a live browser test proving they play here.
   4: { name: 'autoembed.me', episodeOffset: 0, baseUrl: 'https://player.autoembed.me', badge: 'Backup' },
   5: { name: 'vidsrc.me', episodeOffset: 0, baseUrl: 'https://vidsrc.me', badge: 'Multi-Lang' },
   6: { name: 'VAPlayer', episodeOffset: 0, baseUrl: 'https://vaplayer.ru', badge: 'VidAPI' },
   11: { name: 'Archive', isArchive: true, badge: 'Free' },
   14: { name: 'Bingr', isBingr: true, badge: 'Direct' },
-  15: { name: 'CineSrc', episodeOffset: 0, baseUrl: 'https://cinesrc.st', badge: 'Lumi', originReferrer: true, sandbox: 'allow-scripts allow-same-origin allow-presentation', movie: '/embed/movie/{id}?autoplay=true&autonext=false&continueprompt=false', tv: '/embed/tv/{id}?s={s}&e={e}&autoplay=true&autonext=false&continueprompt=false' },
-  16: { name: 'VidSrc.buzz', episodeOffset: 0, baseUrl: 'https://vidsrc.buzz', badge: 'Embed', originReferrer: true, movie: '/embed/movie/{id}?autoplay=true', tv: '/embed/tv/{id}/{s}/{e}?autoplay=true' },
-  17: { name: 'VidFast', episodeOffset: 0, baseUrl: 'https://vidfast.vc', badge: 'Fast', originReferrer: true, movie: '/movie/{id}?autoPlay=true&autoNext=false', tv: '/tv/{id}/{s}/{e}?autoPlay=true&autoNext=false' },
-  18: { name: 'VidSrc.wtf', episodeOffset: 0, baseUrl: 'https://vidsrc.wtf', badge: 'Embed', originReferrer: true, movie: '/1/movie/{id}', tv: '/1/tv/{id}/{s}/{e}' },
 };
 
 export default function PlayerContainer({ type, id, season, episode, autoPlayNext, onNextEpisode, nextEpisodeTitle, episodeRuntime, onSyncTime, title, year }) {

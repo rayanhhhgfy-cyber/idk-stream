@@ -31,10 +31,32 @@ function contentTypeFor(file) {
   return 'video/mp4';
 }
 
-function pickFiles(files, identifier) {
+function isTrailerItem(meta) {
+  const values = [];
+  const subject = meta?.metadata?.subject;
+  if (typeof subject === 'string') values.push(subject);
+  else if (Array.isArray(subject)) values.push(...subject);
+  const collection = meta?.metadata?.collection;
+  if (typeof collection === 'string') values.push(collection);
+  else if (Array.isArray(collection)) values.push(...collection);
+  return values.some(
+    (v) => typeof v === 'string' && /trailer/i.test(v),
+  );
+}
+
+function pickFiles(files, identifier, minLengthSeconds = 1800) {
   const playable = (files || [])
     .filter((f) => f && f.name && /\.(mp4|m4v|ogv|webm|m3u8)$/i.test(f.name))
-    .filter((f) => !/sample|trailer|preview|thumb/i.test(f.name));
+    .filter((f) => !/sample|trailer|preview|thumb/i.test(f.name))
+    .filter((f) => {
+      // A clip or trailer is not the film: drop files far too short to be
+      // the title. Archive metadata carries `length` in seconds and `size`
+      // in bytes; use length when known, else fall back to file size.
+      const length = Number.parseFloat(f.length);
+      if (Number.isFinite(length)) return length >= minLengthSeconds;
+      const size = Number.parseInt(f.size, 10);
+      return !Number.isFinite(size) || size >= 50_000_000;
+    });
   // Prefer SD 512kb files (small, fast to start), then any mp4, then HLS
   playable.sort((a, b) => {
     const score = (f) =>
@@ -54,6 +76,10 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const title = (searchParams.get('title') || '').trim();
   const year = (searchParams.get('year') || '').trim();
+  // Feature films run 30+ minutes, TV episodes 10+; anything shorter is a
+  // clip or trailer and must never be served as the title itself.
+  const minLengthSeconds =
+    searchParams.get('type') === 'tv' ? 600 : 1800;
   if (!title) {
     return Response.json({ error: 'title is required' }, { status: 400 });
   }
@@ -89,7 +115,8 @@ export async function GET(request) {
           });
           if (!metaRes.ok) return null;
           const meta = await metaRes.json();
-          const files = pickFiles(meta?.files, doc.identifier);
+          if (isTrailerItem(meta)) return null;
+          const files = pickFiles(meta?.files, doc.identifier, minLengthSeconds);
           return files.length ? { doc, files } : null;
         } catch {
           return null;

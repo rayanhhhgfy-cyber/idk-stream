@@ -5,6 +5,9 @@
 // never loads a third-party embed, so no provider can block this domain.
 // No API key. If Bingr's API is unreachable, falls back to scraping the
 // bingr.one watch page for an .m3u8 URL.
+// ?debug=1 adds a `debug` object to the JSON response showing exactly which
+// stage failed (metadata status, per-server POST results, candidate hosts,
+// probe outcomes, scrape diagnostics) — no secrets, no raw HTML.
 import { bingrMediaProxyUrl, unwrapBingrMediaUrl } from '@/lib/bingr-player';
 
 export const dynamic = 'force-dynamic';
@@ -60,18 +63,40 @@ async function resolveBingrWatchPage(
   season,
   episode,
   signal,
+  diag,
 ) {
   const pageUrl = new URL(
     mediaType === 'tv'
       ? `https://bingr.one/watch/tv/${tmdbId}/${season}/${episode}`
       : `https://bingr.one/watch/movie/${tmdbId}`,
   );
-  const response = await fetch(pageUrl, {
-    signal,
-    redirect: 'follow',
-    headers: { ...HEADERS, Accept: 'text/html,application/xhtml+xml' },
-  });
-  if (!response.ok) return null;
+  let response;
+  try {
+    response = await fetch(pageUrl, {
+      signal,
+      redirect: 'follow',
+      headers: { ...HEADERS, Accept: 'text/html,application/xhtml+xml' },
+    });
+  } catch {
+    diag.scrape = {
+      status: null,
+      htmlLength: 0,
+      m3u8Count: 0,
+      hasNextData: false,
+      hasRsc: false,
+    };
+    return null;
+  }
+  if (!response.ok) {
+    diag.scrape = {
+      status: response.status,
+      htmlLength: 0,
+      m3u8Count: 0,
+      hasNextData: false,
+      hasRsc: false,
+    };
+    return null;
+  }
   const html = await response.text();
   const matches = Array.from(
     new Set([
@@ -79,6 +104,13 @@ async function resolveBingrWatchPage(
       ...(html.match(/https?:\\\/\\\/[^\s"'<]+\.m3u8[^\s"'<]*/gi) || []),
     ]),
   );
+  diag.scrape = {
+    status: response.status,
+    htmlLength: html.length,
+    m3u8Count: matches.length,
+    hasNextData: html.includes('__NEXT_DATA__'),
+    hasRsc: html.includes('self.__next_f'),
+  };
   for (const match of matches) {
     try {
       const raw = decodeBingrHtmlUrl(match).replace(/\\$/, '');
@@ -97,6 +129,14 @@ export async function GET(request) {
   if (!tmdbId)
     return Response.json({ error: 'Invalid TMDB ID' }, { status: 400 });
   const mediaType = normalizeMediaType(params.get('type'));
+  const debug = params.get('debug') === '1';
+  const diag = {
+    metadata: null,
+    posts: [],
+    candidates: null,
+    probes: [],
+    scrape: null,
+  };
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 45000);
   const options = {
@@ -109,6 +149,10 @@ export async function GET(request) {
     const detailsUrl = new URL('https://api.bingr.one');
     detailsUrl.pathname = `/api/details/${mediaType}/${Number(tmdbId)}`;
     const detailsResponse = await fetch(detailsUrl, options);
+    diag.metadata = {
+      status: detailsResponse.status,
+      ok: detailsResponse.ok,
+    };
     let details = {};
     if (detailsResponse.ok) {
       failureCode = 'metadata-response';
@@ -147,14 +191,27 @@ export async function GET(request) {
     );
     failureCode = 'stream-response';
     const candidates = [];
-    for (const result of responses) {
+    for (let i = 0; i < responses.length; i++) {
+      const result = responses[i];
+      const entry = {
+        srv: SERVER_IDS[i],
+        status: null,
+        ok: false,
+        sources: 0,
+      };
+      diag.posts.push(entry);
       if (result.status !== 'fulfilled' || !result.value?.ok) continue;
+      entry.status = result.value.status;
+      entry.ok = true;
       let payload;
       try {
         payload = await result.value.json();
       } catch {
         continue;
       }
+      entry.sources = Array.isArray(payload.sources)
+        ? payload.sources.length
+        : 0;
       for (const source of (payload.sources || []).slice(0, 20)) {
         if (typeof source.url !== 'string') continue;
         try {
@@ -164,6 +221,10 @@ export async function GET(request) {
         }
       }
     }
+    diag.candidates = {
+      count: candidates.length,
+      hosts: [...new Set(candidates.map((u) => u.hostname))].slice(0, 12),
+    };
     candidates.sort((a, b) => {
       const rank = (url) => {
         if (/\.hscow\.com$/.test(url.hostname)) return 5;
@@ -174,6 +235,9 @@ export async function GET(request) {
       };
       return rank(b) - rank(a);
     });
+    const probe = (host, outcome) => {
+      diag.probes.push({ host, outcome });
+    };
     for (const url of candidates.slice(0, 12)) {
       try {
         const candidateResponse = await fetch(url, {
@@ -181,24 +245,35 @@ export async function GET(request) {
           redirect: 'follow',
           headers: HEADERS,
         });
-        if (!candidateResponse.ok) continue;
+        if (!candidateResponse.ok) {
+          probe(url.hostname, `http-${candidateResponse.status}`);
+          continue;
+        }
         const manifest = await candidateResponse.text();
-        if (!manifest.includes('#EXTM3U')) continue;
+        if (!manifest.includes('#EXTM3U')) {
+          probe(url.hostname, 'not-playlist');
+          continue;
+        }
 
         if (!manifest.includes('#EXT-X-STREAM-INF')) {
           const mediaLines = manifest.split(/\r?\n/)
             .map((line) => line.trim())
             .filter((line) => line && !line.startsWith('#'));
           const onlyImageSegments = mediaLines.length > 0 && mediaLines.every((line) => /\.(jpg|jpeg|png)(\?|$)/i.test(line));
-          if (onlyImageSegments) continue;
+          if (onlyImageSegments) {
+            probe(url.hostname, 'images-only');
+            continue;
+          }
           const hasPlayableSegment = mediaLines.some((line) => /\.(ts|m4s|mp4|aac)(\?|$)/i.test(line));
           const hasEncryption = manifest.includes('#EXT-X-KEY');
           if (hasPlayableSegment || hasEncryption || mediaLines.length === 0) {
+            probe(url.hostname, 'ok');
             return Response.json(
-              { streamUrl: bingrMediaProxyUrl(url.href), title: details.title },
+              { streamUrl: bingrMediaProxyUrl(url.href), title: details.title, ...(debug ? { debug: diag } : {}) },
               { headers: { 'Cache-Control': 'no-store' } },
             );
           }
+          probe(url.hostname, 'no-segments');
           continue;
         }
 
@@ -214,14 +289,20 @@ export async function GET(request) {
           if (!variantUrl || pixels >= 1280 * 720) variantUrl = candidateVariant;
           if (variantUrl && pixels >= 1280 * 720) break;
         }
-        if (!variantUrl) continue;
+        if (!variantUrl) {
+          probe(url.hostname, 'no-variant');
+          continue;
+        }
 
         const variantResponse = await fetch(variantUrl, {
           signal: AbortSignal.timeout(12_000),
           redirect: 'follow',
           headers: HEADERS,
         });
-        if (!variantResponse.ok) continue;
+        if (!variantResponse.ok) {
+          probe(url.hostname, `variant-http-${variantResponse.status}`);
+          continue;
+        }
         const variantManifest = await variantResponse.text();
         const variantMediaLines = variantManifest.split(/\r?\n/)
           .map((line) => line.trim())
@@ -229,20 +310,23 @@ export async function GET(request) {
         const variantHasVideo = variantMediaLines.some((line) => /\.(ts|m4s|mp4|aac)(\?|$)/i.test(line));
         const variantHasImagesOnly = variantMediaLines.length > 0 && variantMediaLines.every((line) => /\.(jpg|jpeg|png)(\?|$)/i.test(line));
         if (!variantHasImagesOnly && (variantHasVideo || variantManifest.includes('#EXT-X-KEY'))) {
+          probe(url.hostname, 'ok');
           return Response.json(
-            { streamUrl: bingrMediaProxyUrl(url.href), title: details.title },
+            { streamUrl: bingrMediaProxyUrl(url.href), title: details.title, ...(debug ? { debug: diag } : {}) },
             { headers: { 'Cache-Control': 'no-store' } },
           );
         }
+        probe(url.hostname, 'variant-no-video');
       } catch {
+        probe(url.hostname, 'error');
         // Probe the next candidate when a CDN source is expired or unavailable.
       }
     }
     try {
-      const watched = await resolveBingrWatchPage(String(tmdbId), mediaType, season, episode, controller.signal);
+      const watched = await resolveBingrWatchPage(String(tmdbId), mediaType, season, episode, controller.signal, diag);
       if (watched) {
         return Response.json(
-          { streamUrl: bingrMediaProxyUrl(watched.href), title: details.title },
+          { streamUrl: bingrMediaProxyUrl(watched.href), title: details.title, ...(debug ? { debug: diag } : {}) },
           { headers: { 'Cache-Control': 'no-store' } },
         );
       }
@@ -253,7 +337,7 @@ export async function GET(request) {
     throw new Error('No supported stream');
   } catch {
     return Response.json(
-      { error: 'Bingr is unavailable for this title', code: failureCode },
+      { error: 'Bingr is unavailable for this title', code: failureCode, ...(debug ? { debug: diag } : {}) },
       { status: 502, headers: { 'Cache-Control': 'no-store' } },
     );
   } finally {
