@@ -95,7 +95,13 @@ export default function RedirectBlocker() {
         blur: function blur() {},
         close: function close() { this.closed = true; },
         postMessage: function postMessage() {},
-        opener: window,
+        // SECURITY: opener points at the dummy itself, NEVER at the real
+        // top window. An earlier version set opener: window, which handed
+        // ad code a live handle to our page — win.opener.location.href =
+        // 'https://scam.com' would have redirected the user for real.
+        opener: null,
+        navigator: window.navigator,
+        screen: window.screen,
         window: null,
         self: null,
         top: null,
@@ -128,12 +134,25 @@ export default function RedirectBlocker() {
       dummy.self = dummy;
       dummy.top = dummy;
       dummy.parent = dummy;
+      dummy.opener = dummy;
 
+      // The proxy must hand itself back for the self-referential window
+      // properties — a real window satisfies win.window === win, and ad
+      // scripts do check that. (Returning the raw dummy object fails it.)
+      let proxy;
       try {
-        return new Proxy(dummy, {
+        proxy = new Proxy(dummy, {
           get(target, prop) {
             if (prop === Symbol.toStringTag) return 'Window';
+            if (prop === 'window' || prop === 'self' || prop === 'top' || prop === 'parent' || prop === 'opener') return proxy;
             if (prop in target) return target[prop];
+            // Numeric window-geometry reads must look like numbers, not
+            // functions — ad scripts that check typeof win.innerWidth ===
+            // 'number' would otherwise smell the fake immediately.
+            if (prop === 'innerWidth' || prop === 'outerWidth') return window.innerWidth;
+            if (prop === 'innerHeight' || prop === 'outerHeight') return window.innerHeight;
+            if (prop === 'screenX' || prop === 'screenLeft') return 0;
+            if (prop === 'screenY' || prop === 'screenTop') return 0;
             return function noop() {};
           },
           set(target, prop, value) {
@@ -144,6 +163,7 @@ export default function RedirectBlocker() {
       } catch {
         return dummy;
       }
+      return proxy;
     };
 
     const interceptedOpen = function open(...args) {
@@ -211,10 +231,36 @@ export default function RedirectBlocker() {
     };
     HTMLFormElement.prototype.submit = makeNativeStealth(interceptedFormSubmit, 'submit');
 
-    // Keep normal browser lifecycle events active so the app can safely handle
-    // backgrounding and popout playback on iOS / standalone PWA installs.
+    // ┌────────────────────────────────────────────────────────────────┐
+    // │         PROTECTION #2: Block Top-Level Window Hijacking        │
+    // │                                                                │
+    // │  Ad scripts inside a CROSS-ORIGIN player iframe cannot be      │
+    // │  scripted directly, but they CAN navigate the top page:        │
+    // │  `top.location = 'https://scam.com'` and                       │
+    // │  `window.open(url, '_top')` are both legal cross-origin.       │
+    // │  No JS override can stop those calls — but the browser fires   │
+    // │  `beforeunload` on the top window before ANY top navigation.   │
+    // │  So: whenever a click lands on/inside the player, we ARM a    │
+    // │  2.5-second guard. If a top navigation is attempted while the  │
+    // │  guard is armed, we set returnValue, and the browser shows    │
+    // │  "Leave site?" instead of silently redirecting — the user      │
+    // │  clicks "Stay" and nothing happens. Legitimate navigation      │
+    // │  (internal links are client-side router moves, no unload) is  │
+    // │  unaffected; the guard only ever fires within 2.5s of a click  │
+    // │  on the player, when a redirect attempt is almost certainly    │
+    // │  an ad. (An earlier version of this handler deliberately set   │
+    // │  returnValue = undefined, i.e. it blocked nothing.)            │
+    // └────────────────────────────────────────────────────────────────┘
+    // Armed timestamp (ms since epoch) until which a top navigation
+    // shows the "Leave site?" prompt. 0 = disarmed.
+    let topNavGuardUntil = 0;
+
     const handleBeforeUnload = (e) => {
-      if (e) e.returnValue = undefined;
+      if (Date.now() < topNavGuardUntil) {
+        e.preventDefault();
+        e.returnValue = '';
+        console.warn('[RedirectBlocker] Top-navigation guard tripped — user asked before leaving');
+      }
     };
     window.addEventListener('beforeunload', handleBeforeUnload, true);
 
@@ -275,14 +321,8 @@ export default function RedirectBlocker() {
     Node.prototype.insertBefore = makeNativeStealth(interceptedInsertBefore, 'insertBefore');
 
 
-    // ┌────────────────────────────────────────────────────────────────┐
-    // │         PROTECTION #2: Block Top-Level Window Hijacking        │
-    // │                                                                │
-    // │  Some ad scripts inside cross-origin iframes try to navigate   │
-    // │  window.top.location or window.parent.location.                │
-    // │  We block those attempts without disabling the browser's normal│
-    // │  lifecycle handlers required for iOS PWA background playback.   │
-    // └────────────────────────────────────────────────────────────────┘
+    // (Protection #2's implementation — the armed top-navigation guard —
+    // lives above, next to the beforeunload handler.)
 
     // ┌────────────────────────────────────────────────────────────────┐
     // │    PROTECTION #3: Block Clicks on External (Outside) Links    │
@@ -307,6 +347,15 @@ export default function RedirectBlocker() {
     // │  the click before any ad script can react to it.              │
     // └────────────────────────────────────────────────────────────────┘
     const handleClick = (e) => {
+      // Arm the top-navigation guard (Protection #2): a click landing on
+      // the player is the moment an ad script inside the cross-origin
+      // player iframe would try to navigate the top page. Clicks on the
+      // player iframe itself arrive here with the iframe element (which
+      // carries data-player) as the target.
+      if (e.target?.closest?.('[data-player]')) {
+        topNavGuardUntil = Date.now() + 2500;
+      }
+
       // Find the closest <a> (anchor/link) element that was clicked.
       // "closest('a')" walks up the DOM tree looking for an <a> tag.
       // If the user clicked a <span> inside an <a>, this finds the <a>.
@@ -516,6 +565,10 @@ export default function RedirectBlocker() {
               src.includes('vidking') ||           // Our video provider #2
               src.includes('embed.su') ||          // Our video provider #3
               src.includes('autoembed') ||         // Our video provider #4 (new)
+              src.includes('vaplayer') ||          // VAPlayer (server 6) — was missing; the observer deleted it on mount
+              src.includes('vidapi') ||            // VAPlayer's API host (matches the sweep allowlist)
+              src.includes('youtube') ||           // TrailerModal YouTube embed (no data-player attr)
+              src.includes('youtube-nocookie') ||  // YouTube privacy embed
               src.includes('ezvidapi');            // Our video provider #5
             if (!isOurPlayer) {
               node.remove(); // Delete the ad iframe!
@@ -559,6 +612,7 @@ export default function RedirectBlocker() {
               style.includes('fixed') &&
               style.includes('z-index') &&
               !node.closest('[data-player]') && // Not inside our player
+              !node.hasAttribute('data-safe-overlay') && // Explicitly marked safe (e.g. chat sidebar backdrop)
               !node.id?.includes('__next');      // Not a Next.js system div
             if (isFullOverlay && node.children.length === 0) {
               node.remove(); // Delete the click-catcher div!
@@ -617,7 +671,7 @@ export default function RedirectBlocker() {
       document.querySelectorAll('iframe:not([data-player])').forEach((iframe) => {
         const src = iframe.getAttribute('src') || '';
         // Only remove if it's not one of our trusted video sources.
-        if (!src.includes('vidsrc') && !src.includes('vidking') && !src.includes('embed.su') && !src.includes('ezvidapi') && !src.includes('autoembed') && !src.includes('vaplayer') && !src.includes('vidapi') && src !== '') {
+        if (!src.includes('vidsrc') && !src.includes('vidking') && !src.includes('embed.su') && !src.includes('ezvidapi') && !src.includes('autoembed') && !src.includes('vaplayer') && !src.includes('vidapi') && !src.includes('youtube') && !src.includes('youtube-nocookie') && src !== '') {
           iframe.remove();
           console.warn('[RedirectBlocker] Cleanup removed rogue iframe:', src);
         }

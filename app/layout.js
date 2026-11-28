@@ -1,6 +1,7 @@
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import RedirectBlocker from '@/components/RedirectBlocker';
 import Script from 'next/script';
 
 export const metadata = {
@@ -38,6 +39,11 @@ export default function RootLayout({ children }) {
       </head>
 
       <body>
+        {/* Redirect blocker: mounts first, guards every page. It renders
+            nothing visible — it patches window.open (fake-success dummy
+            window), blocks external-link/form/top-navigation redirects,
+            and removes injected ad elements. See components/RedirectBlocker.js. */}
+        <RedirectBlocker />
         <Navbar />
         <main style={{ minHeight: '100vh' }}>{children}</main>
         <Footer />

@@ -18,6 +18,7 @@ export default function CollapsibleSidebar({ children, title = 'Chat' }) {
       <>
         {isOpen && (
           <div
+            data-safe-overlay="true"
             onClick={() => setIsOpen(false)}
             style={{
               position: 'fixed', inset: 0, zIndex: 45,

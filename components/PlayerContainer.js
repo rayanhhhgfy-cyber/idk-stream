@@ -62,6 +62,25 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
   const [showSlowTip, setShowSlowTip] = useState(false);
   const [miniPip, setMiniPip] = useState(false);
 
+  // ── Click shield (anti-redirect) ──
+  // The provider players (autoembed/vidsrc/VAPlayer) run in cross-origin
+  // iframes, so their ad scripts cannot be patched from here — and the
+  // player iframe must NOT get a sandbox attribute (providers detect it
+  // and break). Instead, an invisible overlay covers the player and
+  // swallows the FIRST click (the ad-triggering click), then steps aside
+  // so real playback clicks reach the player. The shield re-arms every
+  // time the player reloads (server / title / episode / quality change).
+  // It is only rendered over iframe players — Archive/Bingr play in our
+  // own native <video> element and have no ad redirects to eat.
+  // User-visible behaviour: the first tap on the video does nothing;
+  // the second tap plays. That is the trade-off for no redirects.
+  const [clickShieldArmed, setClickShieldArmed] = useState(true);
+  useEffect(() => {
+    // setTimeout avoids the set-state-in-effect lint error, matching the
+    // other reset effects in this file.
+    setTimeout(() => setClickShieldArmed(true), 0);
+  }, [currentServer, id, season, episode, quality]);
+
   const iframeRef = useRef(null);
   const videoRef = useRef(null);
   const autoPlayTimerRef = useRef(null);
@@ -848,6 +867,25 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
           />
         )}
 
+        {/* Click shield — swallows the first click on an iframe player
+            (the ad-triggering click) and then steps aside. Rendered above
+            the iframe (zIndex 15) but below the PiP button (25) and the
+            auto-play countdown (20), so those stay clickable. Only for
+            iframe players; never over the native Archive/Bingr <video>. */}
+        {playerReady && !isDirectServer && !serverConfigs[currentServer].isHls && clickShieldArmed && !embedBlocked && (
+          <div
+            aria-hidden="true"
+            data-click-shield="true"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.info('[PlayerContainer] Click shield absorbed first player click (ad trigger)');
+              setClickShieldArmed(false);
+            }}
+            style={{ position: 'absolute', inset: 0, zIndex: 15, background: 'transparent', cursor: 'pointer' }}
+          />
+        )}
+
         {playerReady && serverConfigs[currentServer].isHls && isDev && (
           <video
             ref={videoRef}
@@ -893,7 +931,7 @@ export default function PlayerContainer({ type, id, season, episode, autoPlayNex
               <h3 style={{ color: 'white', margin: '0 0 8px' }}>Player Unavailable</h3>
               <p style={{ color: '#aaa', margin: '0 0 16px' }}>{loadErrorMessage || 'The embed provider blocked playback or the content failed to load.'}</p>
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <button onClick={() => window.open(buildUrl(currentServer), '_blank')} style={{ background: '#e50914', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Open Player in New Tab</button>
+                <button onClick={() => { try { window.__allowNextPopup = true; } catch {} window.open(buildUrl(currentServer), '_blank'); }} style={{ background: '#e50914', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Open Player in New Tab</button>
                 <button onClick={retryPlayer} style={{ background: 'rgba(255,255,255,0.06)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Retry</button>
                 <button onClick={() => switchServer(nextServer())} style={{ background: 'rgba(255,255,255,0.04)', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer' }}>Try Server {nextServer()}</button>
               </div>
