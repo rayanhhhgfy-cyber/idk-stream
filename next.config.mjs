@@ -116,6 +116,10 @@ const nextConfig = {
           //   "frame-ancestors 'self'" = Only our own website can embed us.
           //     (Same idea as X-Frame-Options above, but newer and better.)
           //
+          //   "https://www.youtube.com" = the Watch Trailer modal embeds
+          //     YouTube here. It MUST stay in frame-src or the browser
+          //     blocks the trailer iframe ("This content is blocked").
+          //
           //   "frame-src 'self' https://vidsrc.cc ..." = These are the ONLY
           //     websites we allow to show up inside our video player iframe.
           //     If a sneaky ad tries to load a different website in an iframe,
@@ -131,7 +135,7 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "frame-ancestors 'self'",
-              "frame-src 'self' https://www.vidking.net https://vidking.net https://vidsrc.to https://vidsrc.me https://vidsrc.sh https://vidsrc.cc https://vidsrc.pro https://embed.su https://ezvidapi.com https://vidsrc.pm https://autoembed.co https://autoembed.me https://player.autoembed.co https://player.autoembed.me https://vaplayer.ru https://vidapi.ru https://*.vidking.net https://*.vidsrc.to https://*.vidsrc.me https://*.vidsrc.sh https://*.vidsrc.cc https://*.vidsrc.pro https://*.embed.su https://*.ezvidapi.com https://*.vidsrc.pm https://*.autoembed.co https://*.autoembed.me https://*.player.autoembed.co https://*.player.autoembed.me https://*.vaplayer.ru https://*.vidapi.ru",
+              "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://*.youtube.com https://*.youtube-nocookie.com https://www.vidking.net https://vidking.net https://vidsrc.to https://vidsrc.me https://vidsrc.sh https://vidsrc.cc https://vidsrc.pro https://embed.su https://ezvidapi.com https://vidsrc.pm https://autoembed.co https://autoembed.me https://player.autoembed.co https://player.autoembed.me https://vaplayer.ru https://vidapi.ru https://*.vidking.net https://*.vidsrc.to https://*.vidsrc.me https://*.vidsrc.sh https://*.vidsrc.cc https://*.vidsrc.pro https://*.embed.su https://*.ezvidapi.com https://*.vidsrc.pm https://*.autoembed.co https://*.autoembed.me https://*.player.autoembed.co https://*.player.autoembed.me https://*.vaplayer.ru https://*.vidapi.ru",
             ].join('; '),
           },
 
